@@ -23,7 +23,6 @@ from shutterbug.init import (
 from shutterbug.interfaces.internal import Photometer
 
 
-@define
 class Shutterbug:
     def load_file(
         self, file_path: Path, into: Literal["memory", "database"]
