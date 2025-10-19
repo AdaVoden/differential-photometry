@@ -9,16 +9,16 @@ Built to find candidates for stars with varying brightness in an arbitrary star 
 
 ### Installation
 
-1. Clone the repository
-```bash
-    git clone https://github.com/AdaVoden/differential-photometry.git
-```
-2. Install dependencies
+1. **Clone the repository**
+    ```bash
+        git clone https://github.com/AdaVoden/differential-photometry.git
+    ```
+2. **Install dependencies**
 
-```bash
-    pip install poetry
-    poetry install
-```
+    ```bash
+        pip install poetry
+        poetry install
+    ```
 At this point Shutterbug is installed and ready for use.
 
 ### Configuration
@@ -29,9 +29,9 @@ All configuration options are in `shutterbug.ini`. Defaults are acceptable, but 
 
 Basic usage of Shutterbug is loading datasets to process and outputting graphs as a result:
 
-```bash
-shutterbug -f name.csv -o path/to/dir
-```
+    ```bash
+    shutterbug -f name.csv -o path/to/dir
+    ```
 
 At which point it will begin processing your csv or csvs.
 
