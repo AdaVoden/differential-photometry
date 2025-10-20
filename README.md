@@ -29,9 +29,9 @@ All configuration options are in `shutterbug.ini`. Defaults are acceptable, but 
 
 Basic usage of Shutterbug is loading datasets to process and outputting graphs as a result:
 
-    ```bash
-    shutterbug -f name.csv -o path/to/dir
-    ```
+```bash
+shutterbug -f name.csv -o path/to/dir
+```
 
 At which point it will begin processing your csv or csvs.
 
