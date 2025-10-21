@@ -3,7 +3,7 @@ name = "shutterbug"
 version = "1.2.1"
 description = "Conducts differential photometry on arbitrary datasets"
 authors = [
-    "Ada Voden <ada@voden.ca",
+    "Ada Voden <ada@voden.ca>",
 ]
 packages = [{ include = "shutterbug", from = "src" }]
 license = "MIT"
