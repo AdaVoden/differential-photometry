@@ -1,16 +1,18 @@
-[tool.poetry]
+[project]
 name = "shutterbug"
 version = "0.1.0"
-description = "Conducts differential photometry on arbitrary datasets"
+description = "Differential photometry and variable star detection tool"
 authors = [
-    "Ada Voden <ada@voden.ca>"
+    {name = "Ada Voden",email = "ada@voden.ca"}
 ]
-requires-python = ">=3.13,<4.0"
-packages = [{ include = "shutterbug" }]
-license = "MIT"
+license = {text = "MIT"}
 readme = "README.md"
-homepage = "https://github.com/AdaVoden/differential-photometry"
-
+requires-python = ">=3.13"
+dependencies = [
+    "pandas (>=2.3.3,<3.0.0)",
+    "numpy (>=2.3.4,<3.0.0)",
+    "click (>=8.3.0,<9.0.0)"
+]
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]

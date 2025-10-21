@@ -3,8 +3,6 @@ from typing import List
 import numpy as np
 import pandas as pd
 
-from shutterbug.data import Star
-
 
 def average_differential(
     target: Star,
