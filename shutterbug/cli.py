@@ -15,7 +15,7 @@ from shutterbug.application import (
     make_reader_writer,
 )
 
-from shutterbug.ux.progress_bars import ProgressBarManager
+from progress_bars import ProgressBarManager
 
 
 def processor(func):
