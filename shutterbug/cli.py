@@ -6,6 +6,7 @@ import pandas as pd
 from shutterbug.csv_loader import load_observation_data, load_spatial_metadata
 from shutterbug.differential import calculate_differential_magnitudes, find_reference_stars
 from shutterbug.graph import plot_light_curve
+from shutterbug.utility import split_by_session
 
 @click.command()
 @click.option('--data-file', type=click.Path(exists=True), required=True,
@@ -35,9 +36,15 @@ def cli(data_file):
         diff_data = pd.concat([diff_data, diff_mags], ignore_index=True)
 
     logger.info("Differential magnitudes calculated successfully.")
-    # Plot light curves for each target star
-    for star in diff_data['Name'].unique():
-        star_data = diff_data[diff_data['Name'] == star]
-        output_path = f"{star}_light_curve.png"
-        logger.debug(f"Plotting light curve for star {star}")
-        plot_light_curve(star_data, star, output_path)
+    # Split data by observation sessions
+    diff_data = split_by_session(diff_data)
+    # Plot light curves for each session
+    for session_id in diff_data['session'].unique():
+        session_data = diff_data[diff_data['session'] == session_id]
+        logger.info(f"Processing session {session_id} with {len(session_data)} observations.")
+        # Plot light curves for each target star
+        for star in session_data['Name'].unique():
+            star_data = session_data[session_data['Name'] == star]
+            output_path = f"{star}_{session_id}_light_curve.png"
+            logger.debug(f"Plotting light curve for star {star}")
+            plot_light_curve(star_data, star, output_path)
