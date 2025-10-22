@@ -5,10 +5,12 @@ import pandas as pd
 
 from shutterbug.csv_loader import load_observation_data, load_spatial_metadata
 from shutterbug.differential import calculate_differential_magnitudes, find_reference_stars
+from shutterbug.graph import plot_light_curve
 
 @click.command()
 @click.option('--data-file', type=click.Path(exists=True), required=True,
               help='Path to the CSV file containing observation data.')
+
 def cli(data_file):
     """Command-line interface for calculating differential magnitudes."""
     # Set up logging
@@ -23,7 +25,7 @@ def cli(data_file):
 
     for star in metadata['Name'].unique():
         target_star = star
-        logger.info(f"Finding reference stars for target star {target_star}")
+        logger.debug(f"Finding reference stars for target star {target_star}")
         reference_stars = find_reference_stars(metadata, target_star)
 
         # Calculate differential magnitudes
@@ -33,4 +35,9 @@ def cli(data_file):
         diff_data = pd.concat([diff_data, diff_mags], ignore_index=True)
 
     logger.info("Differential magnitudes calculated successfully.")
-    print(diff_data)
+    # Plot light curves for each target star
+    for star in diff_data['Name'].unique():
+        star_data = diff_data[diff_data['Name'] == star]
+        output_path = f"{star}_light_curve.png"
+        logger.debug(f"Plotting light curve for star {star}")
+        plot_light_curve(star_data, star, output_path)
