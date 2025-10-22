@@ -1,148 +1,36 @@
 import logging
-from functools import update_wrapper
-from pathlib import Path
-from typing import List
 
 import click
-from click.core import Context
+import pandas as pd
 
-from progress_bars import ProgressBarManager
+from shutterbug.csv_loader import load_observation_data, load_spatial_metadata
+from shutterbug.differential import calculate_differential_magnitudes, find_reference_stars
 
+@click.command()
+@click.option('--data-file', type=click.Path(exists=True), required=True,
+              help='Path to the CSV file containing observation data.')
+def cli(data_file):
+    """Command-line interface for calculating differential magnitudes."""
+    # Set up logging
+    logging.basicConfig(level=logging.INFO)
+    logger = logging.getLogger(__name__)
 
-def processor(func):
-    def new_func(*args, **kwargs):
-        def processor(stream):
-            return func(stream, *args, **kwargs)
+    logger.info(f"Loading observation data from {data_file}")
+    data = load_observation_data(data_file)
+    metadata = load_spatial_metadata(data_file)
+    logger.info("Data loaded successfully.")
+    diff_data = pd.DataFrame()
 
-        return processor
+    for star in metadata['Name'].unique():
+        target_star = star
+        logger.info(f"Finding reference stars for target star {target_star}")
+        reference_stars = find_reference_stars(metadata, target_star)
 
-    return update_wrapper(new_func, func)
+        # Calculate differential magnitudes
+        logger.info(f"Calculating differential magnitudes for target star {target_star}")
+        diff_mags = calculate_differential_magnitudes(data, target_star, reference_stars)
 
+        diff_data = pd.concat([diff_data, diff_mags], ignore_index=True)
 
-def generator(func):
-    @processor
-    def new_func(stream, *args, **kwargs):
-        yield from stream
-        yield from func(*args, **kwargs)
-
-    return update_wrapper(new_func, func)
-
-
-@click.group(chain=True, invoke_without_command=True)
-@click.option("-d", "--debug", is_flag=True, default=False, type=click.BOOL)
-@click.pass_context
-def cli(context: Context, debug: bool):
-    config, engine = initialize_application(debug=debug)
-    context.obj = {}
-    context.obj["pbar_manager"] = ProgressBarManager()
-    context.obj["config"] = config
-    context.obj["database"] = engine
-
-
-@cli.result_callback()
-def process_commands(processors, *args, **kwargs):
-
-    stream = ()
-
-    for processor in processors:
-        stream = processor(stream)
-    logging.debug("Finished callbacks, starting execution")
-    for node in stream:
-        for _ in node.execute():
-            pass
-    logging.debug("Execution finished")
-
-
-@cli.command("load")
-@click.option(
-    "-f",
-    "--file",
-    "files",
-    multiple=True,
-    type=click.Path(
-        exists=True, file_okay=True, dir_okay=True, readable=True, path_type=Path
-    ),
-    help="Datasets to load",
-)
-@click.pass_context
-@generator
-def load(context: Context, files: List[Path]):
-    config = context.obj["config"]
-    engine = context.obj["database"]
-    mag_limit = config.photometry.magnitude_limit
-    distance_limit = config.photometry.distance_limit
-    for f in files:
-        logging.debug(f"Loading file: {f.name}")
-        f_input = make_file_loader(f)
-        db_reader, db_writer = next(
-            make_reader_writer(
-                engine=engine,
-                dataset_name=f.stem,
-                magnitude_limit=mag_limit,
-                distance_limit=distance_limit,
-            )
-        )
-        for loader in f_input:
-            name_delta = list(set(loader.names) - set(db_reader.names))
-            StoreNode(loader, db_writer, name_delta).execute()
-
-        dataset = make_dataset(dataset_name=f.name, reader=db_reader, writer=db_writer)
-        yield DatasetLeaf(dataset)
-
-
-@cli.command("process")
-@click.option(
-    "-i",
-    "--iterations",
-    "iterations",
-    help="Number of differential/detection iterations",
-    type=click.IntRange(min=1, max=3, clamp=True),
-)
-@click.pass_context
-@processor
-def process(nodes: List[DatasetNode], context: Context, iterations: int):
-    feature_calculators = get_feature_calculators(config=context.obj["config"])
-    photometer = get_photometer()
-    logging.info(f"Adding process nodes for {iterations} iterations to node tree")
-    for node in nodes:
-        for _ in range(iterations):
-            node = DifferentialNode(node, photometer)
-            node = VariabilityNode(node, feature_calculators)
-        yield node
-
-
-@cli.command("save")
-@click.option("-o", "--out-folder", type=click.Path())
-@click.option("-g", "--graph", type=click.BOOL, is_flag=True, default=False)
-@click.option("-c", "--csv", type=click.BOOL, is_flag=True, default=False)
-@click.option(
-    "-v", "--variable_only", "variable", type=click.BOOL, is_flag=True, default=False
-)
-@click.pass_context
-@processor
-def save(
-    nodes: List[DatasetNode],
-    context: Context,
-    out_folder: Path,
-    graph: bool,
-    csv: bool,
-    variable: bool,
-):
-    if out_folder is None:
-        out_folder = context.obj["config"].data.output_folder
-        graph_builder = get_graph_builder()
-    for node in nodes:
-        if graph:
-            logging.info(f"Adding graph saving to node tree")
-            node = GraphSaveNode(
-                output_location=out_folder,
-                only_variable=variable,
-                datasets=node,
-                graph_builder=graph_builder,
-            )
-        if csv:
-            logging.info(f"Adding csv saving to node tree")
-            node = CSVSaveNode(
-                output_location=out_folder, only_variable=variable, datasets=node
-            )
-        yield node
+    logger.info("Differential magnitudes calculated successfully.")
+    print(diff_data)

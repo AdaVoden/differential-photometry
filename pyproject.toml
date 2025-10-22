@@ -3,7 +3,7 @@ name = "shutterbug"
 version = "0.1.0"
 description = "Differential photometry and variable star detection tool"
 authors = [
-    {name = "Ada Voden",email = "ada@voden.ca"}
+    {name = "Ada Voden", email = "ada@voden.ca"}
 ]
 license = {text = "MIT"}
 readme = "README.md"
@@ -17,3 +17,6 @@ dependencies = [
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.poetry.scripts]
+shutterbug = "shutterbug.cli:cli"

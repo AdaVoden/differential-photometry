@@ -2,72 +2,43 @@ from typing import List
 
 import numpy as np
 import pandas as pd
+import logging
 
+def calculate_differential_magnitudes(data: pd.DataFrame, 
+                                      target_star: str, 
+                                      reference_stars: List[str]) -> pd.DataFrame:
+    """Calculates differential magnitudes for a target star against reference stars.
 
-def average_differential(
-    target: Star,
-    reference: List[Star],
-) -> Star:
-
-    """Given a target star and a list of reference stars, calculates the average
-    differential magnitude and error for target
-
-    :param target: Target star to calculate on
-    :param reference: Reference stars to use for calculate
-    :returns: Star updated with average differential magnitude and error
+    :param data: DataFrame containing 'Name', 'Mag', 'JD', and 'Error' columns
+    :param target_star: Name of the target star
+    :param reference_stars: List of names of reference stars
+    :returns: DataFrame with differential magnitudes and errors for the target star
 
     """
-    if len(reference) < 1:
-        raise ValueError(
-            "Need at least one reference star for differential photometry, exiting"
-        )
-    target_mag = target.timeseries.magnitude
-    target_error = target.timeseries.error
-    reference_mag = reference[0].timeseries.magnitude
-    reference_error = reference[0].timeseries.error
-    # Unpack reference list
-    for ref in reference[1:]:
-        reference_mag = pd.concat([ref.timeseries.magnitude, reference_mag])
-        reference_error = pd.concat([ref.timeseries.error, reference_error])
-    ade = _average_error(target=target_error, reference=reference_error)
-    adm = _average_difference(target=target_mag, reference=reference_mag)
-    target.timeseries.differential_magnitude = adm
-    target.timeseries.differential_error = ade
-    return target
+    target_data = data[data['Name'] == target_star]
+    reference_data = data[data['Name'].isin(reference_stars)]
 
+    if target_data.empty:
+        raise ValueError(f"Target star {target_star} not found in data.")
+    if reference_data.empty:
+        raise ValueError("No reference stars found in data.")
 
-def _average_error(
-    target: pd.Series,
-    reference: pd.Series,
-) -> pd.Series:
+    # Merge target and reference data on JD (time)
+    merged = pd.merge(target_data, reference_data, on='JD', suffixes=('_target', '_ref'))
 
-    """Calculates the average differential error of given star's timeseries
+    # Calculate differential magnitude and error
+    merged['differential_magnitude'] = merged['Mag_target'] - merged['Mag_ref']
+    merged['differential_error'] = np.sqrt(merged['Error_target']**2 + merged['Error_ref']**2)
+    # Average over reference stars
+    merged = merged.groupby(['Name_target', 'JD'], observed=True).agg({
+        'differential_magnitude': 'mean',
+        'differential_error': lambda x: np.sqrt(np.sum(x**2)) / len(x),
 
-    :param target: Target star timeseries
-    :param reference: Reference stars timeseries
-    :returns: New timeseries containing the averaged differential error
+    }).reset_index()
 
-    """
-    N = len(reference.groupby("time")) + 1
-    new = np.sqrt((reference ** 2 + target ** 2).groupby("time").sum()) / N
-    return new
-
-
-def _average_difference(
-    target: pd.Series,
-    reference: pd.Series,
-) -> pd.Series:
-
-    """Calculates the average differential magnitude of a given star's timeseries
-    compared with a set of reference star's timeseries
-
-    :param target: Target star timeseries
-    :param reference: Reference stars timeseries
-    :returns: New timeseries containing the averaged differential magnitude
-
-    """
-    new = reference.rsub(target).groupby("time").mean()
-    return new
+    result = merged[['Name_target', 'JD', 'differential_magnitude', 'differential_error']]
+    result = result.rename(columns={'Name_target': 'Name'})
+    return result
 
 def find_reference_stars(metadata: pd.DataFrame, 
                          target_star: str, 
@@ -96,5 +67,6 @@ def find_reference_stars(metadata: pd.DataFrame,
             candidates = nearby.head(min_refs)
     else:
         candidates = nearby.head(max_refs)
-
+    logging.info(f"Found {len(candidates)} reference stars for target {target_star}, maximum distance: {candidates['distance'].max():.2f} pixels")
+    logging.info(f"Reference stars: {candidates['Name'].tolist()}")
     return candidates['Name'].tolist()
