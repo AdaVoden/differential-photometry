@@ -21,3 +21,8 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry.scripts]
 shutterbug = "shutterbug.cli:cli"
+
+[dependency-groups]
+dev = [
+    "black (>=25.9.0,<26.0.0)"
+]
