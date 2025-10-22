@@ -68,3 +68,33 @@ def _average_difference(
     """
     new = reference.rsub(target).groupby("time").mean()
     return new
+
+def find_reference_stars(metadata: pd.DataFrame, 
+                         target_star: str, 
+                         max_distance: float | None = None, 
+                         min_refs: int=10, 
+                         max_refs: int=50) -> List[str]:
+    """Finds reference stars within a certain distance from the target star."""
+    # Get target star position
+    target_pos = metadata[metadata['Name'] == target_star][['X', 'Y']].iloc[0]
+
+    # Calculate distances to all other stars
+    metadata['distance'] = np.sqrt(
+        (metadata['X'] - target_pos.X) ** 2 + 
+        (metadata['Y'] - target_pos.Y) ** 2
+    )
+
+    # Sort by distance, excluding the target star itself
+    nearby = metadata[metadata['Name'] != target_star].sort_values(by='distance')
+
+    # Strategy: Take closest N stars, ensuring we get enough
+    # Start with max_distance if provided, otherwise take closest max_refs
+    if max_distance:
+        candidates = nearby[nearby['distance'] <= max_distance]
+        if len(candidates) < min_refs:
+            # Not enough, expand to get minimum
+            candidates = nearby.head(min_refs)
+    else:
+        candidates = nearby.head(max_refs)
+
+    return candidates['Name'].tolist()
