@@ -4,7 +4,7 @@ Built to find candidates for stars with varying brightness in an arbitrary star 
 
 ## Prerequisites
 
-- Python 3.9 or higher
+- Python 3.13 or higher
 - Astronomical data from Mirax64 that you wish to process, in either .csv or .xlsx form
 
 ## Installation
@@ -21,19 +21,16 @@ Built to find candidates for stars with varying brightness in an arbitrary star 
     ```
 At this point Shutterbug is installed and ready for use.
 
-## Configuration
-
-All configuration options are in `shutterbug.ini`. Defaults are acceptable, but if you want to fine tune or change logging settings they are detailed within.
 
 ## Usage
 
 Basic usage of Shutterbug is loading datasets to process and outputting graphs as a result:
 
 ```bash
-shutterbug -f name.csv -o path/to/dir
+shutterbug --data-file name.csv
 ```
 
-At which point it will begin processing your csv or csvs.
+At which point it will begin processing your csv.
 
 ## Contributing
 
