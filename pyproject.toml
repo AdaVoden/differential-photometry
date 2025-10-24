@@ -22,6 +22,7 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry.scripts]
 shutterbug = "shutterbug.cli:cli"
+shutterbug-gui = "shutterbug.gui.app:main"
 
 [dependency-groups]
 dev = [

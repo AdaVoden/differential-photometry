@@ -1,4 +1,10 @@
 from PySide6.QtWidgets import QWidget
 
 class Outliner(QWidget):
-    pass
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+
+        # Set a minimum height for the outliner
+        self.setMinimumHeight(200) 
+        
