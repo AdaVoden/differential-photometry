@@ -32,6 +32,12 @@ shutterbug --data-file name.csv
 
 At which point it will begin processing your csv.
 
+If you wish to load the GUI version, use the command
+
+```bash
+shutterbug-gui
+```
+
 ## Contributing
 
 Contributions are welcome! Feel free to open issues or submit pull requests
