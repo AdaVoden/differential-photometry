@@ -1,7 +1,7 @@
 import logging
 
 from PySide6.QtWidgets import QMainWindow, QHBoxLayout, QFileDialog, QWidget
-from PySide6.QtCore import Slot
+from PySide6.QtCore import Slot, QCoreApplication
 
 from shutterbug.gui.sidebar import Sidebar
 from shutterbug.gui.viewer import Viewer
@@ -70,8 +70,8 @@ class MainWindow(QMainWindow):
         save_action = file_menu.addAction("Save Project")
         save_action.triggered.connect(self.save_project)
 
-
         exit_action = file_menu.addAction("Exit")
+        exit_action.triggered.connect(self.exit)
 
         # Edit menu
         edit_menu = menu_bar.addMenu("Edit")
@@ -114,11 +114,11 @@ class MainWindow(QMainWindow):
             self.viewer.display_image(self.fits_data[filenames[0]])
 
     def add_fits_to_project(self, filename: str):
-            # Add to outliner
-            self.sidebar.outliner.add_item(filename)
+        # Add to outliner
+        self.sidebar.outliner.add_item(filename)
 
-            # Load and display in viewer
-            self.fits_data[filename] = self.load_fits_image(filename)
+        # Load and display in viewer
+        self.fits_data[filename] = self.load_fits_image(filename)
 
     def load_fits_image(self, filepath: str):
         """Load FITS image from given filepath"""
@@ -126,10 +126,10 @@ class MainWindow(QMainWindow):
         logging.debug(f"Loading FITS image from {filepath}")
 
         with fits.open(filepath) as hdul:
-            data = hdul[0].data  #type: ignore
+            data = hdul[0].data  # type: ignore
             # Assuming image data is in the primary HDU
             return data
-    
+
     @Slot()
     def save_project(self):
         filename, _ = QFileDialog.getSaveFileName(
@@ -146,16 +146,17 @@ class MainWindow(QMainWindow):
         if filename:
             ShutterbugProject.load(filename, self)
 
+    @Slot()
+    def exit(self):
+        QCoreApplication.quit()
+
     def get_state(self):
         return {
             "outliner": self.sidebar.outliner.get_state(),
-            "settings": self.sidebar.settings.get_state()
+            "settings": self.sidebar.settings.get_state(),
         }
 
     def set_state(self, state):
         print(state.keys())
         self.sidebar.outliner.set_state(state["outliner"])
         self.sidebar.settings.set_state(state["settings"])
-            
-
-    

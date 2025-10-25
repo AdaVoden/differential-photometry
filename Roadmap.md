@@ -14,7 +14,7 @@
     - [x] Load images
     - [x] Save state
     - [x] Load state
-- [ ] Exit program
+- [x] Exit program
 - [ ] Cache image manipulation so image can load faster
 - [ ] Fix Bug: Loading project twice loads all objects multiple times
 - [ ] Add image track to bottom of layout

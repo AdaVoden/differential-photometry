@@ -77,13 +77,16 @@ class ImagePropertiesPanel(QWidget):
         self.contrast_slider.setValue(value)
 
     def get_state(self):
-        state = {'brightness': self.brightness_slider.value(),
-                 'contrast': self.contrast_slider.value()}
+        state = {
+            "brightness": self.brightness_slider.value(),
+            "contrast": self.contrast_slider.value(),
+        }
         return state
-    
+
     def set_state(self, state):
-        self.set_brightness(state['brightness'])
-        self.set_contrast(state['contrast'])
+        self.set_brightness(state["brightness"])
+        self.set_contrast(state["contrast"])
+
 
 class StarPropertiesPanel(QWidget):
     def __init__(self):

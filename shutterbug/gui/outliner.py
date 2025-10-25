@@ -5,6 +5,7 @@ from PySide6.QtCore import Signal, Slot, Qt
 
 from typing import List
 
+
 class Outliner(QWidget):
 
     item_selected = Signal(object)  # Signal emitted when an item is selected
@@ -50,15 +51,14 @@ class Outliner(QWidget):
         self.item_selected.emit(item.text())
 
     def get_state(self):
-        return {
-            "items": self.loaded_items,
-            "selected_item": self.selected_item
-        }
+        return {"items": self.loaded_items, "selected_item": self.selected_item}
 
     def set_state(self, state):
         for item in state["items"]:
             self.add_item(item)
         self.selected_item = state["selected_item"]
-        selected_item = self.file_list.findItems(self.selected_item, Qt.MatchFlag.MatchExactly)[0]
+        selected_item = self.file_list.findItems(
+            self.selected_item, Qt.MatchFlag.MatchExactly
+        )[0]
         self.file_list.setCurrentItem(selected_item)
         self.on_item_clicked(selected_item)
