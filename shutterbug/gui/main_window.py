@@ -126,7 +126,8 @@ class MainWindow(QMainWindow):
         logging.debug(f"Loading FITS image from {filepath}")
 
         with fits.open(filepath) as hdul:
-            data = hdul[0].data  # Assuming image data is in the primary HDU
+            data = hdul[0].data  #type: ignore
+            # Assuming image data is in the primary HDU
             return data
     
     @Slot()
