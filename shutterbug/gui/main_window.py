@@ -71,10 +71,6 @@ class MainWindow(QMainWindow):
         undo_action = edit_menu.addAction("Undo")
         redo_action = edit_menu.addAction("Redo")
 
-        # View menu
-        view_menu = menu_bar.addMenu("View")
-        toggle_sidebar_action = view_menu.addAction("Toggle Sidebar")
-
         # Help menu
         help_menu = menu_bar.addMenu("Help")
         about_action = help_menu.addAction("About Shutterbug")

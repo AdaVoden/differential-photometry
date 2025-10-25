@@ -1,6 +1,6 @@
 import logging
 from PySide6.QtWidgets import QWidget, QVBoxLayout, QListWidget
-from PySide6.QtCore import Signal, Slot
+from PySide6.QtCore import Signal, Slot, Qt
 
 
 class Outliner(QWidget):
@@ -29,6 +29,15 @@ class Outliner(QWidget):
         """Add an item to the outliner"""
         self.file_list.addItem(item_name)
         self.loaded_items.append(item_name)
+
+    def remove_item(self, item_name):
+        """Remove an item from the outliner"""
+        items = self.file_list.findItems(item_name, Qt.MatchFlag.MatchExactly)
+        # I don't like this approach but QListWidget has no direct removeItem method
+        for item in items:
+            row = self.file_list.row(item)
+            self.file_list.takeItem(row)
+            self.loaded_items.remove(item_name)
 
     @Slot()
     def on_item_clicked(self, item):
