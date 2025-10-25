@@ -1,8 +1,12 @@
+import logging
+
 from PySide6.QtWidgets import QMainWindow, QHBoxLayout, QFileDialog, QWidget
 from PySide6.QtCore import Slot
 
 from shutterbug.gui.sidebar import Sidebar
 from shutterbug.gui.viewer import Viewer
+
+from astropy.io import fits
 
 
 class MainWindow(QMainWindow):
@@ -30,6 +34,23 @@ class MainWindow(QMainWindow):
 
         # Set up menu bar
         self.setup_menu_bar()
+
+        self.fits_data = {}  # Dictionary to hold loaded FITS data
+        # filepath -> data
+
+        # Connect outliner selection signal
+        self.sidebar.outliner.item_selected.connect(self.on_file_selected)
+
+    @Slot(str)
+    def on_file_selected(self, filepath):
+        """Called when a file is selected in the outliner"""
+        logging.debug(f"File selected in outliner: {filepath}")
+        # Load data if not already loaded
+        if filepath not in self.fits_data:
+            self.fits_data[filepath] = self.load_fits_image(filepath)
+
+        # Tell viewer to display the image
+        self.viewer.display_image(self.fits_data[filepath])
 
     def setup_menu_bar(self):
         """Set up the menu bar with File, Edit, View, and Help menus"""
@@ -59,11 +80,26 @@ class MainWindow(QMainWindow):
     @Slot()
     def open_fits(self):
         """Open a FITS image file and load it into the viewer"""
-        filename, _ = QFileDialog.getOpenFileName(
+        filenames, _ = QFileDialog.getOpenFileNames(
             self,
             "Open FITS Image",
             "",
             "FITS Files (*.fits *.fit *.fts);;All Files (*)",
         )
-        if filename:
-            self.viewer.load_fits_image(filename)
+
+        for filename in filenames:
+            # Add to outliner
+            self.sidebar.outliner.add_item(filename)
+
+            # Load and display in viewer
+            self.fits_data[filename] = self.load_fits_image(filename)
+        if filenames:
+            self.viewer.display_image(self.fits_data[filenames[0]])
+
+    def load_fits_image(self, filepath):
+        """Load FITS image from given filepath"""
+        # This method can be implemented to load FITS data
+
+        with fits.open(filepath) as hdul:
+            data = hdul[0].data  # Assuming image data is in the primary HDU
+            return data

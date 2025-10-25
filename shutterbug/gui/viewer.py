@@ -1,14 +1,15 @@
-from PySide6.QtWidgets import QLabel, QGraphicsView, QGraphicsScene
+import logging
+
+from PySide6.QtWidgets import QGraphicsView, QGraphicsScene
 from PySide6.QtCore import Qt, Slot
 from PySide6.QtGui import QPixmap, QImage
 
-from astropy.io import fits
 import numpy as np
 
 
 class Viewer(QGraphicsView):
-    def __init__(self, parent=None):
-        super().__init__(parent)
+    def __init__(self):
+        super().__init__()
         self.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.setStyleSheet("background-color: black;")
         # Set up scene
@@ -32,23 +33,20 @@ class Viewer(QGraphicsView):
         self.zoom_factor = 1.1
 
     def wheelEvent(self, event):
-            if event.modifiers() == Qt.KeyboardModifier.ControlModifier: # Zoom only when Ctrl is pressed
-                if event.angleDelta().y() > 0: # Zoom in
-                    self.scale(self.zoom_factor, self.zoom_factor)
-                else: # Zoom out
-                    self.scale(1 / self.zoom_factor, 1 / self.zoom_factor)
-                event.accept()
-            else:
-                super().wheelEvent(event) # Pass other wheel events to parent
+        if (
+            event.modifiers() == Qt.KeyboardModifier.ControlModifier
+        ):  # Zoom only when Ctrl is pressed
+            if event.angleDelta().y() > 0:  # Zoom in
+                self.scale(self.zoom_factor, self.zoom_factor)
+            else:  # Zoom out
+                self.scale(1 / self.zoom_factor, 1 / self.zoom_factor)
+            event.accept()
+        else:
+            super().wheelEvent(event)  # Pass other wheel events to parent
 
-
-    def load_fits_image(self, filename):
-        """Load and display a FITS image from the given filename"""
-
-        # Load fits file
-        with fits.open(filename) as hdul:
-            data = hdul[0].data  # Assuming image is in primary HDU
-
+    def display_image(self, data):
+        """Display given FITS data array"""
+        logging.debug("Displaying image in viewer")
         # Normalize data for display
         data = self.normalize_data(data)
 
@@ -60,21 +58,6 @@ class Viewer(QGraphicsView):
         pixmap = QPixmap.fromImage(qimage)
         self.pixmap_item.setPixmap(pixmap)
         self.fitInView(self.pixmap_item, Qt.AspectRatioMode.KeepAspectRatio)
-
-        # Set up drag mode
-
-
-        # Set up zooming (optional)
-
-
-
-        # self.setPixmap(
-        #     pixmap.scaled(
-        #         self.size(),
-        #         Qt.AspectRatioMode.KeepAspectRatio,
-        #         Qt.TransformationMode.SmoothTransformation,
-        #     )
-        # )
 
     def normalize_data(self, data):
         """Normalize the FITS data to 0-255 for display"""
