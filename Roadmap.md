@@ -7,7 +7,8 @@
 - [x] Zoom image (scroll wheel)
 - [x] Load multiple FITS images
 - [x] Display FITS images in Outliner
-- [ ] Adjust image brightness/contrast
+- [x] Adjust image brightness/contrast
+- [ ] Add image track to bottom of layout
 - [ ] Aperture photometry from FITS
 - [ ] Click star to select as target
 - [ ] Display star coordinates on click

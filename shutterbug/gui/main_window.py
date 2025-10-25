@@ -41,6 +41,14 @@ class MainWindow(QMainWindow):
         # Connect outliner selection signal
         self.sidebar.outliner.item_selected.connect(self.on_file_selected)
 
+        # Set up image properties signals to slots
+        self.sidebar.settings.image_properties.brightness_slider.valueChanged.connect(
+            self.viewer.set_brightness
+        )
+        self.sidebar.settings.image_properties.contrast_slider.valueChanged.connect(
+            self.viewer.set_contrast
+        )
+
         logging.debug("Main window initialized")
 
     @Slot(str)
