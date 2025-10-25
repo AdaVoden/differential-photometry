@@ -23,6 +23,8 @@ class Outliner(QWidget):
 
         self.loaded_items = []  # Dictionary to keep track of loaded items
 
+        logging.debug("Outliner initialized")
+
     def add_item(self, item_name):
         """Add an item to the outliner"""
         self.file_list.addItem(item_name)

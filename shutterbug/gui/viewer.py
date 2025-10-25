@@ -32,6 +32,8 @@ class Viewer(QGraphicsView):
         # Set zoom factor
         self.zoom_factor = 1.1
 
+        logging.debug("Viewer initialized")
+
     def wheelEvent(self, event):
         if (
             event.modifiers() == Qt.KeyboardModifier.ControlModifier

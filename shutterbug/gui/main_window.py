@@ -41,6 +41,8 @@ class MainWindow(QMainWindow):
         # Connect outliner selection signal
         self.sidebar.outliner.item_selected.connect(self.on_file_selected)
 
+        logging.debug("Main window initialized")
+
     @Slot(str)
     def on_file_selected(self, filepath):
         """Called when a file is selected in the outliner"""
@@ -77,9 +79,12 @@ class MainWindow(QMainWindow):
         help_menu = menu_bar.addMenu("Help")
         about_action = help_menu.addAction("About Shutterbug")
 
+        logging.debug("Menu bar set up")
+
     @Slot()
     def open_fits(self):
         """Open a FITS image file and load it into the viewer"""
+        logging.debug("Opening FITS file dialog")
         filenames, _ = QFileDialog.getOpenFileNames(
             self,
             "Open FITS Image",
@@ -99,6 +104,7 @@ class MainWindow(QMainWindow):
     def load_fits_image(self, filepath):
         """Load FITS image from given filepath"""
         # This method can be implemented to load FITS data
+        logging.debug(f"Loading FITS image from {filepath}")
 
         with fits.open(filepath) as hdul:
             data = hdul[0].data  # Assuming image data is in the primary HDU

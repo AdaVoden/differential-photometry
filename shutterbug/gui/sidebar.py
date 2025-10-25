@@ -1,3 +1,4 @@
+import logging
 from PySide6.QtWidgets import QWidget, QVBoxLayout
 
 from shutterbug.gui.outliner import Outliner
@@ -19,3 +20,5 @@ class Sidebar(QWidget):
         layout.addWidget(self.settings, stretch=3)
         self.setLayout(layout)
         self.setMaximumWidth(400)  # set a maximum width for the sidebar
+
+        logging.debug("Sidebar initialized")
