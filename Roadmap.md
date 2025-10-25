@@ -8,6 +8,13 @@
 - [x] Load multiple FITS images
 - [x] Display FITS images in Outliner
 - [x] Adjust image brightness/contrast
+- [x] Save/load project state
+    - [x] Display selected image on load
+    - [x] Load project settings
+    - [x] Load images
+    - [x] Save state
+    - [x] Load state
+- [ ] Fix Bug: Loading project twice loads all objects multiple times
 - [ ] Add image track to bottom of layout
 - [ ] Aperture photometry from FITS
 - [ ] Click star to select as target
@@ -15,7 +22,6 @@
 - [ ] Multiple reference star selection
 - [ ] Generate light curve for selected star
 - [ ] Export light curve graph
-- [ ] Save/load project state
 - [ ] Plate solving
 - [ ] AAVSO export format
 - [ ] Batch processing multiple images

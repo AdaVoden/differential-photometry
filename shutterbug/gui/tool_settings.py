@@ -33,6 +33,12 @@ class Settings(QWidget):
     def show_general_properties(self):
         self.stack.setCurrentWidget(self.general_properties)
 
+    def get_state(self):
+        return {"image_properties": self.image_properties.get_state()}
+
+    def set_state(self, state):
+        self.image_properties.set_state(state["image_properties"])
+
 
 class ImagePropertiesPanel(QWidget):
     def __init__(self):
@@ -56,6 +62,28 @@ class ImagePropertiesPanel(QWidget):
 
         logging.debug("Image properties panel initialized")
 
+    def set_brightness(self, value: int):
+        if value < -100:
+            raise ValueError("Brightness set too low")
+        if value > 100:
+            raise ValueError("Brightness set too high")
+        self.brightness_slider.setValue(value)
+
+    def set_contrast(self, value):
+        if value < 50:
+            raise ValueError("Contrast set too low")
+        if value > 200:
+            raise ValueError("Contrast set too high")
+        self.contrast_slider.setValue(value)
+
+    def get_state(self):
+        state = {'brightness': self.brightness_slider.value(),
+                 'contrast': self.contrast_slider.value()}
+        return state
+    
+    def set_state(self, state):
+        self.set_brightness(state['brightness'])
+        self.set_contrast(state['contrast'])
 
 class StarPropertiesPanel(QWidget):
     def __init__(self):
