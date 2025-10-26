@@ -6,8 +6,11 @@ from PySide6.QtCore import Slot, QCoreApplication
 from shutterbug.gui.sidebar import Sidebar
 from shutterbug.gui.viewer import Viewer
 from shutterbug.gui.project import ShutterbugProject
+from shutterbug.gui.image_data import FITSImage
 
 from astropy.io import fits
+
+from pathlib import Path
 
 
 class MainWindow(QMainWindow):
@@ -39,8 +42,8 @@ class MainWindow(QMainWindow):
         # Set up menu bar
         self.setup_menu_bar()
 
-        self.fits_data = {}  # Dictionary to hold loaded FITS data
-        # filepath -> data
+        self.fits_data = {}  # Loaded FITS images
+        # filename -> FITSImage
 
         # Connect outliner selection signal
         self.sidebar.outliner.item_selected.connect(self.on_file_selected)
@@ -61,6 +64,7 @@ class MainWindow(QMainWindow):
 
         # File menu
         file_menu = menu_bar.addMenu("File")
+        
         open_action = file_menu.addAction("Open Image")
         open_action.triggered.connect(self.open_fits)
 
@@ -85,16 +89,13 @@ class MainWindow(QMainWindow):
         logging.debug("Menu bar set up")
 
     @Slot(str)
-    def on_file_selected(self, filepath: str):
+    def on_file_selected(self, filename: str):
         """Called when a file is selected in the outliner"""
-        logging.debug(f"File selected in outliner: {filepath}")
-        # Load data if not already loaded
-        if filepath not in self.fits_data:
-            self.fits_data[filepath] = self.load_fits_image(filepath)
+        logging.debug(f"File selected in outliner: {filename}")
 
         # Tell viewer to display the image
-        self.selected_file = filepath
-        self.viewer.display_image(self.fits_data[filepath])
+        self.selected_file = filename
+        self.viewer.display_image(self.fits_data[filename])
 
     @Slot()
     def open_fits(self):
@@ -108,17 +109,22 @@ class MainWindow(QMainWindow):
         )
 
         for filename in filenames:
-            self.add_fits_to_project(filename)
+            image = FITSImage(
+                filename, 
+                self.load_fits_image(filename)
+            )
+            self.add_fits_to_project(image)
 
         if filenames:
-            self.viewer.display_image(self.fits_data[filenames[0]])
+            filepath = Path(filenames[0])
+            self.viewer.display_image(self.fits_data[filepath.name + filepath.suffix])
 
-    def add_fits_to_project(self, filename: str):
+    def add_fits_to_project(self, image: FITSImage):
         # Add to outliner
-        self.sidebar.outliner.add_item(filename)
+        self.sidebar.outliner.add_item(image.filename)
 
         # Load and display in viewer
-        self.fits_data[filename] = self.load_fits_image(filename)
+        self.fits_data[image.filename] = image
 
     def load_fits_image(self, filepath: str):
         """Load FITS image from given filepath"""
@@ -157,6 +163,5 @@ class MainWindow(QMainWindow):
         }
 
     def set_state(self, state):
-        print(state.keys())
         self.sidebar.outliner.set_state(state["outliner"])
         self.sidebar.settings.set_state(state["settings"])

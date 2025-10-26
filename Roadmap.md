@@ -28,5 +28,5 @@
 - [ ] AAVSO export format
 - [ ] Batch processing multiple images
 - [ ] Period analysis tools
-
+- [ ] Polish appearance
 
