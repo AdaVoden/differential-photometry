@@ -20,7 +20,7 @@
 - [ ] Add image track to bottom of layout
 - [ ] Aperture photometry from FITS
 - [x] Click star to select as target
-- [ ] Display star coordinates on click
+- [x] Display star coordinates on click
 - [ ] Multiple reference star selection
 - [ ] Generate light curve for selected star
 - [ ] Export light curve graph

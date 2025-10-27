@@ -57,9 +57,7 @@ class MainWindow(QMainWindow):
         )
 
         # Set up star being selected to Settings
-        self.viewer.star_selected.connect(
-            self.sidebar.settings.show_star_properties
-        )
+        self.viewer.star_selected.connect(self.sidebar.settings.show_star_properties)
 
         logging.debug("Main window initialized")
 

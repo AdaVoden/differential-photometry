@@ -5,6 +5,7 @@ from PySide6.QtCore import Qt, Slot, QPoint, Signal
 from PySide6.QtGui import QContextMenuEvent, QPixmap, QImage, QPen, QColor
 
 from shutterbug.gui.image_data import FITSImage
+from shutterbug.gui.star import Star
 
 from typing import Tuple
 
@@ -12,7 +13,7 @@ import numpy as np
 
 
 class Viewer(QGraphicsView):
-    
+
     star_selected = Signal(object)
     # TODO made a viable type
 
@@ -91,21 +92,20 @@ class Viewer(QGraphicsView):
 
         if self.current_image.stars is None:
             return
-        
+
         stars = self.current_image.stars
 
         # Calculate distance to all stars
         # TODO Make more efficient. Ktrees?
         distances = np.sqrt(
-            (stars['xcentroid'] - x)**2 +
-            (stars['ycentroid'] - y)**2
+            (stars["xcentroid"] - x) ** 2 + (stars["ycentroid"] - y) ** 2
         )
 
         min_idx = np.argmin(distances)
 
         if distances[min_idx] <= max_distance:
             return stars[min_idx]
-        
+
         return None
 
     def convert_to_image_coordinates(self, coordinate: QPoint) -> Tuple[float, float]:
@@ -202,13 +202,13 @@ class Viewer(QGraphicsView):
             return
 
         x, y = self.convert_to_image_coordinates(coordinates)
-        
+
         nearest_star = self.find_nearest_star(x, y)
 
         if nearest_star:
             # Place marker at actual star position
-            star_x = nearest_star['xcentroid']
-            star_y = nearest_star['ycentroid']
+            star_x = nearest_star["xcentroid"]
+            star_y = nearest_star["ycentroid"]
             # Don't need any other markers
             self.clear_markers()
             self.add_star_marker(star_x, star_y)
@@ -220,5 +220,5 @@ class Viewer(QGraphicsView):
 
         else:
             logging.info(f"No star found near flick at ({x:.1f}, {y:.1f})")
-        
+
         # TODO send star information to main window

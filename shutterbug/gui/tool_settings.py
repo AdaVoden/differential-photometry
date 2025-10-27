@@ -97,11 +97,11 @@ class StarPropertiesPanel(QWidget):
         super().__init__()
         layout = QVBoxLayout()
         self.setLayout(layout)
-        
+
         layout.addWidget(QLabel("Star Information"))
 
         self.info_labels = {}
-        for field in ['Position', 'Flux', 'Magnitude', 'FWHM']:
+        for field in ["Position", "Flux", "Magnitude", "FWHM"]:
             label = QLabel(f"{field}: --")
             self.info_labels[field] = label
             layout.addWidget(label)
@@ -113,15 +113,11 @@ class StarPropertiesPanel(QWidget):
     def display_star(self, star):
         """Update labels with star data"""
 
-        self.info_labels['Position'].setText(
+        self.info_labels["Position"].setText(
             f"Position: ({star['xcentroid']:.1f}, {star['ycentroid']:.1f})"
         )
-        self.info_labels['Flux'].setText(
-            f"Flux: {star['flux']:.1f}"
-        )
+        self.info_labels["Flux"].setText(f"Flux: {star['flux']:.1f}")
         # TODO Magnitude and FWHM from star
-
-
 
 
 class GeneralPropertiesPanel(QWidget):
