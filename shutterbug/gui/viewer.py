@@ -5,7 +5,6 @@ from PySide6.QtCore import Qt, Slot, QPoint, Signal
 from PySide6.QtGui import QContextMenuEvent, QPixmap, QImage, QPen, QColor
 
 from shutterbug.gui.image_data import FITSImage
-from shutterbug.gui.star import Star
 
 from typing import Tuple
 
@@ -80,6 +79,9 @@ class Viewer(QGraphicsView):
         find_stars_action = menu.addAction("Find all stars in image")
         find_stars_action.triggered.connect(self.find_stars_in_image)
 
+        calc_phot_action = menu.addAction("Calculate magnitude for selected star")
+        calc_phot_action.triggered.connect(self.calculate_aperture_photometry)
+
         # TODO add in "Select as Reference Star" "Set Aperture", etc.
 
         menu.exec(event.globalPos())
@@ -88,10 +90,10 @@ class Viewer(QGraphicsView):
 
     def find_nearest_star(self, x: float, y: float, max_distance: int = 20):
         if self.current_image is None:
-            return
+            return None, None
 
         if self.current_image.stars is None:
-            return
+            return None, None
 
         stars = self.current_image.stars
 
@@ -104,9 +106,9 @@ class Viewer(QGraphicsView):
         min_idx = np.argmin(distances)
 
         if distances[min_idx] <= max_distance:
-            return stars[min_idx]
+            return stars[min_idx], min_idx
 
-        return None
+        return None, None
 
     def convert_to_image_coordinates(self, coordinate: QPoint) -> Tuple[float, float]:
         # Step 1, convert to scene coordinates
@@ -203,18 +205,20 @@ class Viewer(QGraphicsView):
 
         x, y = self.convert_to_image_coordinates(coordinates)
 
-        nearest_star = self.find_nearest_star(x, y)
+        nearest_star, idx = self.find_nearest_star(x, y)
 
-        if nearest_star:
+        if nearest_star and idx:
             # Place marker at actual star position
             star_x = nearest_star["xcentroid"]
             star_y = nearest_star["ycentroid"]
+            flux = nearest_star["flux"]
             # Don't need any other markers
+            self.current_image.select_star(idx, flux)
             self.clear_markers()
             self.add_star_marker(star_x, star_y)
             logging.info(f"Selected star at ({star_x:.1f}, {star_y:.1f})")
 
-            self.star_selected.emit(nearest_star)
+            self.star_selected.emit(self.current_image.selected_star)
 
             # TODO Emit signal that star is selected
 
@@ -222,3 +226,18 @@ class Viewer(QGraphicsView):
             logging.info(f"No star found near flick at ({x:.1f}, {y:.1f})")
 
         # TODO send star information to main window
+
+    @Slot()
+    def calculate_aperture_photometry(self):
+        if self.current_image is None:
+            return
+        if self.current_image.stars is None:
+            return
+        if self.current_image.selected_star is None:
+            return
+        
+        self.current_image.measure_star_magnitude()
+
+        self.star_selected.emit(self.current_image.selected_star)
+
+
