@@ -18,6 +18,8 @@ class Viewer(QGraphicsView):
         self.current_image: FITSImage | None = None
         self.star_markers = []  # store all markers for removal
         self.zoom_factor: float = 1.1
+        self.zoom_max: float = 5.0
+        self.zoom_min: float = 0.1
 
         self.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.setStyleSheet("background-color: black;")
@@ -37,7 +39,6 @@ class Viewer(QGraphicsView):
         self.setTransformationAnchor(QGraphicsView.ViewportAnchor.AnchorUnderMouse)
         self.setResizeAnchor(QGraphicsView.ViewportAnchor.AnchorUnderMouse)
         # TODO Fix issue where zoom is not under cursor
-        # TODO set max zoom limits
 
         # Set initial zoom level
         self.scale(1.0, 1.0)
@@ -45,11 +46,14 @@ class Viewer(QGraphicsView):
         logging.debug("Viewer initialized")
 
     def wheelEvent(self, event):
-
+        # M11 is the horizontal scaling factor
+        current_scale = self.transform().m11()
         if event.angleDelta().y() > 0:  # Zoom in
-            self.scale(self.zoom_factor, self.zoom_factor)
+            if current_scale * self.zoom_factor <= self.zoom_max:
+                self.scale(self.zoom_factor, self.zoom_factor)
         else:  # Zoom out
-            self.scale(1 / self.zoom_factor, 1 / self.zoom_factor)
+            if current_scale * self.zoom_factor >= self.zoom_min:
+                self.scale(1 / self.zoom_factor, 1 / self.zoom_factor)
         event.accept()
 
         super().wheelEvent(event)  # Pass other wheel events to parent
