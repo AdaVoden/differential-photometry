@@ -64,7 +64,7 @@ class MainWindow(QMainWindow):
 
         # File menu
         file_menu = menu_bar.addMenu("File")
-        
+
         open_action = file_menu.addAction("Open Image")
         open_action.triggered.connect(self.open_fits)
 
@@ -109,10 +109,7 @@ class MainWindow(QMainWindow):
         )
 
         for filename in filenames:
-            image = FITSImage(
-                filename, 
-                self.load_fits_image(filename)
-            )
+            image = FITSImage(filename, self.load_fits_image(filename))
             self.add_fits_to_project(image)
 
         if filenames:

@@ -1,10 +1,12 @@
 import logging
 
-from PySide6.QtWidgets import QGraphicsView, QGraphicsScene
-from PySide6.QtCore import Qt, Slot
-from PySide6.QtGui import QPixmap, QImage
+from PySide6.QtWidgets import QGraphicsView, QGraphicsScene, QMenu
+from PySide6.QtCore import Qt, Slot, QPoint
+from PySide6.QtGui import QContextMenuEvent, QPixmap, QImage, QPen, QColor
 
 from shutterbug.gui.image_data import FITSImage
+
+from typing import Tuple
 
 import numpy as np
 
@@ -12,9 +14,10 @@ import numpy as np
 class Viewer(QGraphicsView):
     def __init__(self):
         super().__init__()
-        self.current_image: FITSImage | None = None
         # Initial variables
-        self.zoom_factor = 1.1
+        self.current_image: FITSImage | None = None
+        self.star_markers = []  # store all markers for removal
+        self.zoom_factor: float = 1.1
 
         self.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.setStyleSheet("background-color: black;")
@@ -33,6 +36,8 @@ class Viewer(QGraphicsView):
         # Set up zooming behavior
         self.setTransformationAnchor(QGraphicsView.ViewportAnchor.AnchorUnderMouse)
         self.setResizeAnchor(QGraphicsView.ViewportAnchor.AnchorUnderMouse)
+        # TODO Fix issue where zoom is not under cursor
+        # TODO set max zoom limits
 
         # Set initial zoom level
         self.scale(1.0, 1.0)
@@ -48,6 +53,115 @@ class Viewer(QGraphicsView):
         event.accept()
 
         super().wheelEvent(event)  # Pass other wheel events to parent
+
+    def mousePressEvent(self, event):
+        if event.button() == Qt.MouseButton.LeftButton:
+            self.select_star_at_position(event.pos())
+
+        super().mousePressEvent(event)
+
+    def contextMenuEvent(self, event: QContextMenuEvent) -> None:
+        menu = QMenu()
+
+        select_star_action = menu.addAction("Select as Target Star")
+        select_star_action.triggered.connect(
+            lambda: self.select_star_at_position(event.pos())
+        )
+
+        find_stars_action = menu.addAction("Find all stars in image")
+        find_stars_action.triggered.connect(self.find_stars_in_image)
+
+        # TODO add in "Select as Reference Star" "Set Aperture", etc.
+
+        menu.exec(event.globalPos())
+
+        super().contextMenuEvent(event)
+
+    @Slot()
+    def select_star_at_position(self, coordinates: QPoint):
+        if self.current_image is None:
+            return
+
+        if self.current_image.stars is None:
+            return
+
+        x, y = self.convert_to_image_coordinates(coordinates)
+        
+        nearest_star = self.find_nearest_star(x, y)
+
+        if nearest_star:
+            # Place marker at actual star position
+            star_x = nearest_star['xcentroid']
+            star_y = nearest_star['ycentroid']
+            self.clear_markers()
+            self.add_star_marker(star_x, star_y)
+            logging.info(f"Selected star at ({star_x:.1f}, {star_y:.1f})")
+            # TODO Emit signal that star is selected
+        else:
+            logging.info(f"No star found near flick at ({x:.1f}, {y:.1f})")
+        
+        # TODO send star information to main window
+
+    def find_nearest_star(self, x: float, y: float, max_distance: int = 20):
+        if self.current_image is None:
+            return
+
+        if self.current_image.stars is None:
+            return
+        
+        stars = self.current_image.stars
+
+        # Calculate distance to all stars
+        # TODO Make more efficient. Ktrees?
+        distances = np.sqrt(
+            (stars['xcentroid'] - x)**2 +
+            (stars['ycentroid'] - y)**2
+        )
+
+        min_idx = np.argmin(distances)
+
+        if distances[min_idx] <= max_distance:
+            return stars[min_idx]
+        
+        return None
+
+
+
+    def convert_to_image_coordinates(self, coordinate: QPoint) -> Tuple[float, float]:
+        # Step 1, convert to scene coordinates
+        scene_pos = self.mapToScene(coordinate)
+
+        # Step 2, map to Pixmap
+        pix_pos = self.pixmap_item.mapToScene(scene_pos)
+
+        # Step 3, there is no step 3
+        return pix_pos.x(), pix_pos.y()
+
+    def add_star_marker(
+        self, x: float, y: float, radius: int = 20, colour: str = "cyan"
+    ):
+        """Add a circular marker at image coordinates x, y"""
+
+        # Create circle
+        pen = QPen(QColor(colour))
+        pen.setWidth(2)
+
+        circle = self.scene().addEllipse(
+            x - radius,
+            y - radius,  # top-left corner of circle
+            radius * 2,
+            radius * 2,  # Width, height
+            pen,
+        )
+
+        self.star_markers.append(circle)
+        return circle
+
+    def clear_markers(self):
+        """Remove all star markers"""
+        for marker in self.star_markers:
+            self.scene().removeItem(marker)
+        self.star_markers.clear()
 
     def display_image(self, image: FITSImage):
         """Display given FITS data array"""
@@ -86,6 +200,14 @@ class Viewer(QGraphicsView):
     def set_contrast(self, value: int):
         if self.current_image is None:
             return
-        
+
         self.current_image.contrast_factor = value / 100  # Normalize to ~1
         self.update_display()
+
+    @Slot()
+    def find_stars_in_image(self):
+        if self.current_image is None:
+            return
+
+        self.current_image.find_stars()
+        # TODO: Display stars on image, when hovered?

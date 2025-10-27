@@ -5,6 +5,7 @@ import numpy as np
 
 from pathlib import Path
 
+
 class FITSImage:
     def __init__(self, filepath: str, data) -> None:
         self.filepath: Path = Path(filepath)
@@ -13,7 +14,7 @@ class FITSImage:
         self.brightness_offset: int = 0
         self.contrast_factor: float = 1.0
         self.background: float | None = None
-        self.stars = None # Detected stars
+        self.stars = None  # Detected stars
         self._background_subtracted = None
 
     def compute_background(self):
@@ -22,7 +23,7 @@ class FITSImage:
         _, median, _ = stats.sigma_clipped_stats(self.original_data, sigma=3.0)
         self.background = median
         return self.background
-    
+
     def get_background_subtracted(self):
         """Get background-subtracted data, creates if unavailable"""
         if self._background_subtracted is None:
@@ -31,7 +32,7 @@ class FITSImage:
             # Simply subtract background from original data
             self._background_subtracted = self.original_data - self.background
         return self._background_subtracted
-    
+
     def find_stars(self):
         """Detect stars using DAOStarFinder"""
 
@@ -40,11 +41,11 @@ class FITSImage:
         # Estimate FWHM and threshold
         _, _, std = stats.sigma_clipped_stats(bg_subtracted, sigma=3.0)
 
-        daofind = DAOStarFinder(fwhm=3.0, threshold=5.*std)
+        daofind = DAOStarFinder(fwhm=3.0, threshold=5.0 * std)
         self.stars = daofind(bg_subtracted)
 
         return self.stars
-    
+
     def get_normalized_data(self):
         """Normalize the FITS data to 0-255 for display"""
 
@@ -70,3 +71,9 @@ class FITSImage:
         data = (data * 255).astype(np.uint8)
 
         return data
+
+    def get_state(self) -> None:
+        pass
+
+    def set_state(self, state: dict) -> None:
+        pass
