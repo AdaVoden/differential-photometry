@@ -21,13 +21,13 @@
 - [x] Aperture photometry from FITS
 - [x] Click star to select as target
 - [x] Display star coordinates on click
-- [ ] Find image zero point
 - [ ] Multiple reference star selection
+- [ ] Batch processing multiple images
 - [ ] Generate light curve for selected star
 - [ ] Export light curve graph
 - [ ] Plate solving
+- [ ] Find image zero point
 - [ ] AAVSO export format
-- [ ] Batch processing multiple images
 - [ ] Period analysis tools
 - [ ] Polish appearance
 

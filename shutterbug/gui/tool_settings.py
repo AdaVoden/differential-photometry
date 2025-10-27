@@ -113,16 +113,14 @@ class StarPropertiesPanel(QWidget):
     def display_star(self, star):
         """Update labels with star data"""
 
-        self.info_labels["Position"].setText(
-            f"Position: ({star.x:.1f}, {star.y:.1f})"
-        )
+        self.info_labels["Position"].setText(f"Position: ({star.x:.1f}, {star.y:.1f})")
         self.info_labels["Flux"].setText(f"Flux: {star.flux:.1f}")
 
         if star.magnitude:
             self.info_labels["Magnitude"].setText(f"Magnitude: {star.magnitude:.1f}")
         else:
             self.info_labels["Magnitude"].setText("Magnitude: --")
-        
+
         # TODO FWHM from star
 
 

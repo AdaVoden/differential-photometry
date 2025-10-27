@@ -9,8 +9,10 @@ import numpy as np
 
 from pathlib import Path
 
+
 class SelectedStar(BaseModel):
     """Only for stars the user as explicitly selected"""
+
     index: int
     x: float
     y: float
@@ -31,7 +33,8 @@ class FITSImage:
         self.contrast_factor: float = 1.0
         self.background: float | None = None
         self.stars = None  # Detected stars
-        self.selected_star = None # Index into the stars table
+        self.target_star = None  # Index into the stars table
+        self.reference_star_idxs = []
         self._background_subtracted = None
 
     def compute_background(self):
@@ -88,18 +91,18 @@ class FITSImage:
         data = (data * 255).astype(np.uint8)
 
         return data
-    
-    def select_star(self, idx, flux):
+
+    def select_star(self, idx):
         if self.stars is None:
             return
         star = self.stars[idx]
 
-        self.selected_star = SelectedStar(
-            index = idx,
-            x = star['xcentroid'],
-            y = star['ycentroid'],
-            flux = flux,
-            magnitude = None
+        self.target_star = SelectedStar(
+            index=idx,
+            x=star["xcentroid"],
+            y=star["ycentroid"],
+            flux=star["flux"],
+            magnitude=None,
         )
 
     def measure_star_magnitude(
@@ -109,11 +112,11 @@ class FITSImage:
         annulus_outer: int = 20,
     ):
         """Measure the instrumental magnitude of a star"""
-        if self.selected_star is None:
+        if self.target_star is None:
             return
 
-        star_x = self.selected_star.x
-        star_y = self.selected_star.y
+        star_x = self.target_star.x
+        star_y = self.target_star.y
 
         # Define apertures
         position = [(star_x, star_y)]
@@ -132,8 +135,8 @@ class FITSImage:
         # Convert to magnitude (25 is an arbitrary zero_point)
         magnitude = -2.5 * np.log10(star_flux.value[0]) + 25
 
-        self.selected_star.magnitude = magnitude
-        
+        self.target_star.magnitude = magnitude
+
         return {
             "flux": star_flux.value[0],
             "magnitude": magnitude,
