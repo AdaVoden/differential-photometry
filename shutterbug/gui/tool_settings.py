@@ -1,6 +1,6 @@
 import logging
 from PySide6.QtWidgets import QWidget, QVBoxLayout, QStackedWidget, QLabel, QSlider
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, Slot
 
 
 class Settings(QWidget):
@@ -22,12 +22,16 @@ class Settings(QWidget):
         self.stack.addWidget(self.star_properties)
         self.stack.addWidget(self.general_properties)
 
+        self.show_image_properties()
+
         logging.debug("Tool settings initialized")
 
     def show_image_properties(self):
         self.stack.setCurrentWidget(self.image_properties)
 
-    def show_star_properties(self):
+    @Slot()
+    def show_star_properties(self, star_data):
+        self.star_properties.display_star(star_data)
         self.stack.setCurrentWidget(self.star_properties)
 
     def show_general_properties(self):
@@ -93,8 +97,31 @@ class StarPropertiesPanel(QWidget):
         super().__init__()
         layout = QVBoxLayout()
         self.setLayout(layout)
-        # Add star property controls here
+        
+        layout.addWidget(QLabel("Star Information"))
+
+        self.info_labels = {}
+        for field in ['Position', 'Flux', 'Magnitude', 'FWHM']:
+            label = QLabel(f"{field}: --")
+            self.info_labels[field] = label
+            layout.addWidget(label)
+
+        layout.addStretch()
+
         logging.debug("Star properties panel initialized")
+
+    def display_star(self, star):
+        """Update labels with star data"""
+
+        self.info_labels['Position'].setText(
+            f"Position: ({star['xcentroid']:.1f}, {star['ycentroid']:.1f})"
+        )
+        self.info_labels['Flux'].setText(
+            f"Flux: {star['flux']:.1f}"
+        )
+        # TODO Magnitude and FWHM from star
+
+
 
 
 class GeneralPropertiesPanel(QWidget):

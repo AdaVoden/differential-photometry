@@ -56,6 +56,11 @@ class MainWindow(QMainWindow):
             self.viewer.set_contrast
         )
 
+        # Set up star being selected to Settings
+        self.viewer.star_selected.connect(
+            self.sidebar.settings.show_star_properties
+        )
+
         logging.debug("Main window initialized")
 
     def setup_menu_bar(self):
