@@ -19,7 +19,7 @@
 - [ ] Fix Bug: Loading project twice loads all objects multiple times
 - [ ] Add image track to bottom of layout
 - [ ] Aperture photometry from FITS
-- [ ] Click star to select as target
+- [x] Click star to select as target
 - [ ] Display star coordinates on click
 - [ ] Multiple reference star selection
 - [ ] Generate light curve for selected star
