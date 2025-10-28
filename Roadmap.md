@@ -18,10 +18,10 @@
 - [ ] Cache image manipulation so image can load faster
 - [ ] Fix Bug: Loading project twice loads all objects multiple times
 - [ ] Add image track to bottom of layout
-- [x] Aperture photometry from FITS
 - [x] Click star to select as target
 - [x] Display star coordinates on click
-- [ ] Multiple reference star selection
+- [x] Aperture photometry from FITS
+- [x] Multiple reference star selection
 - [ ] Batch processing multiple images
 - [ ] Generate light curve for selected star
 - [ ] Export light curve graph

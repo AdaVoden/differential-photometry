@@ -1,6 +1,6 @@
 from astropy import stats
-from photutils.detection import DAOStarFinder
 
+from photutils.detection import DAOStarFinder
 from photutils.aperture import CircularAperture, CircularAnnulus, aperture_photometry
 
 from pydantic import BaseModel
@@ -8,6 +8,8 @@ from pydantic import BaseModel
 import numpy as np
 
 from pathlib import Path
+
+import logging
 
 
 class SelectedStar(BaseModel):
@@ -26,11 +28,15 @@ class SelectedStar(BaseModel):
 
 class FITSImage:
     def __init__(self, filepath: str, data) -> None:
+        # File data
         self.filepath: Path = Path(filepath)
         self.filename: str = self.filepath.name + self.filepath.suffix
+        self.observation_time: float
         self.original_data = data
+        # Image display settings
         self.brightness_offset: int = 0
         self.contrast_factor: float = 1.0
+        # Star variables, computed
         self.background: float | None = None
         self.stars = None  # Detected stars
         self.target_star = None  # Index into the stars table
@@ -66,6 +72,29 @@ class FITSImage:
 
         return self.stars
 
+    def find_nearest_star(self, x: float, y: float, max_distance: int = 20):
+        if self.stars is None:
+            self.find_stars()
+
+        if self.stars is None:
+            # No stars found
+            return None, None
+
+        stars = self.stars
+
+        # Calculate distance to all stars
+        # TODO Make more efficient. Ktrees?
+        distances = np.sqrt(
+            (stars["xcentroid"] - x) ** 2 + (stars["ycentroid"] - y) ** 2
+        )
+
+        min_idx = np.argmin(distances)
+
+        if distances[min_idx] <= max_distance:
+            return stars[min_idx], min_idx
+
+        return None, None
+
     def get_normalized_data(self):
         """Normalize the FITS data to 0-255 for display"""
 
@@ -94,10 +123,10 @@ class FITSImage:
 
     def select_star(self, idx):
         if self.stars is None:
-            return
+            return None
         star = self.stars[idx]
 
-        self.target_star = SelectedStar(
+        return SelectedStar(
             index=idx,
             x=star["xcentroid"],
             y=star["ycentroid"],
@@ -142,6 +171,24 @@ class FITSImage:
             "magnitude": magnitude,
             "background": bkg_mean.value[0],
         }
+
+    def select_star_at_position(self, x: float, y: float):
+        """From specified coordinates, find star nearest to click"""
+
+        if self.stars is None:
+            return None, None
+
+        nearest_star, idx = self.find_nearest_star(x, y)
+
+        if nearest_star and idx:
+            star_x = nearest_star["xcentroid"]
+            star_y = nearest_star["ycentroid"]
+            logging.info(f"Selected star at ({star_x:.1f}, {star_y:.1f})")
+            return self.select_star(idx), idx
+
+        else:
+            logging.info(f"No star found near ({x:.1f}, {y:.1f})")
+            return None, None
 
     def get_state(self) -> None:
         pass

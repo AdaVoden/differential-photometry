@@ -1,12 +1,13 @@
 import logging
 
 from PySide6.QtWidgets import QMainWindow, QHBoxLayout, QFileDialog, QWidget
-from PySide6.QtCore import Slot, QCoreApplication
+from PySide6.QtCore import Slot, QCoreApplication, QPoint, Qt, Signal
+from PySide6.QtGui import QMouseEvent
 
 from shutterbug.gui.sidebar import Sidebar
 from shutterbug.gui.viewer import Viewer
 from shutterbug.gui.project import ShutterbugProject
-from shutterbug.gui.image_data import FITSImage
+from shutterbug.gui.image_data import FITSImage, SelectedStar
 
 from astropy.io import fits
 
@@ -14,6 +15,8 @@ from pathlib import Path
 
 
 class MainWindow(QMainWindow):
+
+    star_selected = Signal(SelectedStar)
 
     def __init__(self):
         super().__init__()
@@ -56,8 +59,15 @@ class MainWindow(QMainWindow):
             self.viewer.set_contrast
         )
 
-        # Set up star being selected to Settings
-        self.viewer.star_selected.connect(self.sidebar.settings.show_star_properties)
+        # Handle Viewer signals
+        self.viewer.clicked.connect(self.on_viewer_clicked)
+        self.viewer.find_stars_requested.connect(self.find_stars_in_image)
+        self.viewer.photometry_requested.connect(self.calculate_aperture_photometry)
+
+        # Handle star selection signals
+        self.star_selected.connect(self.sidebar.settings.show_star_properties)
+
+        # TODO: Display stars on image, when hovered?
 
         logging.debug("Main window initialized")
 
@@ -165,3 +175,86 @@ class MainWindow(QMainWindow):
     def set_state(self, state):
         self.sidebar.outliner.set_state(state["outliner"])
         self.sidebar.settings.set_state(state["settings"])
+
+    @Slot(QMouseEvent)
+    def on_viewer_clicked(self, event: QMouseEvent):
+        """Handler for a click in the viewer"""
+        if self.viewer.current_image is None:
+            # No image, we don't care
+            return
+
+        # if CTRL is held, add a reference star
+        if event.modifiers() == Qt.KeyboardModifier.ControlModifier:
+            if event.button() == Qt.MouseButton.LeftButton:
+                self.add_reference_star(event.pos())
+        elif event.button() == Qt.MouseButton.LeftButton:
+            self.select_target_star(event.pos())
+
+    @Slot()
+    def calculate_aperture_photometry(self):
+        current_image = self.viewer.current_image
+        if current_image is None:
+            return
+        if current_image.stars is None:
+            return
+        if current_image.target_star is None:
+            return
+
+        current_image.measure_star_magnitude()
+
+        # self.star_selected.emit(self.current_image.target_star)
+
+    @Slot()
+    def find_stars_in_image(self):
+        current_image = self.viewer.current_image
+        if current_image is None:
+            return
+
+        current_image.find_stars()
+
+    def select_target_star(self, coordinates: QPoint):
+        """Creates a marker on image at coordinates"""
+        current_image = self.viewer.current_image
+
+        if current_image is None:
+            return
+
+        x, y = self.viewer.convert_to_image_coordinates(coordinates)
+
+        star, idx = current_image.select_star_at_position(x, y)
+        # Star not found
+        if star is None or idx is None:
+            return
+        if idx in current_image.reference_star_idxs:
+            # Target star cannot be a reference to itself
+            return
+
+        # Add new marker, replace old target if present
+        self.viewer.add_star_marker(star.x, star.y, colour="cyan", reference=False)
+
+        current_image.select_star(idx)
+
+        self.star_selected.emit(star)
+
+    def add_reference_star(self, coordinates: QPoint):
+        """Select star at point as a reference star for calculations"""
+
+        current_image = self.viewer.current_image
+
+        if current_image is None:
+            return
+
+        x, y = self.viewer.convert_to_image_coordinates(coordinates)
+
+        star, idx = current_image.select_star_at_position(x, y)
+        # Star not found
+        if star is None or idx is None:
+            return
+
+        if current_image.target_star is not None:
+            if current_image.target_star.index == idx:
+                # We cannot mark a target star as a reference to itself
+                return
+        self.viewer.add_star_marker(star.x, star.y, colour="magenta", reference=True)
+
+        current_image.reference_star_idxs.append(idx)

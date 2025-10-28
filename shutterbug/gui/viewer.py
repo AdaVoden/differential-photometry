@@ -2,9 +2,9 @@ import logging
 
 from PySide6.QtWidgets import QGraphicsView, QGraphicsScene, QMenu
 from PySide6.QtCore import Qt, Slot, QPoint, Signal
-from PySide6.QtGui import QContextMenuEvent, QPixmap, QImage, QPen, QColor
+from PySide6.QtGui import QContextMenuEvent, QPixmap, QImage, QPen, QColor, QMouseEvent
 
-from shutterbug.gui.image_data import FITSImage
+from shutterbug.gui.image_data import FITSImage, SelectedStar
 
 from typing import Tuple
 
@@ -13,8 +13,9 @@ import numpy as np
 
 class Viewer(QGraphicsView):
 
-    star_selected = Signal(object)
-    # TODO made a viable type
+    clicked = Signal(QMouseEvent)
+    find_stars_requested = Signal()
+    photometry_requested = Signal()
 
     def __init__(self):
         super().__init__()
@@ -30,9 +31,11 @@ class Viewer(QGraphicsView):
 
         self.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.setStyleSheet("background-color: black;")
+
         # Set up scene
         scene = QGraphicsScene(self)
         self.setScene(scene)
+
         # Add pixmap item to scene, blank for now
         self.pixmap_item = scene.addPixmap(QPixmap())
 
@@ -62,99 +65,25 @@ class Viewer(QGraphicsView):
 
         super().wheelEvent(event)  # Pass other wheel events to parent
 
-    def mousePressEvent(self, event):
-        if self.current_image is None or self.current_image.stars is None:
-            # Nothing to do
-            super().mousePressEvent(event)
-            return
-
-        if event.modifiers() == Qt.KeyboardModifier.ControlModifier:
-            if event.button() == Qt.MouseButton.LeftButton:
-                self.add_reference_star(event.pos())
-        elif event.button() == Qt.MouseButton.LeftButton:
-            self.select_target_star(event.pos())
-
+    def mousePressEvent(self, event: QMouseEvent):
+        self.clicked.emit(event)
         super().mousePressEvent(event)
-
-    def add_reference_star(self, coordinates: QPoint):
-        if self.current_image is None:
-            return
-        star, idx = self.select_star_at_position(coordinates)
-
-        if self.current_image.target_star is not None:
-            if self.current_image.target_star.index == idx:
-                # We cannot mark a target star as a reference to itself
-                return
-        marker = self.add_star_marker(
-            star["xcentroid"], star["ycentroid"], colour="magenta"
-        )
-        self.reference_markers.append(marker)
-        self.current_image.reference_star_idxs.append(idx)
-
-    def select_target_star(self, coordinates: QPoint):
-        if self.current_image is None:
-            return
-
-        star, idx = self.select_star_at_position(coordinates)
-        # Star not found
-        if star is None or idx is None:
-            return
-        if idx in self.current_image.reference_star_idxs:
-            # Target star cannot be a reference to itself
-            return
-
-        # Add new marker, replace old target if present
-        marker = self.add_star_marker(
-            star["xcentroid"], star["ycentroid"], colour="cyan"
-        )
-        if self.target_marker is not None:
-            self.scene().removeItem(self.target_marker)
-        self.target_marker = marker
-        self.current_image.select_star(idx)
-
-        self.star_selected.emit(self.current_image.target_star)
 
     def contextMenuEvent(self, event: QContextMenuEvent) -> None:
         menu = QMenu()
 
-        select_star_action = menu.addAction("Select as Target Star")
-        select_star_action.triggered.connect(
-            lambda: self.select_star_at_position(event.pos())
-        )
+        # select_star_action = menu.addAction("Select as Target Star")
 
         find_stars_action = menu.addAction("Find all stars in image")
-        find_stars_action.triggered.connect(self.find_stars_in_image)
+        find_stars_action.triggered.connect(self.find_stars_requested)
 
         calc_phot_action = menu.addAction("Calculate magnitude for selected star")
-        calc_phot_action.triggered.connect(self.calculate_aperture_photometry)
-
+        calc_phot_action.triggered.connect(self.photometry_requested)
         # TODO add in "Select as Reference Star" "Set Aperture", etc.
 
         menu.exec(event.globalPos())
 
         super().contextMenuEvent(event)
-
-    def find_nearest_star(self, x: float, y: float, max_distance: int = 20):
-        if self.current_image is None:
-            return None, None
-
-        if self.current_image.stars is None:
-            return None, None
-
-        stars = self.current_image.stars
-
-        # Calculate distance to all stars
-        # TODO Make more efficient. Ktrees?
-        distances = np.sqrt(
-            (stars["xcentroid"] - x) ** 2 + (stars["ycentroid"] - y) ** 2
-        )
-
-        min_idx = np.argmin(distances)
-
-        if distances[min_idx] <= max_distance:
-            return stars[min_idx], min_idx
-
-        return None, None
 
     def convert_to_image_coordinates(self, coordinate: QPoint) -> Tuple[float, float]:
         # Step 1, convert to scene coordinates
@@ -172,6 +101,7 @@ class Viewer(QGraphicsView):
         y: float,
         radius: int = 20,
         colour: str = "cyan",
+        reference: bool = False,
     ):
         """Add a circular marker at image coordinates x, y"""
 
@@ -186,6 +116,12 @@ class Viewer(QGraphicsView):
             radius * 2,  # Width, height
             pen,
         )
+        if reference:
+            self.reference_markers.append(circle)
+        else:
+            if self.target_marker is not None:
+                self.scene().removeItem(self.target_marker)
+            self.target_marker = circle
 
         return circle
 
@@ -227,63 +163,18 @@ class Viewer(QGraphicsView):
 
     @Slot(int)
     def set_brightness(self, value: int):
+        """Set the brightness of the current image"""
         if self.current_image is None:
             return
+
         self.current_image.brightness_offset = value
         self.update_display()
 
     @Slot(int)
     def set_contrast(self, value: int):
+        """Set the contrast of the current image"""
         if self.current_image is None:
             return
 
         self.current_image.contrast_factor = value / 100  # Normalize to ~1
         self.update_display()
-
-    @Slot()
-    def find_stars_in_image(self):
-        if self.current_image is None:
-            return
-
-        self.current_image.find_stars()
-        # TODO: Display stars on image, when hovered?
-
-    @Slot(QPoint)
-    def select_star_at_position(self, coordinates: QPoint, reference: bool = False):
-        if self.current_image is None:
-            return
-
-        if self.current_image.stars is None:
-            return
-
-        x, y = self.convert_to_image_coordinates(coordinates)
-
-        nearest_star, idx = self.find_nearest_star(x, y)
-
-        if nearest_star and idx:
-            # Place marker at actual star position
-            star_x = nearest_star["xcentroid"]
-            star_y = nearest_star["ycentroid"]
-            # Don't need any other markers
-            logging.info(f"Selected star at ({star_x:.1f}, {star_y:.1f})")
-            return nearest_star, idx
-            # TODO Emit signal that star is selected
-
-        else:
-            logging.info(f"No star found near click at ({x:.1f}, {y:.1f})")
-            return None, None
-
-        # TODO send star information to main window
-
-    @Slot()
-    def calculate_aperture_photometry(self):
-        if self.current_image is None:
-            return
-        if self.current_image.stars is None:
-            return
-        if self.current_image.target_star is None:
-            return
-
-        self.current_image.measure_star_magnitude()
-
-        self.star_selected.emit(self.current_image.target_star)
