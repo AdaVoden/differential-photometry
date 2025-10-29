@@ -50,7 +50,8 @@ class Viewer(QGraphicsView):
         self.pixmap_item = scene.addPixmap(QPixmap())
 
         # Set up panning and scrolling
-        self.setDragMode(QGraphicsView.DragMode.ScrollHandDrag)
+        # No drag initially, we will capture middle mouse and drag then
+        self.setDragMode(QGraphicsView.DragMode.NoDrag)
         # Scrollbars look ugly here
         self.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
@@ -77,8 +78,29 @@ class Viewer(QGraphicsView):
         super().wheelEvent(event)  # Pass other wheel events to parent
 
     def mousePressEvent(self, event: QMouseEvent):
-        self.clicked.emit(event)
-        super().mousePressEvent(event)
+        if event.button() == Qt.MouseButton.MiddleButton:
+            # start panning
+            self.setDragMode(QGraphicsView.DragMode.ScrollHandDrag)
+            # Fake left-mousebutton for dragging
+            fake_event = QMouseEvent(
+                event.type(),
+                event.position(),
+                Qt.MouseButton.LeftButton,
+                Qt.MouseButton.LeftButton,
+                event.modifiers()
+            )
+            super().mousePressEvent(fake_event)
+        else:
+            # Normal left click
+            self.clicked.emit(event)
+            super().mousePressEvent(event)
+
+    def mouseReleaseEvent(self, event: QMouseEvent) -> None:
+        if event.button() == Qt.MouseButton.MiddleButton:
+            # Stop panning
+            self.setDragMode(QGraphicsView.DragMode.NoDrag)
+        
+        super().mouseReleaseEvent(event)
 
     def contextMenuEvent(self, event: QContextMenuEvent) -> None:
         menu = QMenu()
