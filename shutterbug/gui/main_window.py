@@ -13,6 +13,8 @@ from astropy.io import fits
 
 from pathlib import Path
 
+from typing import List, Dict
+
 
 class MainWindow(QMainWindow):
 
@@ -45,7 +47,7 @@ class MainWindow(QMainWindow):
         # Set up menu bar
         self.setup_menu_bar()
 
-        self.fits_data = {}  # Loaded FITS images
+        self.fits_data: Dict[str, FITSImage] = {}  # Loaded FITS images
         # filename -> FITSImage
 
         # Connect outliner selection signal
@@ -63,6 +65,7 @@ class MainWindow(QMainWindow):
         self.viewer.clicked.connect(self.on_viewer_clicked)
         self.viewer.find_stars_requested.connect(self.find_stars_in_image)
         self.viewer.photometry_requested.connect(self.calculate_aperture_photometry)
+        self.viewer.propagation_requested.connect(self.propagate_star_selection)
 
         # Handle star selection signals
         self.star_selected.connect(self.sidebar.settings.show_star_properties)
@@ -255,3 +258,50 @@ class MainWindow(QMainWindow):
         self.viewer.add_star_marker(star.x, star.y, colour="magenta", reference=True)
 
         current_image.reference_star_idxs.append(int(idx))
+
+    def process_all_images(self):
+        """Generate light curve from all loaded images"""
+        pass
+
+    def process_single_image(self, image: FITSImage):
+        """Process one image for differential photometry"""
+        pass
+
+    @Slot(FITSImage)
+    def propagate_star_selection(self, image: FITSImage):
+        """Propagates star selection across all images"""
+        if not image.target_star_idx and not image.reference_star_idxs:
+            # No markers to propagate, no work to do
+            return
+
+        for img in self.fits_data.values():
+            if img == image:
+                # Don't propagate to self
+                continue
+
+            if img.stars is None:
+                img.find_stars()
+
+            if image.target_star_idx:
+                star = image.get_star(image.target_star_idx)
+                if star:
+                    _, t_s_idx = img.find_nearest_star(star.x, star.y)
+                    if t_s_idx:
+                        img.target_star_idx = int(t_s_idx)
+
+            for idx in image.reference_star_idxs:
+                star = image.get_star(idx)
+                if star:
+                    _, ref_idx = img.find_nearest_star(star.x, star.y)
+                    if ref_idx:
+                        img.reference_star_idxs.append(int(ref_idx))
+
+    def calculate_differential_magnitude(
+        self, image: FITSImage, target_idx: int, ref_idxs: List[int]
+    ):
+        """Calculate differential magnitude on target image and stars"""
+        pass
+
+    def generate_light_curve(self, results):
+        """Create light curve from data"""
+        pass

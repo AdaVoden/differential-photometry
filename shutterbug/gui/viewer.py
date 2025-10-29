@@ -9,12 +9,12 @@ from shutterbug.gui.image_data import FITSImage
 from typing import Tuple
 
 
-
 class Viewer(QGraphicsView):
 
     clicked = Signal(QMouseEvent)
     find_stars_requested = Signal()
     photometry_requested = Signal()
+    propagation_requested = Signal(FITSImage)
 
     def __init__(self):
         super().__init__()
@@ -53,12 +53,14 @@ class Viewer(QGraphicsView):
     def wheelEvent(self, event):
         # M11 is the horizontal scaling factor
         current_scale = self.transform().m11()
+
         if event.angleDelta().y() > 0:  # Zoom in
             if current_scale * self.zoom_factor <= self.zoom_max:
                 self.scale(self.zoom_factor, self.zoom_factor)
         else:  # Zoom out
             if current_scale * self.zoom_factor >= self.zoom_min:
                 self.scale(1 / self.zoom_factor, 1 / self.zoom_factor)
+
         event.accept()
 
         super().wheelEvent(event)  # Pass other wheel events to parent
@@ -78,9 +80,19 @@ class Viewer(QGraphicsView):
         calc_phot_action = menu.addAction("Calculate magnitude for selected star")
         calc_phot_action.triggered.connect(self.photometry_requested)
 
+        propagate_action = menu.addAction("Propagate star selection")
+        propagate_action.triggered.connect(self.on_propagate_requested)
+
         menu.exec(event.globalPos())
 
         super().contextMenuEvent(event)
+
+    @Slot()
+    def on_propagate_requested(self):
+        if not self.current_image:
+            return None
+
+        self.propagation_requested.emit(self.current_image)
 
     def convert_to_image_coordinates(self, coordinate: QPoint) -> Tuple[float, float]:
         # Step 1, convert to scene coordinates
@@ -101,7 +113,9 @@ class Viewer(QGraphicsView):
         reference: bool = False,
     ):
         """Add a circular marker at image coordinates x, y"""
-        logging.debug(f"Adding marker at position ({x:.1f},{y:.1f}), colour: {colour}, is reference: {reference}")
+        logging.debug(
+            f"Adding marker at position ({x:.1f},{y:.1f}), colour: {colour}, is reference: {reference}"
+        )
         # Create circle
         pen = QPen(QColor(colour))
         pen.setWidth(2)
