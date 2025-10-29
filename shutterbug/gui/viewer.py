@@ -2,7 +2,7 @@ import logging
 
 from PySide6.QtWidgets import QGraphicsView, QGraphicsScene, QMenu
 from PySide6.QtCore import Qt, Slot, QPoint, Signal
-from PySide6.QtGui import QContextMenuEvent, QPixmap, QImage, QPen, QColor, QMouseEvent
+from PySide6.QtGui import QContextMenuEvent, QPixmap, QImage, QPen, QColor, QMouseEvent, QWheelEvent
 
 from shutterbug.gui.image_data import FITSImage
 
@@ -62,7 +62,7 @@ class Viewer(QGraphicsView):
 
         logging.debug("Viewer initialized")
 
-    def wheelEvent(self, event):
+    def wheelEvent(self, event: QWheelEvent):
         # M11 is the horizontal scaling factor
         current_scale = self.transform().m11()
 
@@ -73,6 +73,8 @@ class Viewer(QGraphicsView):
             if current_scale * self.zoom_factor >= self.zoom_min:
                 self.scale(1 / self.zoom_factor, 1 / self.zoom_factor)
 
+        # Adjust to difference
+        self.centerOn(self.mapToScene(self.viewport().rect().center()))
         event.accept()
 
         super().wheelEvent(event)  # Pass other wheel events to parent

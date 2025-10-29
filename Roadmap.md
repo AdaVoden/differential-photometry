@@ -18,7 +18,7 @@
 - [ ] Cache image manipulation so image can load faster
 - [ ] Fix Bug: Loading project twice loads all objects multiple times
 - [ ] Add image track to bottom of layout
-- [ ] Fix Bug: Zoom not on cursor
+- [x] Fix Bug: Zoom not on cursor
 - [x] Click star to select as target
 - [x] Display star coordinates on click
 - [x] Aperture photometry from FITS
