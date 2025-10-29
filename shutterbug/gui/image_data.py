@@ -11,6 +11,8 @@ from pathlib import Path
 
 import logging
 
+from typing import List
+
 
 class SelectedStar(BaseModel):
     """Only for stars the user as explicitly selected"""
@@ -33,14 +35,16 @@ class FITSImage:
         self.filename: str = self.filepath.name + self.filepath.suffix
         self.observation_time: float
         self.original_data = data
+
         # Image display settings
         self.brightness_offset: int = 0
         self.contrast_factor: float = 1.0
+
         # Star variables, computed
         self.background: float | None = None
         self.stars = None  # Detected stars
-        self.target_star = None  # Index into the stars table
-        self.reference_star_idxs = []
+        self.target_star_idx: int | None = None  # Index into the stars table
+        self.reference_star_idxs: List[int] = []
         self._background_subtracted = None
 
     def compute_background(self):
@@ -121,7 +125,7 @@ class FITSImage:
 
         return data
 
-    def select_star(self, idx):
+    def get_star(self, idx):
         if self.stars is None:
             return None
         star = self.stars[idx]
@@ -141,14 +145,15 @@ class FITSImage:
         annulus_outer: int = 20,
     ):
         """Measure the instrumental magnitude of a star"""
-        if self.target_star is None:
+        if self.target_star_idx is None:
             return
 
-        star_x = self.target_star.x
-        star_y = self.target_star.y
+        star = self.get_star(self.target_star_idx)
+        if star is None:
+            return
 
         # Define apertures
-        position = [(star_x, star_y)]
+        position = [(star.x, star.y)]
         aperture = CircularAperture(position, r=aperture_radius)
         annulus = CircularAnnulus(position, r_in=annulus_inner, r_out=annulus_outer)
 
@@ -164,7 +169,9 @@ class FITSImage:
         # Convert to magnitude (25 is an arbitrary zero_point)
         magnitude = -2.5 * np.log10(star_flux.value[0]) + 25
 
-        self.target_star.magnitude = magnitude
+        # TODO Need a method to carry magnitude with us
+        #if self.stars:
+            #self.stars[star.index]["magnitude"] = magnitude
 
         return {
             "flux": star_flux.value[0],
@@ -184,7 +191,7 @@ class FITSImage:
             star_x = nearest_star["xcentroid"]
             star_y = nearest_star["ycentroid"]
             logging.info(f"Selected star at ({star_x:.1f}, {star_y:.1f})")
-            return self.select_star(idx), idx
+            return self.get_star(idx), idx
 
         else:
             logging.info(f"No star found near ({x:.1f}, {y:.1f})")

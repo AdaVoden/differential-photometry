@@ -104,7 +104,7 @@ class Viewer(QGraphicsView):
         reference: bool = False,
     ):
         """Add a circular marker at image coordinates x, y"""
-
+        logging.debug(f"Adding marker at position ({x:.1f},{y:.1f}), colour: {colour}, is reference: {reference}")
         # Create circle
         pen = QPen(QColor(colour))
         pen.setWidth(2)
@@ -138,6 +138,8 @@ class Viewer(QGraphicsView):
     def display_image(self, image: FITSImage):
         """Display given FITS data array"""
 
+        self.clear_markers()
+
         # Store new image
         self.current_image = image
 
@@ -154,6 +156,18 @@ class Viewer(QGraphicsView):
         pixmap = QPixmap.fromImage(qimage)
         self.pixmap_item.setPixmap(pixmap)
         self.fitInView(self.pixmap_item, Qt.AspectRatioMode.KeepAspectRatio)
+
+        # Add markers from image
+        # I don't like this repetition
+        if image.target_star_idx is not None:
+            star = image.get_star(image.target_star_idx)
+            if star is not None:
+                self.add_star_marker(star.x, star.y, colour="cyan", reference=False)
+
+        for idx in image.reference_star_idxs:
+            star = image.get_star(idx)
+            if star is not None:
+                self.add_star_marker(star.x, star.y, colour="magenta", reference=True)
 
     def update_display(self):
         if self.current_image is None:

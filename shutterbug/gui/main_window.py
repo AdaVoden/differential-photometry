@@ -197,7 +197,7 @@ class MainWindow(QMainWindow):
             return
         if current_image.stars is None:
             return
-        if current_image.target_star is None:
+        if current_image.target_star_idx is None:
             return
 
         current_image.measure_star_magnitude()
@@ -228,12 +228,11 @@ class MainWindow(QMainWindow):
         if idx in current_image.reference_star_idxs:
             # Target star cannot be a reference to itself
             return
-
         # Add new marker, replace old target if present
         self.viewer.add_star_marker(star.x, star.y, colour="cyan", reference=False)
 
-        current_image.select_star(idx)
-
+        current_image.target_star_idx = int(idx)
+        
         self.star_selected.emit(star)
 
     def add_reference_star(self, coordinates: QPoint):
@@ -251,10 +250,10 @@ class MainWindow(QMainWindow):
         if star is None or idx is None:
             return
 
-        if current_image.target_star is not None:
-            if current_image.target_star.index == idx:
+        if current_image.target_star_idx is not None:
+            if current_image.target_star_idx == idx:
                 # We cannot mark a target star as a reference to itself
                 return
         self.viewer.add_star_marker(star.x, star.y, colour="magenta", reference=True)
 
-        current_image.reference_star_idxs.append(idx)
+        current_image.reference_star_idxs.append(int(idx))
