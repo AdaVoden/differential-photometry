@@ -70,6 +70,7 @@ class MainWindow(QMainWindow):
         self.viewer.find_stars_requested.connect(self.find_stars_in_image)
         self.viewer.photometry_requested.connect(self.calculate_aperture_photometry)
         self.viewer.propagation_requested.connect(self.propagate_star_selection)
+        self.viewer.batch_requested.connect(self.process_all_images)
 
         # Handle star selection signals
         self.star_selected.connect(self.sidebar.settings.show_star_properties)
@@ -265,6 +266,7 @@ class MainWindow(QMainWindow):
 
         current_image.reference_star_idxs.append(int(idx))
 
+    @Slot()
     def process_all_images(self):
         """Generate light curve from all loaded images"""
         # Validate that there's data to work on
@@ -402,10 +404,10 @@ class MainWindow(QMainWindow):
         results = sorted(results, key=lambda x: x["time"])
 
         times = [r["time"] for r in results]
-        mags = [r["mags"] for r in results]
+        mags = [r["magnitude"] for r in results]
 
         plt.figure(figsize=(12, 6))
-        plt.scatter(times, mags, s=20)
+        plt.scatter(x=times, y=mags, marker='o')
         plt.xlabel("Time (JD)")
         plt.ylabel("Differential Magnitude")
         plt.title("Light Curve")

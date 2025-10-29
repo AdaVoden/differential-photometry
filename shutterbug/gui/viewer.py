@@ -15,6 +15,7 @@ class Viewer(QGraphicsView):
     find_stars_requested = Signal()
     photometry_requested = Signal()
     propagation_requested = Signal(FITSImage)
+    batch_requested = Signal()
 
     # Zoom defaults
     ZOOM_FACTOR_DEFAULT = 1.1
@@ -32,7 +33,10 @@ class Viewer(QGraphicsView):
         self.target_marker = None  # Target star marker
         self.reference_markers = []  # Reference star markers
 
-        # Zoom defaults
+        # Zoom settings
+        self.zoom_factor = self.ZOOM_FACTOR_DEFAULT
+        self.zoom_max = self.ZOOM_MAXIMUM_DEFAULT
+        self.zoom_min = self.ZOOM_MINIMUM_DEFAULT
         self.scale(1.0, 1.0)  # Scale of 1
 
         self.setAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -62,11 +66,11 @@ class Viewer(QGraphicsView):
         current_scale = self.transform().m11()
 
         if event.angleDelta().y() > 0:  # Zoom in
-            if current_scale * self.ZOOM_FACTOR_DEFAULT <= self.ZOOM_MAXIMUM_DEFAULT:
-                self.scale(self.ZOOM_FACTOR_DEFAULT, self.ZOOM_FACTOR_DEFAULT)
+            if current_scale * self.zoom_factor <= self.zoom_max:
+                self.scale(self.zoom_factor, self.zoom_factor)
         else:  # Zoom out
-            if current_scale * self.ZOOM_FACTOR_DEFAULT >= self.ZOOM_MINIMUM_DEFAULT:
-                self.scale(1 / self.ZOOM_FACTOR_DEFAULT, 1 / self.ZOOM_FACTOR_DEFAULT)
+            if current_scale * self.zoom_factor >= self.zoom_min:
+                self.scale(1 / self.zoom_factor, 1 / self.zoom_factor)
 
         event.accept()
 
@@ -90,7 +94,8 @@ class Viewer(QGraphicsView):
         propagate_action = menu.addAction("Propagate star selection")
         propagate_action.triggered.connect(self.on_propagate_requested)
 
-        
+        process_action = menu.addAction("Batch process all images")
+        process_action.triggered.connect(self.batch_requested)
 
         menu.exec(event.globalPos())
 
