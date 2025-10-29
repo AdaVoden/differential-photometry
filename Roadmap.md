@@ -23,8 +23,8 @@
 - [x] Display star coordinates on click
 - [x] Aperture photometry from FITS
 - [x] Multiple reference star selection
-- [ ] Batch processing multiple images
-- [ ] Generate light curve for selected star
+- [x] Batch processing multiple images
+- [x] Generate light curve for selected star
 - [ ] Export light curve graph
 - [ ] Plate solving
 - [ ] Find image zero point

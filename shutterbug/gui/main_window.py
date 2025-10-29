@@ -1,5 +1,7 @@
 import logging
 
+import matplotlib.pyplot as plt
+
 from PySide6.QtWidgets import QMainWindow, QHBoxLayout, QFileDialog, QWidget
 from PySide6.QtCore import Slot, QCoreApplication, QPoint, Qt, Signal
 from PySide6.QtGui import QMouseEvent
@@ -14,6 +16,8 @@ from astropy.io import fits
 from pathlib import Path
 
 from typing import List, Dict
+
+import numpy as np
 
 
 class MainWindow(QMainWindow):
@@ -123,7 +127,7 @@ class MainWindow(QMainWindow):
         )
 
         for filename in filenames:
-            image = FITSImage(filename, self.load_fits_image(filename))
+            image = self.load_fits_image(filename)
             self.add_fits_to_project(image)
 
         if filenames:
@@ -144,8 +148,10 @@ class MainWindow(QMainWindow):
 
         with fits.open(filepath) as hdul:
             data = hdul[0].data  # type: ignore
+            obs_time = hdul[0].header["JD"]  # type: ignore
+            image = FITSImage(filepath, data, obs_time)
             # Assuming image data is in the primary HDU
-            return data
+            return image
 
     @Slot()
     def save_project(self):
@@ -201,9 +207,9 @@ class MainWindow(QMainWindow):
         if current_image.target_star_idx is None:
             return
 
-        current_image.measure_star_magnitude()
+        star = current_image.measure_magnitude_at_idx(current_image.target_star_idx)
 
-        # self.star_selected.emit(self.current_image.target_star)
+        self.star_selected.emit(star)
 
     @Slot()
     def find_stars_in_image(self):
@@ -261,7 +267,80 @@ class MainWindow(QMainWindow):
 
     def process_all_images(self):
         """Generate light curve from all loaded images"""
-        pass
+        # Validate that there's data to work on
+        if not self.fits_data:
+            logging.error(f"No images available to work on")
+            return  # No images to work on
+
+        target_image = self.viewer.current_image
+
+        if target_image is None:
+            logging.error(f"No image currently loaded, aborting process")
+            return  # No primary image to propagate from
+
+        if target_image.target_star_idx is None:
+            logging.error(
+                f"Image {target_image.filename} has no target star, aborting process"
+            )
+            return  # We need a target star
+
+        if target_image.reference_star_idxs is None:
+            logging.error(
+                f"Image {target_image.filename} has no reference stars, aborting process"
+            )
+            return  # We need reference stars to do math with
+
+        # Unify star selections
+        self.propagate_star_selection(target_image)
+
+        results = []
+        for img in self.fits_data.values():
+            if img.target_star_idx is None:
+                logging.error(
+                    f"Image {img.filename} did not successfully propagate stars, skipping"
+                )
+                continue  # Did not propagate, do not use
+
+            # No repetition if it's in one list
+            idxs = [img.target_star_idx]
+            idxs.extend(img.reference_star_idxs)
+
+            stars = []
+            for idx in idxs:
+                # Need magnitude for diff mag
+                star = img.measure_magnitude_at_idx(
+                    idx=idx,
+                    aperture_radius=img.APERTURE_RADIUS_DEFAULT,
+                    annulus_inner=img.ANNULUS_INNER_DEFAULT,
+                    annulus_outer=img.ANNULUS_OUTER_DEFAULT,
+                )
+                if star:
+                    stars.append(star)
+                else:
+                    logging.error(
+                        f"Failed to measure star magnitude in image {img.filename}, index {idx}, skipping"
+                    )
+                    break
+            # Cannot continue without sufficient number of stars
+            if len(stars) != len(idxs):
+                logging.error(
+                    f"Failed to measure sufficient stars in image {img.filename}, skipping image"
+                )
+                continue
+
+            result = self.calculate_differential_magnitude(
+                target_star=stars[0], ref_stars=stars[1:]
+            )
+            results.append(
+                {
+                    "filename": img.filename,
+                    "time": img.observation_time,
+                    "magnitude": result,
+                    "n_references": len(stars[1:]),
+                }
+            )
+
+        self.generate_light_curve(results)
 
     def process_single_image(self, image: FITSImage):
         """Process one image for differential photometry"""
@@ -271,8 +350,8 @@ class MainWindow(QMainWindow):
     def propagate_star_selection(self, image: FITSImage):
         """Propagates star selection across all images"""
         if not image.target_star_idx and not image.reference_star_idxs:
-            # No markers to propagate, no work to do
-            return
+            logging.error(f"No markers in image {image.filename} to propagate")
+            return  # No markers to propagate, no work to do
 
         for img in self.fits_data.values():
             if img == image:
@@ -282,26 +361,54 @@ class MainWindow(QMainWindow):
             if img.stars is None:
                 img.find_stars()
 
+            # Clear existing selections before propagation
+            img.target_star_idx = None
+            img.reference_star_idxs = []
+
+            # Propagate target
             if image.target_star_idx:
                 star = image.get_star(image.target_star_idx)
                 if star:
-                    _, t_s_idx = img.find_nearest_star(star.x, star.y)
+                    _, t_s_idx = img.find_nearest_star(
+                        star.x, star.y, FITSImage.MAX_DISTANCE_DEFAULT
+                    )
                     if t_s_idx:
                         img.target_star_idx = int(t_s_idx)
 
+            # Propagate references
             for idx in image.reference_star_idxs:
                 star = image.get_star(idx)
                 if star:
-                    _, ref_idx = img.find_nearest_star(star.x, star.y)
+                    _, ref_idx = img.find_nearest_star(
+                        star.x, star.y, FITSImage.MAX_DISTANCE_DEFAULT
+                    )
                     if ref_idx:
                         img.reference_star_idxs.append(int(ref_idx))
 
     def calculate_differential_magnitude(
-        self, image: FITSImage, target_idx: int, ref_idxs: List[int]
+        self, target_star: SelectedStar, ref_stars: List[SelectedStar]
     ):
         """Calculate differential magnitude on target image and stars"""
-        pass
+        ref_mags = [ref.magnitude for ref in ref_stars]
+        ref_mags = np.asarray(ref_mags)
+
+        # - ref_mags + target_mag == target_mag - ref_mags
+        return np.mean((-1 * ref_mags) + target_star.magnitude)
 
     def generate_light_curve(self, results):
         """Create light curve from data"""
-        pass
+
+        # sort by time, just in case
+        results = sorted(results, key=lambda x: x["time"])
+
+        times = [r["time"] for r in results]
+        mags = [r["mags"] for r in results]
+
+        plt.figure(figsize=(12, 6))
+        plt.scatter(times, mags, s=20)
+        plt.xlabel("Time (JD)")
+        plt.ylabel("Differential Magnitude")
+        plt.title("Light Curve")
+        plt.gca().invert_yaxis()  # Magnitude increases downward
+        plt.grid(True, alpha=0.3)
+        plt.show()  # Probably need to pipe it somewhere.

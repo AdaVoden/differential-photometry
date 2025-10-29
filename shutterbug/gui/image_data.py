@@ -34,6 +34,7 @@ class FITSImage:
     APERTURE_RADIUS_DEFAULT = 10  # pixels
     ANNULUS_INNER_DEFAULT = 15  # pixels
     ANNULUS_OUTER_DEFAULT = 20  # pixels
+    ZERO_POINT_DEFAULT = 25
 
     # Star Finding defaults
     MAX_DISTANCE_DEFAULT = 20  # pixels
@@ -45,16 +46,19 @@ class FITSImage:
     BRIGHTNESS_OFFSET = 0
     CONTRAST_FACTOR = 1.0
 
-    def __init__(self, filepath: str, data) -> None:
+    def __init__(self, filepath: str, data, obs_time: str) -> None:
         # File data
         self.filepath: Path = Path(filepath)
         self.filename: str = self.filepath.name
-        self.observation_time: float
+        self.observation_time: float = float(obs_time)
         self.original_data = data
 
         # Image display settings
         self.brightness_offset: int = self.BRIGHTNESS_OFFSET
         self.contrast_factor: float = self.CONTRAST_FACTOR
+
+        # photometry settings
+        self.zero_point: float = self.ZERO_POINT_DEFAULT
 
         # Star variables, computed
         self.background: float | None = None
@@ -169,7 +173,18 @@ class FITSImage:
         if self.target_star_idx is None:
             return
 
-        star = self.get_star(self.target_star_idx)
+        return self.measure_magnitude_at_idx(
+            self.target_star_idx, aperture_radius, annulus_inner, annulus_outer
+        )
+
+    def measure_magnitude_at_idx(
+        self,
+        idx: int,
+        aperture_radius: int = APERTURE_RADIUS_DEFAULT,
+        annulus_inner: int = ANNULUS_INNER_DEFAULT,
+        annulus_outer: int = ANNULUS_OUTER_DEFAULT,
+    ):
+        star = self.get_star(idx)
         if star is None:
             return
 
@@ -188,13 +203,12 @@ class FITSImage:
         star_flux = phot_table["aperture_sum_0"] - total_bkg
 
         # Convert to magnitude (25 is an arbitrary zero_point)
-        magnitude = -2.5 * np.log10(star_flux.value[0]) + 25
+        magnitude = -2.5 * np.log10(star_flux.value[0]) + self.zero_point
 
-        return {
-            "flux": star_flux.value[0],
-            "magnitude": magnitude,
-            "background": bkg_mean.value[0],
-        }
+        star.magnitude = magnitude
+        star.flux = star_flux.value[0]
+
+        return star
 
     def select_star_at_position(self, x: float, y: float):
         """From specified coordinates, find star nearest to click"""

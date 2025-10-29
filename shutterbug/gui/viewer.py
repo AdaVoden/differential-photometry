@@ -90,6 +90,8 @@ class Viewer(QGraphicsView):
         propagate_action = menu.addAction("Propagate star selection")
         propagate_action.triggered.connect(self.on_propagate_requested)
 
+        
+
         menu.exec(event.globalPos())
 
         super().contextMenuEvent(event)
