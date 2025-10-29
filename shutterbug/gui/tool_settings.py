@@ -1,4 +1,5 @@
 import logging
+
 from PySide6.QtWidgets import QWidget, QVBoxLayout, QStackedWidget, QLabel, QSlider
 from PySide6.QtCore import Qt, Slot
 

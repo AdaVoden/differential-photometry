@@ -4,11 +4,10 @@ from PySide6.QtWidgets import QGraphicsView, QGraphicsScene, QMenu
 from PySide6.QtCore import Qt, Slot, QPoint, Signal
 from PySide6.QtGui import QContextMenuEvent, QPixmap, QImage, QPen, QColor, QMouseEvent
 
-from shutterbug.gui.image_data import FITSImage, SelectedStar
+from shutterbug.gui.image_data import FITSImage
 
 from typing import Tuple
 
-import numpy as np
 
 
 class Viewer(QGraphicsView):
@@ -48,7 +47,6 @@ class Viewer(QGraphicsView):
         # Set up zooming behavior
         self.setTransformationAnchor(QGraphicsView.ViewportAnchor.AnchorUnderMouse)
         self.setResizeAnchor(QGraphicsView.ViewportAnchor.AnchorViewCenter)
-        # TODO Fix issue where zoom is not under cursor
 
         logging.debug("Viewer initialized")
 
@@ -79,7 +77,6 @@ class Viewer(QGraphicsView):
 
         calc_phot_action = menu.addAction("Calculate magnitude for selected star")
         calc_phot_action.triggered.connect(self.photometry_requested)
-        # TODO add in "Select as Reference Star" "Set Aperture", etc.
 
         menu.exec(event.globalPos())
 
@@ -157,8 +154,12 @@ class Viewer(QGraphicsView):
         self.pixmap_item.setPixmap(pixmap)
         self.fitInView(self.pixmap_item, Qt.AspectRatioMode.KeepAspectRatio)
 
+        self.display_markers_for_image(image)
+
+    def display_markers_for_image(self, image):
+        """Restore markers from image state"""
         # Add markers from image
-        # I don't like this repetition
+
         if image.target_star_idx is not None:
             star = image.get_star(image.target_star_idx)
             if star is not None:

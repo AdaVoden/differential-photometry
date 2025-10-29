@@ -67,8 +67,6 @@ class MainWindow(QMainWindow):
         # Handle star selection signals
         self.star_selected.connect(self.sidebar.settings.show_star_properties)
 
-        # TODO: Display stars on image, when hovered?
-
         logging.debug("Main window initialized")
 
     def setup_menu_bar(self):
@@ -127,7 +125,7 @@ class MainWindow(QMainWindow):
 
         if filenames:
             filepath = Path(filenames[0])
-            self.viewer.display_image(self.fits_data[filepath.name + filepath.suffix])
+            self.viewer.display_image(self.fits_data[filepath.name])
 
     def add_fits_to_project(self, image: FITSImage):
         # Add to outliner
@@ -232,7 +230,7 @@ class MainWindow(QMainWindow):
         self.viewer.add_star_marker(star.x, star.y, colour="cyan", reference=False)
 
         current_image.target_star_idx = int(idx)
-        
+
         self.star_selected.emit(star)
 
     def add_reference_star(self, coordinates: QPoint):

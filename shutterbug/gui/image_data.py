@@ -32,7 +32,7 @@ class FITSImage:
     def __init__(self, filepath: str, data) -> None:
         # File data
         self.filepath: Path = Path(filepath)
-        self.filename: str = self.filepath.name + self.filepath.suffix
+        self.filename: str = self.filepath.name
         self.observation_time: float
         self.original_data = data
 
@@ -87,7 +87,6 @@ class FITSImage:
         stars = self.stars
 
         # Calculate distance to all stars
-        # TODO Make more efficient. Ktrees?
         distances = np.sqrt(
             (stars["xcentroid"] - x) ** 2 + (stars["ycentroid"] - y) ** 2
         )
@@ -169,10 +168,6 @@ class FITSImage:
         # Convert to magnitude (25 is an arbitrary zero_point)
         magnitude = -2.5 * np.log10(star_flux.value[0]) + 25
 
-        # TODO Need a method to carry magnitude with us
-        #if self.stars:
-            #self.stars[star.index]["magnitude"] = magnitude
-
         return {
             "flux": star_flux.value[0],
             "magnitude": magnitude,
@@ -196,9 +191,3 @@ class FITSImage:
         else:
             logging.info(f"No star found near ({x:.1f}, {y:.1f})")
             return None, None
-
-    def get_state(self) -> None:
-        pass
-
-    def set_state(self, state: dict) -> None:
-        pass
