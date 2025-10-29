@@ -29,6 +29,22 @@ class SelectedStar(BaseModel):
 
 
 class FITSImage:
+
+    # Photometry defaults
+    APERTURE_RADIUS_DEFAULT = 10  # pixels
+    ANNULUS_INNER_DEFAULT = 15  # pixels
+    ANNULUS_OUTER_DEFAULT = 20  # pixels
+
+    # Star Finding defaults
+    MAX_DISTANCE_DEFAULT = 20  # pixels
+    SIGMA_DEFAULT = 3.0
+    FWHM_DEFAULT = 3.0
+    THRESHOLD_DEFAULT = 5.0
+
+    # Display defaults
+    BRIGHTNESS_OFFSET = 0
+    CONTRAST_FACTOR = 1.0
+
     def __init__(self, filepath: str, data) -> None:
         # File data
         self.filepath: Path = Path(filepath)
@@ -37,8 +53,8 @@ class FITSImage:
         self.original_data = data
 
         # Image display settings
-        self.brightness_offset: int = 0
-        self.contrast_factor: float = 1.0
+        self.brightness_offset: int = self.BRIGHTNESS_OFFSET
+        self.contrast_factor: float = self.CONTRAST_FACTOR
 
         # Star variables, computed
         self.background: float | None = None
@@ -50,7 +66,9 @@ class FITSImage:
     def compute_background(self):
         """Calculate background of image using sigma-clipped statistics"""
 
-        _, median, _ = stats.sigma_clipped_stats(self.original_data, sigma=3.0)
+        _, median, _ = stats.sigma_clipped_stats(
+            self.original_data, sigma=self.SIGMA_DEFAULT
+        )
         self.background = median
         return self.background
 
@@ -69,14 +87,18 @@ class FITSImage:
         bg_subtracted = self.get_background_subtracted()
 
         # Estimate FWHM and threshold
-        _, _, std = stats.sigma_clipped_stats(bg_subtracted, sigma=3.0)
+        _, _, std = stats.sigma_clipped_stats(bg_subtracted, sigma=self.SIGMA_DEFAULT)
 
-        daofind = DAOStarFinder(fwhm=3.0, threshold=5.0 * std)
+        daofind = DAOStarFinder(
+            fwhm=self.FWHM_DEFAULT, threshold=self.THRESHOLD_DEFAULT * std
+        )
         self.stars = daofind(bg_subtracted)
 
         return self.stars
 
-    def find_nearest_star(self, x: float, y: float, max_distance: int = 20):
+    def find_nearest_star(
+        self, x: float, y: float, max_distance: int = MAX_DISTANCE_DEFAULT
+    ):
         if self.stars is None:
             self.find_stars()
 
@@ -139,9 +161,9 @@ class FITSImage:
 
     def measure_star_magnitude(
         self,
-        aperture_radius: int = 10,
-        annulus_inner: int = 15,
-        annulus_outer: int = 20,
+        aperture_radius: int = APERTURE_RADIUS_DEFAULT,
+        annulus_inner: int = ANNULUS_INNER_DEFAULT,
+        annulus_outer: int = ANNULUS_OUTER_DEFAULT,
     ):
         """Measure the instrumental magnitude of a star"""
         if self.target_star_idx is None:

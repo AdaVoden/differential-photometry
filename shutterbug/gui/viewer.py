@@ -16,17 +16,24 @@ class Viewer(QGraphicsView):
     photometry_requested = Signal()
     propagation_requested = Signal(FITSImage)
 
+    # Zoom defaults
+    ZOOM_FACTOR_DEFAULT = 1.1
+    ZOOM_MAXIMUM_DEFAULT = 5.0
+    ZOOM_MINIMUM_DEFAULT = 0.1
+
+    # Marker defaults
+    MARKER_COLOUR_DEFAULT = "cyan"
+    MARKER_RADIUS_DEFAULT = 20  # pixels
+
     def __init__(self):
         super().__init__()
         # Initial variables
         self.current_image: FITSImage | None = None
         self.target_marker = None  # Target star marker
         self.reference_markers = []  # Reference star markers
-        # Zoom variables
-        self.zoom_factor: float = 1.1
-        self.zoom_max: float = 5.0
-        self.zoom_min: float = 0.1
-        self.scale(1.0, 1.0)
+
+        # Zoom defaults
+        self.scale(1.0, 1.0)  # Scale of 1
 
         self.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.setStyleSheet("background-color: black;")
@@ -55,11 +62,11 @@ class Viewer(QGraphicsView):
         current_scale = self.transform().m11()
 
         if event.angleDelta().y() > 0:  # Zoom in
-            if current_scale * self.zoom_factor <= self.zoom_max:
-                self.scale(self.zoom_factor, self.zoom_factor)
+            if current_scale * self.ZOOM_FACTOR_DEFAULT <= self.ZOOM_MAXIMUM_DEFAULT:
+                self.scale(self.ZOOM_FACTOR_DEFAULT, self.ZOOM_FACTOR_DEFAULT)
         else:  # Zoom out
-            if current_scale * self.zoom_factor >= self.zoom_min:
-                self.scale(1 / self.zoom_factor, 1 / self.zoom_factor)
+            if current_scale * self.ZOOM_FACTOR_DEFAULT >= self.ZOOM_MINIMUM_DEFAULT:
+                self.scale(1 / self.ZOOM_FACTOR_DEFAULT, 1 / self.ZOOM_FACTOR_DEFAULT)
 
         event.accept()
 
@@ -108,8 +115,8 @@ class Viewer(QGraphicsView):
         self,
         x: float,
         y: float,
-        radius: int = 20,
-        colour: str = "cyan",
+        radius: int = MARKER_RADIUS_DEFAULT,
+        colour: str = MARKER_COLOUR_DEFAULT,
         reference: bool = False,
     ):
         """Add a circular marker at image coordinates x, y"""
