@@ -20,12 +20,13 @@
 - [ ] Add image track to bottom of layout
 - [x] Fix Bug: Zoom not on cursor
 - [x] Click star to select as target
+- [x] Click to remove stars
 - [x] Display star coordinates on click
 - [x] Aperture photometry from FITS
 - [x] Multiple reference star selection
 - [x] Batch processing multiple images
 - [x] Generate light curve for selected star
-- [ ] Export light curve graph
+- [x] Export light curve graph
 - [ ] Plate solving
 - [ ] Find image zero point
 - [ ] AAVSO export format

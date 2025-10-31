@@ -30,8 +30,7 @@ class Viewer(QGraphicsView):
         super().__init__()
         # Initial variables
         self.current_image: FITSImage | None = None
-        self.target_marker = None  # Target star marker
-        self.reference_markers = []  # Reference star markers
+        self.markers = {} # (x, y) -> marker
 
         # Zoom settings
         self.zoom_factor = self.ZOOM_FACTOR_DEFAULT
@@ -148,11 +147,10 @@ class Viewer(QGraphicsView):
         y: float,
         radius: int = MARKER_RADIUS_DEFAULT,
         colour: str = MARKER_COLOUR_DEFAULT,
-        reference: bool = False,
     ):
         """Add a circular marker at image coordinates x, y"""
         logging.debug(
-            f"Adding marker at position ({x:.1f},{y:.1f}), colour: {colour}, is reference: {reference}"
+            f"Adding marker at position ({x:.1f},{y:.1f}), colour: {colour}"
         )
         # Create circle
         pen = QPen(QColor(colour))
@@ -165,24 +163,25 @@ class Viewer(QGraphicsView):
             radius * 2,  # Width, height
             pen,
         )
-        if reference:
-            self.reference_markers.append(circle)
-        else:
-            if self.target_marker is not None:
-                self.scene().removeItem(self.target_marker)
-            self.target_marker = circle
+
+        self.markers[(x, y)] = circle
 
         return circle
+    
+    def remove_star_marker(self, x: float, y:float):
+        """Remove a circular marker at image coordinates x, y"""
+        logging.debug(
+            f"Removing marker at position ({x:.1f},{y:.1f})"
+        )
+
+        if (x, y) in self.markers:
+            marker = self.markers.pop((x, y))
+            self.scene().removeItem(marker)
 
     def clear_markers(self):
         """Remove all star markers"""
-        for marker in self.reference_markers:
-            self.scene().removeItem(marker)
-        self.reference_markers.clear()
-
-        if self.target_marker:
-            self.scene().removeItem(self.target_marker)
-            self.target_marker = None
+        for coordinate, _ in self.markers:
+            self.remove_star_marker(*coordinate)
 
     def display_image(self, image: FITSImage):
         """Display given FITS data array"""
@@ -215,12 +214,12 @@ class Viewer(QGraphicsView):
         if image.target_star_idx is not None:
             star = image.get_star(image.target_star_idx)
             if star is not None:
-                self.add_star_marker(star.x, star.y, colour="cyan", reference=False)
+                self.add_star_marker(star.x, star.y, colour="cyan")
 
         for idx in image.reference_star_idxs:
             star = image.get_star(idx)
             if star is not None:
-                self.add_star_marker(star.x, star.y, colour="magenta", reference=True)
+                self.add_star_marker(star.x, star.y, colour="magenta")
 
     def update_display(self):
         if self.current_image is None:

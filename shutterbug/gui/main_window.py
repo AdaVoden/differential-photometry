@@ -22,6 +22,8 @@ import numpy as np
 
 class MainWindow(QMainWindow):
 
+    NEARNESS_TOLERANCE_DEFAULT = 20 # pixels
+
     star_selected = Signal(SelectedStar)
 
     def __init__(self):
@@ -190,13 +192,22 @@ class MainWindow(QMainWindow):
         if self.viewer.current_image is None:
             # No image, we don't care
             return
+        
+        # Alt + Click, remove a star
+        if event.modifiers() == Qt.KeyboardModifier.AltModifier:
+            if event.button() == Qt.MouseButton.LeftButton:
+                self.remove_star_at_position(event.pos())
+            return
 
         # if CTRL is held, add a reference star
         if event.modifiers() == Qt.KeyboardModifier.ControlModifier:
             if event.button() == Qt.MouseButton.LeftButton:
                 self.add_reference_star(event.pos())
-        elif event.button() == Qt.MouseButton.LeftButton:
+            return
+        
+        if event.button() == Qt.MouseButton.LeftButton:
             self.select_target_star(event.pos())
+            return
 
     @Slot()
     def calculate_aperture_photometry(self):
@@ -237,11 +248,40 @@ class MainWindow(QMainWindow):
             # Target star cannot be a reference to itself
             return
         # Add new marker, replace old target if present
-        self.viewer.add_star_marker(star.x, star.y, colour="cyan", reference=False)
+        self.viewer.add_star_marker(star.x, star.y, colour="cyan")
 
         current_image.target_star_idx = int(idx)
 
         self.star_selected.emit(star)
+    
+    def remove_star_at_position(self, coordinates: QPoint):
+        """Removes a star at selected point"""
+        img = self.viewer.current_image
+
+        x, y = self.viewer.convert_to_image_coordinates(coordinates)
+
+        if img is None:
+            return # No work required
+        
+        # Are we clicking near a target star?
+        if img.target_star_idx is not None:
+            target = img.get_star(img.target_star_idx)
+            if target and self.is_near(x, y, target.x, target.y):
+                img.target_star_idx = None
+                self.viewer.remove_star_marker(target.x, target.y)
+                return
+            
+        # Are we clicking near a reference star?
+        for idx in img.reference_star_idxs[:]: # make a copy
+            ref = img.get_star(idx)
+            if ref and self.is_near(x, y, ref.x, ref.y):
+                img.reference_star_idxs.remove(idx)
+                self.viewer.remove_star_marker(ref.x, ref.y)
+                return
+
+
+    def is_near(self, x1: float, y1: float, x2: float, y2: float, tolerance = NEARNESS_TOLERANCE_DEFAULT):
+        return ((x1 - x2)**2 + (y1 - y2)**2) ** 0.5 <= tolerance
 
     def add_reference_star(self, coordinates: QPoint):
         """Select star at point as a reference star for calculations"""
@@ -262,7 +302,7 @@ class MainWindow(QMainWindow):
             if current_image.target_star_idx == idx:
                 # We cannot mark a target star as a reference to itself
                 return
-        self.viewer.add_star_marker(star.x, star.y, colour="magenta", reference=True)
+        self.viewer.add_star_marker(star.x, star.y, colour="magenta")
 
         current_image.reference_star_idxs.append(int(idx))
 
