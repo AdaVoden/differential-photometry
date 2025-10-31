@@ -2,7 +2,14 @@ import logging
 
 import matplotlib.pyplot as plt
 
-from PySide6.QtWidgets import QMainWindow, QHBoxLayout, QFileDialog, QWidget, QProgressBar, QLabel
+from PySide6.QtWidgets import (
+    QMainWindow,
+    QHBoxLayout,
+    QFileDialog,
+    QWidget,
+    QProgressBar,
+    QLabel,
+)
 from PySide6.QtCore import Slot, QCoreApplication, QPoint, Qt, Signal
 from PySide6.QtGui import QMouseEvent
 
@@ -61,7 +68,7 @@ class MainWindow(QMainWindow):
 
         # Set up progress bar (Hidden by default)
         self.progress_bar = QProgressBar()
-        self.progress_bar.setMaximumWidth(100) # Pixels
+        self.progress_bar.setMaximumWidth(100)  # Pixels
         # Handler for context handling
         self.progress_handler = ProgressHandler(self.progress_bar, self.status_label)
 
@@ -171,17 +178,16 @@ class MainWindow(QMainWindow):
             image = FITSImage(filepath, data, obs_time)
             # Assuming image data is in the primary HDU
             return image
-        
+
     @Slot(str)
     def on_file_removed(self, item_name: str):
         """Remove image from current project"""
         if item_name not in self.fits_data:
             return
-        
+
         image = self.fits_data.pop(item_name)
         if self.viewer.current_image == image:
             self.viewer.clear_image()
-
 
     @Slot()
     def save_project(self):

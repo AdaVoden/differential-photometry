@@ -9,7 +9,7 @@ from typing import List
 class Outliner(QWidget):
 
     item_selected = Signal(str)  # Signal emitted when an item is selected
-    item_removed = Signal(str) # Signal emitted when an item is deleted
+    item_removed = Signal(str)  # Signal emitted when an item is deleted
 
     def __init__(self):
         super().__init__()
@@ -52,6 +52,7 @@ class Outliner(QWidget):
         self.loaded_items.append(item_name)
 
     Slot(QListWidgetItem)
+
     def remove_item(self, item: QListWidgetItem):
         """Remove an item from the outliner"""
         logging.debug(f"Removing item: {item.text()}")

@@ -1,4 +1,6 @@
 from PySide6.QtWidgets import QProgressBar, QLabel
+from PySide6.QtCore import QCoreApplication
+
 
 class ProgressHandler:
     def __init__(self, progress_bar: QProgressBar, label: QLabel):
@@ -10,15 +12,20 @@ class ProgressHandler:
         self.processing_text = processing_text
         return self
 
-
     def __enter__(self):
         self.progress_bar.setValue(0)
         self.progress_bar.setVisible(True)
         if self.processing_text:
             self.label.setText(self.processing_text)
 
+        # Force UI update
+        QCoreApplication.processEvents()
+        return self
+
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.progress_bar.setValue(100)
         self.progress_bar.setVisible(False)
         self.label.setText("Ready")
-        return False # Errors can propagate
+
+        QCoreApplication.processEvents()
+        return False  # Errors can propagate
