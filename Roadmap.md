@@ -20,7 +20,7 @@
 - [ ] Add image track to bottom of layout
 - [x] Fix Bug: Zoom not on cursor
 - [x] Click star to select as target
-- [x] Click to remove stars
+
 - [x] Display star coordinates on click
 - [x] Aperture photometry from FITS
 - [x] Multiple reference star selection
@@ -31,5 +31,7 @@
 - [ ] Find image zero point
 - [ ] AAVSO export format
 - [ ] Period analysis tools
-- [ ] Polish appearance
+- [ ] Polish UX
+    - [x] Keep same view one image change
+    - [x] Click to remove stars
 

@@ -72,9 +72,9 @@ class Viewer(QGraphicsView):
             if current_scale * self.zoom_factor >= self.zoom_min:
                 self.scale(1 / self.zoom_factor, 1 / self.zoom_factor)
 
+
         # Adjust to difference
         self.centerOn(self.mapToScene(self.viewport().rect().center()))
-        event.accept()
 
         super().wheelEvent(event)  # Pass other wheel events to parent
 
@@ -188,6 +188,8 @@ class Viewer(QGraphicsView):
 
         self.clear_markers()
 
+        transform = self.transform()
+
         # Store new image
         self.current_image = image
 
@@ -204,6 +206,9 @@ class Viewer(QGraphicsView):
         pixmap = QPixmap.fromImage(qimage)
         self.pixmap_item.setPixmap(pixmap)
         self.fitInView(self.pixmap_item, Qt.AspectRatioMode.KeepAspectRatio)
+
+        # Keep same view
+        self.setTransform(transform)
 
         self.display_markers_for_image(image)
 
