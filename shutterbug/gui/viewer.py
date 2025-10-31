@@ -2,7 +2,15 @@ import logging
 
 from PySide6.QtWidgets import QGraphicsView, QGraphicsScene, QMenu
 from PySide6.QtCore import Qt, Slot, QPoint, Signal
-from PySide6.QtGui import QContextMenuEvent, QPixmap, QImage, QPen, QColor, QMouseEvent, QWheelEvent
+from PySide6.QtGui import (
+    QContextMenuEvent,
+    QPixmap,
+    QImage,
+    QPen,
+    QColor,
+    QMouseEvent,
+    QWheelEvent,
+)
 
 from shutterbug.gui.image_data import FITSImage
 
@@ -30,7 +38,7 @@ class Viewer(QGraphicsView):
         super().__init__()
         # Initial variables
         self.current_image: FITSImage | None = None
-        self.markers = {} # (x, y) -> marker
+        self.markers = {}  # (x, y) -> marker
 
         # Zoom settings
         self.zoom_factor = self.ZOOM_FACTOR_DEFAULT
@@ -57,7 +65,7 @@ class Viewer(QGraphicsView):
 
         # Set up zooming behavior
         self.setTransformationAnchor(QGraphicsView.ViewportAnchor.AnchorUnderMouse)
-        self.setResizeAnchor(QGraphicsView.ViewportAnchor.AnchorViewCenter)
+        self.setResizeAnchor(QGraphicsView.ViewportAnchor.AnchorUnderMouse)
 
         logging.debug("Viewer initialized")
 
@@ -72,10 +80,6 @@ class Viewer(QGraphicsView):
             if current_scale * self.zoom_factor >= self.zoom_min:
                 self.scale(1 / self.zoom_factor, 1 / self.zoom_factor)
 
-
-        # Adjust to difference
-        self.centerOn(self.mapToScene(self.viewport().rect().center()))
-
         super().wheelEvent(event)  # Pass other wheel events to parent
 
     def mousePressEvent(self, event: QMouseEvent):
@@ -88,7 +92,7 @@ class Viewer(QGraphicsView):
                 event.position(),
                 Qt.MouseButton.LeftButton,
                 Qt.MouseButton.LeftButton,
-                event.modifiers()
+                event.modifiers(),
             )
             super().mousePressEvent(fake_event)
         else:
@@ -100,7 +104,7 @@ class Viewer(QGraphicsView):
         if event.button() == Qt.MouseButton.MiddleButton:
             # Stop panning
             self.setDragMode(QGraphicsView.DragMode.NoDrag)
-        
+
         super().mouseReleaseEvent(event)
 
     def contextMenuEvent(self, event: QContextMenuEvent) -> None:
@@ -149,9 +153,7 @@ class Viewer(QGraphicsView):
         colour: str = MARKER_COLOUR_DEFAULT,
     ):
         """Add a circular marker at image coordinates x, y"""
-        logging.debug(
-            f"Adding marker at position ({x:.1f},{y:.1f}), colour: {colour}"
-        )
+        logging.debug(f"Adding marker at position ({x:.1f},{y:.1f}), colour: {colour}")
         # Create circle
         pen = QPen(QColor(colour))
         pen.setWidth(2)
@@ -167,12 +169,10 @@ class Viewer(QGraphicsView):
         self.markers[(x, y)] = circle
 
         return circle
-    
-    def remove_star_marker(self, x: float, y:float):
+
+    def remove_star_marker(self, x: float, y: float):
         """Remove a circular marker at image coordinates x, y"""
-        logging.debug(
-            f"Removing marker at position ({x:.1f},{y:.1f})"
-        )
+        logging.debug(f"Removing marker at position ({x:.1f},{y:.1f})")
 
         if (x, y) in self.markers:
             marker = self.markers.pop((x, y))
@@ -188,7 +188,9 @@ class Viewer(QGraphicsView):
 
         self.clear_markers()
 
-        transform = self.transform()
+        transform = None
+        if self.current_image is not None:
+            transform = self.transform()
 
         # Store new image
         self.current_image = image
@@ -208,9 +210,16 @@ class Viewer(QGraphicsView):
         self.fitInView(self.pixmap_item, Qt.AspectRatioMode.KeepAspectRatio)
 
         # Keep same view
-        self.setTransform(transform)
+        if transform:
+            self.setTransform(transform)
 
         self.display_markers_for_image(image)
+
+    def clear_image(self):
+        """Clear current image from view"""
+        self.current_image = None
+        self.clear_markers()
+        self.pixmap_item.setPixmap(QPixmap())
 
     def display_markers_for_image(self, image):
         """Restore markers from image state"""
