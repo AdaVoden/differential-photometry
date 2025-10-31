@@ -36,7 +36,7 @@ class Viewer(QGraphicsView):
     # Zoom defaults
     ZOOM_FACTOR_DEFAULT = 1.1
     ZOOM_MAXIMUM_DEFAULT = 5.0
-    ZOOM_MINIMUM_DEFAULT = 0.1
+    ZOOM_MINIMUM_DEFAULT = 0.01
 
     # Marker defaults
     MARKER_COLOUR_DEFAULT = "cyan"
@@ -61,7 +61,6 @@ class Viewer(QGraphicsView):
         self.anim = None
 
         self.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.setStyleSheet("background-color: black;")
 
         # Set up scene
         scene = QGraphicsScene(self)
@@ -111,7 +110,7 @@ class Viewer(QGraphicsView):
         # Limit zoom
         current_scale = self._zoom_level
         new_scale = current_scale * factor
-        if new_scale > self.zoom_max or new_scale < self.zoom_min:
+        if new_scale >= self.zoom_max or new_scale <= self.zoom_min:
             return  # Limit zoom level
 
         # Get old position first
