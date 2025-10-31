@@ -1,7 +1,7 @@
 import logging
 
 from PySide6.QtWidgets import QGraphicsView, QGraphicsScene, QMenu
-from PySide6.QtCore import Qt, Slot, QPoint, Signal
+from PySide6.QtCore import Qt, Slot, QPoint, Signal, QPointF, Property, QPropertyAnimation
 from PySide6.QtGui import (
     QContextMenuEvent,
     QPixmap,
@@ -46,6 +46,12 @@ class Viewer(QGraphicsView):
         self.zoom_min = self.ZOOM_MINIMUM_DEFAULT
         self.scale(1.0, 1.0)  # Scale of 1
 
+        # Zoom animation settings
+        self._zoom_level = 1.0 # base scale
+        self._target_scene_pos = QPointF()
+        self._target_viewport_pos = QPointF()
+        self.anim = None
+
         self.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.setStyleSheet("background-color: black;")
 
@@ -69,18 +75,48 @@ class Viewer(QGraphicsView):
 
         logging.debug("Viewer initialized")
 
+    def get_zoom(self):
+        return self._zoom_level
+    
+    def set_zoom(self, value: float):
+        if self._zoom_level == 0:
+            return
+        
+        factor = value / self._zoom_level
+        self._zoom_level = value
+        self.scale(factor, factor)
+
+        delta = self.mapToScene(self._target_viewport_pos.toPoint()) - self._target_scene_pos
+        self.translate(delta.x(), delta.y())
+
+    zoom = Property(float, get_zoom, set_zoom)
+
     def wheelEvent(self, event: QWheelEvent):
-        # M11 is the horizontal scaling factor
-        current_scale = self.transform().m11()
+        # Are we zooming in or out?
+        zoom = event.angleDelta().y() > 0
+        factor = self.zoom_factor if zoom else 1 / self.zoom_factor
 
-        if event.angleDelta().y() > 0:  # Zoom in
-            if current_scale * self.zoom_factor <= self.zoom_max:
-                self.scale(self.zoom_factor, self.zoom_factor)
-        else:  # Zoom out
-            if current_scale * self.zoom_factor >= self.zoom_min:
-                self.scale(1 / self.zoom_factor, 1 / self.zoom_factor)
+        # Limit zoom
+        current_scale = self._zoom_level
+        new_scale = current_scale * factor
+        if new_scale > self.zoom_max or new_scale < self.zoom_min:
+            return # Limit zoom level
 
-        super().wheelEvent(event)  # Pass other wheel events to parent
+        # Get old position first
+        self._target_viewport_pos = event.position()
+        self._target_viewport_pos = self.mapToScene(event.position().toPoint())
+
+        # Kill any running animation
+        if self.anim and self.anim.state() == QPropertyAnimation.State.Running:
+            self.anim.stop()
+
+        # Animate the zoom change
+        self.anim = QPropertyAnimation(self, b"zoom")
+        self.anim.setDuration(25) # Tweak for feel
+        self.anim.setStartValue(self._zoom_level)
+        self.anim.setEndValue(new_scale)
+        self.anim.start()
+
 
     def mousePressEvent(self, event: QMouseEvent):
         if event.button() == Qt.MouseButton.MiddleButton:

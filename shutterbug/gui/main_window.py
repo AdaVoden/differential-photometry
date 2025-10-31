@@ -2,7 +2,7 @@ import logging
 
 import matplotlib.pyplot as plt
 
-from PySide6.QtWidgets import QMainWindow, QHBoxLayout, QFileDialog, QWidget
+from PySide6.QtWidgets import QMainWindow, QHBoxLayout, QFileDialog, QWidget, QProgressBar, QLabel
 from PySide6.QtCore import Slot, QCoreApplication, QPoint, Qt, Signal
 from PySide6.QtGui import QMouseEvent
 
@@ -10,6 +10,7 @@ from shutterbug.gui.sidebar import Sidebar
 from shutterbug.gui.viewer import Viewer
 from shutterbug.gui.project import ShutterbugProject
 from shutterbug.gui.image_data import FITSImage, SelectedStar
+from shutterbug.gui.progress_bar_handler import ProgressHandler
 
 from astropy.io import fits
 
@@ -52,6 +53,20 @@ class MainWindow(QMainWindow):
 
         # Set up menu bar
         self.setup_menu_bar()
+
+        # Set up status bar
+        self.status_bar = self.statusBar()
+        self.status_label = QLabel("Ready")
+        self.status_bar.addWidget(self.status_label)
+
+        # Set up progress bar (Hidden by default)
+        self.progress_bar = QProgressBar()
+        self.progress_bar.setMaximumWidth(100) # Pixels
+        # Handler for context handling
+        self.progress_handler = ProgressHandler(self.progress_bar, self.status_label)
+
+        # Add to status bar
+        self.status_bar.addPermanentWidget(self.progress_bar)
 
         self.fits_data: Dict[str, FITSImage] = {}  # Loaded FITS images
         # filename -> FITSImage
@@ -241,7 +256,8 @@ class MainWindow(QMainWindow):
         if current_image is None:
             return
 
-        current_image.find_stars()
+        with self.progress_handler("Finding stars..."):
+            current_image.find_stars()
 
     def select_target_star(self, coordinates: QPoint):
         """Creates a marker on image at coordinates"""
@@ -353,54 +369,55 @@ class MainWindow(QMainWindow):
         # Unify star selections
         self.propagate_star_selection(target_image)
 
-        results = []
-        for img in self.fits_data.values():
-            if img.target_star_idx is None:
-                logging.error(
-                    f"Image {img.filename} did not successfully propagate stars, skipping"
-                )
-                continue  # Did not propagate, do not use
-
-            # No repetition if it's in one list
-            idxs = [img.target_star_idx]
-            idxs.extend(img.reference_star_idxs)
-
-            stars = []
-            for idx in idxs:
-                # Need magnitude for diff mag
-                star = img.measure_magnitude_at_idx(
-                    idx=idx,
-                    aperture_radius=img.APERTURE_RADIUS_DEFAULT,
-                    annulus_inner=img.ANNULUS_INNER_DEFAULT,
-                    annulus_outer=img.ANNULUS_OUTER_DEFAULT,
-                )
-                if star:
-                    stars.append(star)
-                else:
+        with self.progress_handler("Processing images..."):
+            results = []
+            for img in self.fits_data.values():
+                if img.target_star_idx is None:
                     logging.error(
-                        f"Failed to measure star magnitude in image {img.filename}, index {idx}, skipping"
+                        f"Image {img.filename} did not successfully propagate stars, skipping"
                     )
-                    break
-            # Cannot continue without sufficient number of stars
-            if len(stars) != len(idxs):
-                logging.error(
-                    f"Failed to measure sufficient stars in image {img.filename}, skipping image"
+                    continue  # Did not propagate, do not use
+
+                # No repetition if it's in one list
+                idxs = [img.target_star_idx]
+                idxs.extend(img.reference_star_idxs)
+
+                stars = []
+                for idx in idxs:
+                    # Need magnitude for diff mag
+                    star = img.measure_magnitude_at_idx(
+                        idx=idx,
+                        aperture_radius=img.APERTURE_RADIUS_DEFAULT,
+                        annulus_inner=img.ANNULUS_INNER_DEFAULT,
+                        annulus_outer=img.ANNULUS_OUTER_DEFAULT,
+                    )
+                    if star:
+                        stars.append(star)
+                    else:
+                        logging.error(
+                            f"Failed to measure star magnitude in image {img.filename}, index {idx}, skipping"
+                        )
+                        break
+                # Cannot continue without sufficient number of stars
+                if len(stars) != len(idxs):
+                    logging.error(
+                        f"Failed to measure sufficient stars in image {img.filename}, skipping image"
+                    )
+                    continue
+
+                result = self.calculate_differential_magnitude(
+                    target_star=stars[0], ref_stars=stars[1:]
                 )
-                continue
+                results.append(
+                    {
+                        "filename": img.filename,
+                        "time": img.observation_time,
+                        "magnitude": result,
+                        "n_references": len(stars[1:]),
+                    }
+                )
 
-            result = self.calculate_differential_magnitude(
-                target_star=stars[0], ref_stars=stars[1:]
-            )
-            results.append(
-                {
-                    "filename": img.filename,
-                    "time": img.observation_time,
-                    "magnitude": result,
-                    "n_references": len(stars[1:]),
-                }
-            )
-
-        self.generate_light_curve(results)
+            self.generate_light_curve(results)
 
     def process_single_image(self, image: FITSImage):
         """Process one image for differential photometry"""
@@ -414,36 +431,37 @@ class MainWindow(QMainWindow):
             return  # No markers to propagate, no work to do
 
         for img in self.fits_data.values():
-            if img == image:
-                # Don't propagate to self
-                continue
+            with self.progress_handler("Propagating stars..."):
+                if img == image:
+                    # Don't propagate to self
+                    continue
 
-            if img.stars is None:
-                img.find_stars()
+                if img.stars is None:
+                    img.find_stars()
 
-            # Clear existing selections before propagation
-            img.target_star_idx = None
-            img.reference_star_idxs = []
+                # Clear existing selections before propagation
+                img.target_star_idx = None
+                img.reference_star_idxs = []
 
-            # Propagate target
-            if image.target_star_idx:
-                star = image.get_star(image.target_star_idx)
-                if star:
-                    _, t_s_idx = img.find_nearest_star(
-                        star.x, star.y, FITSImage.MAX_DISTANCE_DEFAULT
-                    )
-                    if t_s_idx:
-                        img.target_star_idx = int(t_s_idx)
+                # Propagate target
+                if image.target_star_idx:
+                    star = image.get_star(image.target_star_idx)
+                    if star:
+                        _, t_s_idx = img.find_nearest_star(
+                            star.x, star.y, FITSImage.MAX_DISTANCE_DEFAULT
+                        )
+                        if t_s_idx:
+                            img.target_star_idx = int(t_s_idx)
 
-            # Propagate references
-            for idx in image.reference_star_idxs:
-                star = image.get_star(idx)
-                if star:
-                    _, ref_idx = img.find_nearest_star(
-                        star.x, star.y, FITSImage.MAX_DISTANCE_DEFAULT
-                    )
-                    if ref_idx:
-                        img.reference_star_idxs.append(int(ref_idx))
+                # Propagate references
+                for idx in image.reference_star_idxs:
+                    star = image.get_star(idx)
+                    if star:
+                        _, ref_idx = img.find_nearest_star(
+                            star.x, star.y, FITSImage.MAX_DISTANCE_DEFAULT
+                        )
+                        if ref_idx:
+                            img.reference_star_idxs.append(int(ref_idx))
 
     def calculate_differential_magnitude(
         self, target_star: SelectedStar, ref_stars: List[SelectedStar]
