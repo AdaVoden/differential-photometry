@@ -1,0 +1,15 @@
+/* Clear out extra padding and spaces in widgets */
+
+#outliner {
+    min-height: 200px;
+    margin: 0px;
+}
+
+#sidebar {
+    margin: 0px;
+    max-width: 400px;
+}
+
+#viewer {
+    margin: 0px;
+}

@@ -45,6 +45,8 @@ class Viewer(QGraphicsView):
     def __init__(self):
         super().__init__()
         # Initial variables
+        self.setObjectName("viewer")
+
         self.current_image: FITSImage | None = None
         self.markers = {}  # (x, y) -> marker
 
@@ -238,7 +240,7 @@ class Viewer(QGraphicsView):
         self.clear_markers()
 
         old_center = self.mapToScene(self.viewport().rect().center())
-        old_zoom = self._zoom_level    
+        old_zoom = self._zoom_level
 
         # Store new image
         self.current_image = image

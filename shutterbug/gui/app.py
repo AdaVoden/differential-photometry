@@ -2,18 +2,35 @@ import sys
 import logging
 
 from PySide6.QtWidgets import QApplication
-from PySide6.QtGui import QFont
 from shutterbug.gui.main_window import MainWindow
 
 from qt_material import apply_stylesheet
+
+from pathlib import Path
+
+
+def load_stylesheet():
+    qss_dir = Path(__file__).parent / "qss"
+
+    stylesheets = [qss_dir / "base.qss"]
+
+    combined = ""
+    for qss_file in stylesheets:
+        with open(qss_file, "r") as f:
+            combined += f.read() + "\n"
+
+    return combined
 
 
 def main():
     logging.basicConfig(level=logging.DEBUG)
     app = QApplication(sys.argv)
     window = MainWindow()
-    # qt material theme
+    # qt material theme and custom style
     apply_stylesheet(app, theme="dark_purple.xml")
+
+    # Open and load qss file
+    app.setStyleSheet(app.styleSheet() + "\n" + load_stylesheet())
 
     window.show()
     sys.exit(app.exec())

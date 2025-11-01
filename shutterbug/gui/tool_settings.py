@@ -1,42 +1,47 @@
 import logging
 
-from PySide6.QtWidgets import QWidget, QVBoxLayout, QStackedWidget, QLabel, QSlider
+from PySide6.QtWidgets import QWidget, QVBoxLayout, QLabel, QSlider, QTabWidget
 from PySide6.QtCore import Qt, Slot
 
 
 class Settings(QWidget):
     def __init__(self):
         super().__init__()
+        self.setObjectName("settings")
         layout = QVBoxLayout()
         self.setLayout(layout)
+        # Remove layout styling
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(2)
 
         # Stacked tabs for that Blender goodness
-        self.stack = QStackedWidget()
-        layout.addWidget(self.stack)
+        self.tabs = QTabWidget()
+        layout.addWidget(self.tabs)
+        self.tabs.setTabPosition(QTabWidget.TabPosition.West)
 
         # Different property panels
         self.image_properties = ImagePropertiesPanel()
         self.star_properties = StarPropertiesPanel()
         self.general_properties = GeneralPropertiesPanel()
 
-        self.stack.addWidget(self.image_properties)
-        self.stack.addWidget(self.star_properties)
-        self.stack.addWidget(self.general_properties)
+        self.tabs.addTab(self.general_properties, "Gen")
+        self.tabs.addTab(self.image_properties, "Image")
+        self.tabs.addTab(self.star_properties, "Star")
 
         self.show_image_properties()
 
         logging.debug("Tool settings initialized")
 
     def show_image_properties(self):
-        self.stack.setCurrentWidget(self.image_properties)
+        self.tabs.setCurrentWidget(self.image_properties)
 
     @Slot()
     def show_star_properties(self, star_data):
         self.star_properties.display_star(star_data)
-        self.stack.setCurrentWidget(self.star_properties)
+        self.tabs.setCurrentWidget(self.star_properties)
 
     def show_general_properties(self):
-        self.stack.setCurrentWidget(self.general_properties)
+        self.tabs.setCurrentWidget(self.general_properties)
 
     def get_state(self):
         return {"image_properties": self.image_properties.get_state()}
@@ -44,12 +49,15 @@ class Settings(QWidget):
     def set_state(self, state):
         self.image_properties.set_state(state["image_properties"])
 
-
 class ImagePropertiesPanel(QWidget):
     def __init__(self):
         super().__init__()
+        self.setObjectName("imageProperties")
         layout = QVBoxLayout()
         self.setLayout(layout)
+        # Remove layout styling
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(2)
 
         # Brightness slider
         layout.addWidget(QLabel("Brightness"))
@@ -96,6 +104,7 @@ class ImagePropertiesPanel(QWidget):
 class StarPropertiesPanel(QWidget):
     def __init__(self):
         super().__init__()
+        self.setObjectName("starProperties")
         layout = QVBoxLayout()
         self.setLayout(layout)
 

@@ -13,14 +13,17 @@ class Outliner(QWidget):
 
     def __init__(self):
         super().__init__()
+        self.setObjectName("outliner")
+
         self.selected_item = None
         self.loaded_items: List[str] = []  # Dictionary to keep track of loaded items
 
-        # Set a minimum height for the outliner
-        self.setMinimumHeight(200)
         # Set layout
         layout = QVBoxLayout()
         self.setLayout(layout)
+        # Remove layout styling
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(2)
 
         # Create a file list and connect it here
         self.file_list = QListWidget()
@@ -56,10 +59,10 @@ class Outliner(QWidget):
         for item in self.file_list.findItems(item_name, Qt.MatchFlag.MatchExactly):
             if item.text() == item_name:
                 self.file_list.setCurrentItem(item)
-                return # No more work to do
-        
+                return  # No more work to do
 
     Slot(QListWidgetItem)
+
     def remove_item(self, item: QListWidgetItem):
         """Remove an item from the outliner"""
         logging.debug(f"Removing item: {item.text()}")

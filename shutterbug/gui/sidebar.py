@@ -10,8 +10,12 @@ class Sidebar(QWidget):
     def __init__(self):
         super().__init__()
         # Initialize sidebar components here
+        self.setObjectName("sidebar")
 
         layout = QVBoxLayout()
+        # Remove layout styling
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(0)
         # Outliner on top, Settings below
         self.outliner = Outliner()
         self.settings = Settings()
@@ -19,6 +23,5 @@ class Sidebar(QWidget):
         layout.addWidget(self.outliner, stretch=1)
         layout.addWidget(self.settings, stretch=3)
         self.setLayout(layout)
-        self.setMaximumWidth(400)  # set a maximum width for the sidebar
 
         logging.debug("Sidebar initialized")

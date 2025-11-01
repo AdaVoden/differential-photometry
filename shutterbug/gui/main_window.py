@@ -36,7 +36,7 @@ class MainWindow(QMainWindow):
 
     def __init__(self):
         super().__init__()
-
+        self.setObjectName("mainWindow")
         # Set window properties
         self.setWindowTitle("Shutterbug")
         self.setGeometry(100, 100, 1200, 800)
@@ -53,6 +53,10 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(central)
         main_layout = QHBoxLayout()
         central.setLayout(main_layout)
+
+        # Remove styling from layouts
+        main_layout.setContentsMargins(0, 0, 0, 0)
+        main_layout.setSpacing(2)
 
         # Add in contents
         main_layout.addWidget(self.viewer, stretch=3)  # Viewer takes most space
