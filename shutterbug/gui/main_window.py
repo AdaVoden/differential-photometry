@@ -69,6 +69,7 @@ class MainWindow(QMainWindow):
         # Set up progress bar (Hidden by default)
         self.progress_bar = QProgressBar()
         self.progress_bar.setMaximumWidth(100)  # Pixels
+        self.progress_bar.setVisible(False)
         # Handler for context handling
         self.progress_handler = ProgressHandler(self.progress_bar, self.status_label)
 
@@ -159,6 +160,7 @@ class MainWindow(QMainWindow):
         if filenames:
             filepath = Path(filenames[0])
             self.viewer.display_image(self.fits_data[filepath.name])
+            self.sidebar.outliner.select_item(filepath.name)
 
     def add_fits_to_project(self, image: FITSImage):
         # Add to outliner
@@ -282,6 +284,11 @@ class MainWindow(QMainWindow):
             # Target star cannot be a reference to itself
             return
         # Add new marker, replace old target if present
+        if current_image.target_star_idx:
+            old_target = current_image.get_star(current_image.target_star_idx)
+            if old_target:
+                self.viewer.remove_star_marker(old_target.x, old_target.y)
+
         self.viewer.add_star_marker(star.x, star.y, colour="cyan")
 
         current_image.target_star_idx = int(idx)

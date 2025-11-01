@@ -51,8 +51,15 @@ class Outliner(QWidget):
         self.file_list.addItem(item_name)
         self.loaded_items.append(item_name)
 
-    Slot(QListWidgetItem)
+    def select_item(self, item_name: str):
+        """Selects an item in the outliner"""
+        for item in self.file_list.findItems(item_name, Qt.MatchFlag.MatchExactly):
+            if item.text() == item_name:
+                self.file_list.setCurrentItem(item)
+                return # No more work to do
+        
 
+    Slot(QListWidgetItem)
     def remove_item(self, item: QListWidgetItem):
         """Remove an item from the outliner"""
         logging.debug(f"Removing item: {item.text()}")

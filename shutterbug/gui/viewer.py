@@ -35,8 +35,8 @@ class Viewer(QGraphicsView):
 
     # Zoom defaults
     ZOOM_FACTOR_DEFAULT = 1.1
-    ZOOM_MAXIMUM_DEFAULT = 5.0
-    ZOOM_MINIMUM_DEFAULT = 0.01
+    ZOOM_MAXIMUM_DEFAULT = 7.5
+    ZOOM_MINIMUM_DEFAULT = 0.5
 
     # Marker defaults
     MARKER_COLOUR_DEFAULT = "cyan"
@@ -94,6 +94,7 @@ class Viewer(QGraphicsView):
         self._zoom_level = value
         self.scale(factor, factor)
 
+        # Correct for mouse changing position
         delta = (
             self.mapToScene(self._target_viewport_pos.toPoint())
             - self._target_scene_pos
@@ -226,17 +227,18 @@ class Viewer(QGraphicsView):
 
     def clear_markers(self):
         """Remove all star markers"""
-        for coordinate, _ in self.markers:
-            self.remove_star_marker(*coordinate)
+        for x, y in self.markers:
+            self.scene().removeItem(self.markers[(x, y)])
+
+        self.markers = {}
 
     def display_image(self, image: FITSImage):
         """Display given FITS data array"""
 
         self.clear_markers()
 
-        transform = None
-        if self.current_image is not None:
-            transform = self.transform()
+        old_center = self.mapToScene(self.viewport().rect().center())
+        old_zoom = self._zoom_level    
 
         # Store new image
         self.current_image = image
@@ -256,8 +258,9 @@ class Viewer(QGraphicsView):
         self.fitInView(self.pixmap_item, Qt.AspectRatioMode.KeepAspectRatio)
 
         # Keep same view
-        if transform:
-            self.setTransform(transform)
+        self._zoom_level = old_zoom
+        self.scale(old_zoom, old_zoom)
+        self.centerOn(old_center)
 
         self.display_markers_for_image(image)
 
