@@ -13,3 +13,12 @@
 #viewer {
     margin: 0px;
 }
+
+SliderSettingsWidget > QSlider {
+    max-width: 75px;
+    max-height: 20px;
+}
+
+SliderSettingsWidget > QLabel {
+    max-width: 100px;
+}

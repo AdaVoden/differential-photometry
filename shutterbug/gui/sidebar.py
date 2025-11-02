@@ -15,7 +15,7 @@ class Sidebar(QWidget):
         layout = QVBoxLayout()
         # Remove layout styling
         layout.setContentsMargins(0, 0, 0, 0)
-        layout.setSpacing(0)
+        layout.setSpacing(2)
         # Outliner on top, Settings below
         self.outliner = Outliner()
         self.settings = Settings()
