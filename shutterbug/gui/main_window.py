@@ -11,7 +11,7 @@ from PySide6.QtWidgets import (
     QLabel,
 )
 from PySide6.QtCore import Slot, QCoreApplication, QPoint, Qt, Signal
-from PySide6.QtGui import QMouseEvent
+from PySide6.QtGui import QMouseEvent, QUndoStack
 
 from shutterbug.gui.sidebar import Sidebar
 from shutterbug.gui.viewer import Viewer
@@ -40,6 +40,9 @@ class MainWindow(QMainWindow):
         # Set window properties
         self.setWindowTitle("Shutterbug")
         self.setGeometry(100, 100, 1200, 800)
+
+        # Set up undo stack
+        self.undo_stack = QUndoStack()
 
         # Set up save/load functionality
         self.project = ShutterbugProject()
