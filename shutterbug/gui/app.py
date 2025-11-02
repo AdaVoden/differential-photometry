@@ -12,7 +12,7 @@ from pathlib import Path
 def load_stylesheet():
     qss_dir = Path(__file__).parent / "qss"
 
-    stylesheets = [qss_dir / "base.qss"]
+    stylesheets = [qss_dir / "base.qss", qss_dir / "controls.qss"]
 
     combined = ""
     for qss_file in stylesheets:

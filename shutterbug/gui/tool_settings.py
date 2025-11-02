@@ -1,7 +1,14 @@
 import logging
 
-from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QLabel, QSlider, QTabWidget, QSizePolicy, QSpacerItem
-from PySide6.QtCore import Qt, Slot, Signal
+from shutterbug.gui.controls.labeled_slider import LabeledSlider
+
+from PySide6.QtWidgets import (
+    QWidget,
+    QVBoxLayout,
+    QLabel,
+    QTabWidget,
+)
+from PySide6.QtCore import Qt, Slot
 
 
 class Settings(QWidget):
@@ -49,46 +56,6 @@ class Settings(QWidget):
     def set_state(self, state):
         self.image_properties.set_state(state["image_properties"])
 
-class SliderSettingsWidget(QWidget):
-
-    valueChanged = Signal(int)
-    
-    def __init__(self, name: str, min: int, max: int, default: int):
-        super().__init__()
-        layout = QHBoxLayout()
-        # Set up margins and spacing
-        layout.setContentsMargins(0, 0, 0, 0)
-        layout.setSpacing(0)
-        # Set up alignment and size policy
-        layout.setAlignment(Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignVCenter)
-        self.setLayout(layout)
-
-        self.label = QLabel(name)
-        self.label.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
-        self.label.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
-        layout.addWidget(self.label)
-        # Spacer for central alignment
-        self.spacer = QSpacerItem(10, 5, QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Minimum)
-        layout.addItem(self.spacer)
-
-        # Set up slider from inputs
-        self.slider = QSlider(Qt.Orientation.Horizontal)
-        self.slider.setRange(min, max)
-        self.slider.setValue(default)
-        self.slider.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
-        layout.addWidget(self.slider)
-
-        # Attach slider's signal to custom signal
-        self.slider.valueChanged.connect(self.valueChanged)
-
-    def value(self):
-        """Returns value of embedded slider"""
-        return self.slider.value()
-    
-    def setValue(self, value: int):
-        """Sets value of embedded slider"""
-        self.slider.setValue(value)
-        
 
 class ImagePropertiesPanel(QWidget):
     def __init__(self):
@@ -96,24 +63,23 @@ class ImagePropertiesPanel(QWidget):
         self.setObjectName("imageProperties")
         layout = QVBoxLayout()
         self.setLayout(layout)
+
         # Remove layout styling
         layout.setContentsMargins(0, 0, 0, 0)
-        layout.setSpacing(2)
-        layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        layout.setSpacing(5)
+        layout.setAlignment(Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignTop)
 
-        # Brightness slider
-        self.brightness_slider = SliderSettingsWidget("Brightness", -100, 100, 0)
+        # Sliders
+        self.brightness_slider = LabeledSlider("Brightness", -100, 100, 0)
+        self.contrast_slider = LabeledSlider("Contrast", 50, 200, 100)
+
+        # Add to layout
         layout.addWidget(self.brightness_slider)
-
-        # Contrast slider
-        self.contrast_slider = SliderSettingsWidget("Contrast", 50, 200, 100)
         layout.addWidget(self.contrast_slider)
-
-        # Take up all extra space
-        layout.addStretch()
 
         logging.debug("Image properties panel initialized")
 
+    @Slot(int)
     def set_brightness(self, value: int):
         if value < -100:
             raise ValueError("Brightness set too low")
@@ -121,6 +87,7 @@ class ImagePropertiesPanel(QWidget):
             raise ValueError("Brightness set too high")
         self.brightness_slider.slider.setValue(value)
 
+    @Slot(int)
     def set_contrast(self, value):
         if value < 50:
             raise ValueError("Contrast set too low")
