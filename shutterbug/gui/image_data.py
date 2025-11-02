@@ -59,6 +59,9 @@ class FITSImage:
 
         # photometry settings
         self.zero_point: float = self.ZERO_POINT_DEFAULT
+        self.fwhm: float = self.FWHM_DEFAULT
+        self.threshold: float = self.THRESHOLD_DEFAULT
+        self.sigma: float = self.SIGMA_DEFAULT
 
         # Star variables, computed
         self.background: float | None = None
@@ -91,11 +94,9 @@ class FITSImage:
         bg_subtracted = self.get_background_subtracted()
 
         # Estimate FWHM and threshold
-        _, _, std = stats.sigma_clipped_stats(bg_subtracted, sigma=self.SIGMA_DEFAULT)
+        _, _, std = stats.sigma_clipped_stats(bg_subtracted, sigma=self.sigma)
 
-        daofind = DAOStarFinder(
-            fwhm=self.FWHM_DEFAULT, threshold=self.THRESHOLD_DEFAULT * std
-        )
+        daofind = DAOStarFinder(fwhm=self.fwhm, threshold=self.threshold * std)
         self.stars = daofind(bg_subtracted)
 
         return self.stars

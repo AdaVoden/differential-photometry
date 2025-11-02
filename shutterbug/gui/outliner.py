@@ -49,11 +49,13 @@ class Outliner(QWidget):
 
             menu.exec(self.file_list.mapToGlobal(pos))
 
+    @Slot(str)
     def add_item(self, item_name: str):
         """Add an item to the outliner"""
         self.file_list.addItem(item_name)
         self.loaded_items.append(item_name)
 
+    @Slot(str)
     def select_item(self, item_name: str):
         """Selects an item in the outliner"""
         for item in self.file_list.findItems(item_name, Qt.MatchFlag.MatchExactly):
@@ -61,8 +63,7 @@ class Outliner(QWidget):
                 self.file_list.setCurrentItem(item)
                 return  # No more work to do
 
-    Slot(QListWidgetItem)
-
+    @Slot(QListWidgetItem)
     def remove_item(self, item: QListWidgetItem):
         """Remove an item from the outliner"""
         logging.debug(f"Removing item: {item.text()}")

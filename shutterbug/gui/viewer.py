@@ -236,7 +236,7 @@ class Viewer(QGraphicsView):
 
     def display_image(self, image: FITSImage):
         """Display given FITS data array"""
-
+        logging.debug(f"Image display called on image: {image.filename}")
         self.clear_markers()
 
         old_center = self.mapToScene(self.viewport().rect().center())

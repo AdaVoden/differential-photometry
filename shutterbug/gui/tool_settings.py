@@ -81,18 +81,10 @@ class ImagePropertiesPanel(QWidget):
 
     @Slot(int)
     def set_brightness(self, value: int):
-        if value < -100:
-            raise ValueError("Brightness set too low")
-        if value > 100:
-            raise ValueError("Brightness set too high")
         self.brightness_slider.slider.setValue(value)
 
     @Slot(int)
-    def set_contrast(self, value):
-        if value < 50:
-            raise ValueError("Contrast set too low")
-        if value > 200:
-            raise ValueError("Contrast set too high")
+    def set_contrast(self, value: int):
         self.contrast_slider.setValue(value)
 
     def get_state(self):
@@ -136,8 +128,6 @@ class StarPropertiesPanel(QWidget):
             self.info_labels["Magnitude"].setText(f"Magnitude: {star.magnitude:.1f}")
         else:
             self.info_labels["Magnitude"].setText("Magnitude: --")
-
-        # TODO FWHM from star
 
 
 class GeneralPropertiesPanel(QWidget):

@@ -1,5 +1,5 @@
 from PySide6.QtWidgets import QWidget, QHBoxLayout, QLineEdit, QPushButton
-from PySide6.QtCore import Qt, Signal, QPoint
+from PySide6.QtCore import Qt, Signal, QPoint, Slot
 from PySide6.QtGui import QIntValidator, QCursor, QMouseEvent
 
 
@@ -81,6 +81,7 @@ class ScrubbySlider(QWidget):
         else:
             QLineEdit.mouseReleaseEvent(self.line_edit, event)
 
+    @Slot()
     def on_text_changed(self):
         """Handles line edit text being modified"""
         try:
@@ -89,6 +90,7 @@ class ScrubbySlider(QWidget):
         except ValueError:
             self.line_edit.setText(str(self.current_val))
 
+    @Slot(int)
     def setValue(self, value: int):
         """Sets value of scrubby slider"""
         value = max(self.min_val, min(self.max_val, value))
@@ -101,10 +103,12 @@ class ScrubbySlider(QWidget):
         """Returns the current value of the slider"""
         return self.current_val
 
+    @Slot()
     def increment(self):
         """Increments slider by 1"""
         self.setValue(self.current_val + 1)
 
+    @Slot()
     def decrement(self):
         """Decrements slider by 1"""
         self.setValue(self.current_val - 1)

@@ -1,7 +1,7 @@
 /* Clear out extra padding and spaces in widgets */
 
 #outliner {
-    min-height: 200px;
+    min-height: 300px;
     margin: 0px;
 }
 

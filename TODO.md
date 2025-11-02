@@ -1,0 +1,12 @@
+- [ ] Propagate error with magnitude
+- [ ] Calculate FWHM + sigma
+- [ ] Add icons for tabs
+- [ ] Undo/Redo
+- [ ] Unbreak Save project/load project
+- [ ] Add About Shutterbug
+- [ ] Add controls to Viewer
+    - [ ] Add star select
+    - [ ] Add box select
+    - [ ] Add marker select
+- [ ] Reduce brightness/contrast processing time
+- [ ] 
