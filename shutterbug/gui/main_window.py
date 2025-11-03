@@ -18,7 +18,11 @@ from shutterbug.gui.viewer import Viewer
 from shutterbug.gui.project import ShutterbugProject
 from shutterbug.gui.image_data import FITSImage, SelectedStar
 from shutterbug.gui.progress_bar_handler import ProgressHandler
-from shutterbug.gui.commands.main_commands import LoadImagesCommand, RemoveImagesCommand, FileSelectedCommand
+from shutterbug.gui.commands.main_commands import (
+    LoadImagesCommand,
+    RemoveImagesCommand,
+    FileSelectedCommand,
+)
 
 from pathlib import Path
 
@@ -41,7 +45,7 @@ class MainWindow(QMainWindow):
         self.setGeometry(100, 100, 1200, 800)
 
         self.fits_data: Dict[str, FITSImage] = {}  # Loaded FITS images
-        # filename -> FITSImage 
+        # filename -> FITSImage
 
         # Set up undo stack
         self._undo_stack = QUndoStack()
@@ -87,7 +91,9 @@ class MainWindow(QMainWindow):
 
         # Connect outliner signals
         self.sidebar.outliner.item_selected.connect(self.on_file_selected)
-        self.sidebar.outliner.item_removed.connect(self.on_file_removed)
+        self.sidebar.outliner.remove_item_requested.connect(
+            self.on_remove_file_requested
+        )
 
         # Set up image properties signals to slots
         self.sidebar.settings.image_properties.brightness_changed.connect(
@@ -175,21 +181,21 @@ class MainWindow(QMainWindow):
             "FITS Files (*.fits *.fit *.fts);;All Files (*)",
         )
 
-        load_command = LoadImagesCommand(image_paths=filenames,
-                                         main_window=self,
-                                         viewer=self.viewer,
-                                         outliner=self.sidebar.outliner)
+        load_command = LoadImagesCommand(
+            image_paths=filenames,
+            main_window=self,
+            viewer=self.viewer,
+            outliner=self.sidebar.outliner,
+        )
         self._undo_stack.push(load_command)
 
     @Slot(str)
-    def on_file_removed(self, item_name: str):
+    def on_remove_file_requested(self, item_name: str):
         """Remove image from current project"""
-        if item_name not in self.fits_data:
-            return
-
-        image = self.fits_data.pop(item_name)
-        if self.viewer.current_image == image:
-            self.viewer.clear_image()
+        remove_command = RemoveImagesCommand(
+            [item_name], self, self.viewer, self.sidebar.outliner
+        )
+        self._undo_stack.push(remove_command)
 
     @Slot()
     def save_project(self):

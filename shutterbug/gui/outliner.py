@@ -10,7 +10,7 @@ from typing import List
 class Outliner(QWidget):
 
     item_selected = Signal(str)  # Signal emitted when an item is selected
-    item_removed = Signal(str)  # Signal emitted when an item is deleted
+    remove_item_requested = Signal(str)  # Signal emitted when an item is deleted
 
     def __init__(self, undo_stack: QUndoStack):
         super().__init__()
@@ -48,7 +48,9 @@ class Outliner(QWidget):
             menu = QMenu()
 
             delete_action = menu.addAction("Delete")
-            delete_action.triggered.connect(lambda: self.remove_item(clicked_item))
+            delete_action.triggered.connect(
+                lambda: self.remove_item_requested.emit(clicked_item.text())
+            )
 
             menu.exec(self.file_list.mapToGlobal(pos))
 
@@ -72,11 +74,10 @@ class Outliner(QWidget):
         """Remove an item from the outliner"""
         logging.debug(f"Removing item: {item.text()}")
         row = self.file_list.row(item)
-        removed = self.file_list.takeItem(row)
+        self.file_list.takeItem(row)
 
-        self.item_removed.emit(removed.text())
-    
     def get_item(self, item_name: str) -> QListWidgetItem | None:
+        """Get item from outliner by item name"""
         for item in self.file_list.findItems(item_name, Qt.MatchFlag.MatchExactly):
             if item.text() == item_name:
                 return item

@@ -4,6 +4,7 @@ from PySide6.QtGui import QIntValidator, QCursor, QMouseEvent
 
 import logging
 
+
 class ScrubbySlider(QWidget):
     """A blender-like value box with drag-changing"""
 
