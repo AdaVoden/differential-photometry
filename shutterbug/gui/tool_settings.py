@@ -1,10 +1,6 @@
 import logging
 
 from shutterbug.gui.controls.labeled_slider import LabeledSlider
-from shutterbug.gui.commands.image_commands import (
-    SetBrightnessCommand,
-    SetContrastCommand,
-)
 
 from PySide6.QtWidgets import (
     QWidget,
@@ -67,8 +63,8 @@ class Settings(QWidget):
 
 class ImagePropertiesPanel(QWidget):
 
-    brightness_changed = Signal(int)
-    contrast_changed = Signal(int)
+    brightness_change_requested = Signal(int)
+    contrast_change_requested = Signal(int)
 
     def __init__(self, undo_stack: QUndoStack):
         super().__init__()
@@ -92,30 +88,10 @@ class ImagePropertiesPanel(QWidget):
         layout.addWidget(self.brightness_slider)
         layout.addWidget(self.contrast_slider)
 
-        self.brightness_slider.valueChanged.connect(self.on_brightness_changed)
-        self.contrast_slider.valueChanged.connect(self.on_contrast_changed)
+        self.brightness_slider.valueChanged.connect(self.brightness_change_requested)
+        self.contrast_slider.valueChanged.connect(self.contrast_change_requested)
 
         logging.debug("Image properties panel initialized")
-
-    @Slot(int)
-    def on_brightness_changed(self, value: int):
-        """Handle user changing brightness setting"""
-        old_value = self.brightness_slider.value()
-
-        if value != old_value:
-            cmd = SetBrightnessCommand(self, old_value, value)
-            self._undo_stack.push(cmd)
-            self.brightness_changed.emit(value)
-
-    @Slot(int)
-    def on_contrast_changed(self, value: int):
-        """Handle user changing contrast setting"""
-        old_value = self.contrast_slider.value()
-
-        if value != old_value:
-            cmd = SetContrastCommand(self, old_value, value)
-            self._undo_stack.push(cmd)
-            self.contrast_changed.emit(value)
 
     @Slot(int)
     def set_brightness(self, value: int):

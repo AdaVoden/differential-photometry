@@ -18,6 +18,10 @@ from shutterbug.gui.viewer import Viewer
 from shutterbug.gui.project import ShutterbugProject
 from shutterbug.gui.image_data import FITSImage, SelectedStar
 from shutterbug.gui.progress_bar_handler import ProgressHandler
+from shutterbug.gui.commands.image_commands import (
+    SetBrightnessCommand,
+    SetContrastCommand
+)
 from shutterbug.gui.commands.main_commands import (
     LoadImagesCommand,
     RemoveImagesCommand,
@@ -96,11 +100,11 @@ class MainWindow(QMainWindow):
         )
 
         # Set up image properties signals to slots
-        self.sidebar.settings.image_properties.brightness_changed.connect(
-            self.viewer.set_brightness
+        self.sidebar.settings.image_properties.brightness_change_requested.connect(
+            self.on_brightness_change_requested
         )
-        self.sidebar.settings.image_properties.contrast_changed.connect(
-            self.viewer.set_contrast
+        self.sidebar.settings.image_properties.contrast_change_requested.connect(
+            self.on_contrast_change_requested
         )
 
         # Handle Viewer signals
@@ -182,10 +186,10 @@ class MainWindow(QMainWindow):
         )
 
         load_command = LoadImagesCommand(
-            image_paths=filenames,
-            main_window=self,
-            viewer=self.viewer,
-            outliner=self.sidebar.outliner,
+            filenames,
+            self,
+            self.viewer,
+            self.sidebar.outliner,
         )
         self._undo_stack.push(load_command)
 
@@ -196,6 +200,22 @@ class MainWindow(QMainWindow):
             [item_name], self, self.viewer, self.sidebar.outliner
         )
         self._undo_stack.push(remove_command)
+
+    @Slot(int)
+    def on_brightness_change_requested(self, new_value: int):
+        command = SetBrightnessCommand(self.sidebar.settings.image_properties,
+                                       self.viewer,
+                                       new_value
+                                       )
+        self._undo_stack.push(command)
+
+    @Slot(int)
+    def on_contrast_change_requested(self, new_value: int):
+        command = SetContrastCommand(self.sidebar.settings.image_properties,
+                                       self.viewer,
+                                       new_value
+                                       )
+        self._undo_stack.push(command)
 
     @Slot()
     def save_project(self):

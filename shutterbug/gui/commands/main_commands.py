@@ -1,6 +1,6 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
-
+# Prevent circular import due to type checking
 if TYPE_CHECKING:
     from shutterbug.gui.main_window import MainWindow
 
@@ -17,7 +17,6 @@ from pathlib import Path
 from typing import List
 
 import logging
-
 
 class LoadImagesCommand(QUndoCommand):
     """Loads images into application"""
@@ -54,7 +53,6 @@ class LoadImagesCommand(QUndoCommand):
             viewer=self.viewer,
             outliner=self.outliner,
         )
-
 
 class RemoveImagesCommand(QUndoCommand):
     """Removes image from application"""
@@ -120,7 +118,6 @@ def load_fits_image(filepath: Path):
         image = FITSImage(filepath, data, obs_time)
         # Assuming image data is in the primary HDU
         return image
-
 
 def load_images(
     image_paths: List[Path], main_window: MainWindow, viewer: Viewer, outliner: Outliner
