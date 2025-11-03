@@ -2,6 +2,7 @@ import logging
 
 from PySide6.QtWidgets import QWidget, QVBoxLayout, QListWidget, QListWidgetItem, QMenu
 from PySide6.QtCore import Signal, Slot, Qt, QPoint
+from PySide6.QtGui import QUndoStack
 
 from typing import List
 
@@ -11,9 +12,11 @@ class Outliner(QWidget):
     item_selected = Signal(str)  # Signal emitted when an item is selected
     item_removed = Signal(str)  # Signal emitted when an item is deleted
 
-    def __init__(self):
+    def __init__(self, undo_stack: QUndoStack):
         super().__init__()
         self.setObjectName("outliner")
+
+        self._undo_stack = undo_stack
 
         self.selected_item = None
         self.loaded_items: List[str] = []  # Dictionary to keep track of loaded items

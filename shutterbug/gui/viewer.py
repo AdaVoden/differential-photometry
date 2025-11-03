@@ -18,6 +18,7 @@ from PySide6.QtGui import (
     QColor,
     QMouseEvent,
     QWheelEvent,
+    QUndoStack,
 )
 
 from shutterbug.gui.image_data import FITSImage
@@ -42,10 +43,12 @@ class Viewer(QGraphicsView):
     MARKER_COLOUR_DEFAULT = "cyan"
     MARKER_RADIUS_DEFAULT = 20  # pixels
 
-    def __init__(self):
+    def __init__(self, undo_stack: QUndoStack):
         super().__init__()
         # Initial variables
         self.setObjectName("viewer")
+
+        self._undo_stack = undo_stack
 
         self.current_image: FITSImage | None = None
         self.markers = {}  # (x, y) -> marker
@@ -307,5 +310,5 @@ class Viewer(QGraphicsView):
         if self.current_image is None:
             return
 
-        self.current_image.contrast_factor = value / 100  # Normalize to ~1
+        self.current_image.contrast_factor = value
         self.update_display()

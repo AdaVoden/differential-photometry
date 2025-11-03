@@ -44,7 +44,7 @@ class FITSImage:
 
     # Display defaults
     BRIGHTNESS_OFFSET = 0
-    CONTRAST_FACTOR = 1.0
+    CONTRAST_FACTOR = 100
 
     def __init__(self, filepath: str, data, obs_time: str) -> None:
         # File data
@@ -140,7 +140,7 @@ class FITSImage:
 
         # apply contrast and brightness to 0-1 range
         # Contrast: multiply (1.0 = no change)
-        data = data * self.contrast_factor
+        data = data * (self.contrast_factor / 100) # Normalize to ~1
 
         # Brightness: add/subtract (-1 to 1 range)
         data = data + (self.brightness_offset / 100.0)

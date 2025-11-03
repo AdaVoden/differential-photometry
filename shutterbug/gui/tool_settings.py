@@ -1,6 +1,10 @@
 import logging
 
 from shutterbug.gui.controls.labeled_slider import LabeledSlider
+from shutterbug.gui.commands.image_commands import (
+    SetBrightnessCommand,
+    SetContrastCommand,
+)
 
 from PySide6.QtWidgets import (
     QWidget,
@@ -8,13 +12,17 @@ from PySide6.QtWidgets import (
     QLabel,
     QTabWidget,
 )
-from PySide6.QtCore import Qt, Slot
+from PySide6.QtCore import Qt, Slot, Signal
+from PySide6.QtGui import QUndoStack
 
 
 class Settings(QWidget):
-    def __init__(self):
+    def __init__(self, undo_stack: QUndoStack):
         super().__init__()
         self.setObjectName("settings")
+
+        self._undo_stack = undo_stack
+
         layout = QVBoxLayout()
         self.setLayout(layout)
         # Remove layout styling
@@ -27,9 +35,9 @@ class Settings(QWidget):
         self.tabs.setTabPosition(QTabWidget.TabPosition.West)
 
         # Different property panels
-        self.image_properties = ImagePropertiesPanel()
-        self.star_properties = StarPropertiesPanel()
-        self.general_properties = GeneralPropertiesPanel()
+        self.image_properties = ImagePropertiesPanel(undo_stack)
+        self.star_properties = StarPropertiesPanel(undo_stack)
+        self.general_properties = GeneralPropertiesPanel(undo_stack)
 
         self.tabs.addTab(self.general_properties, "Gen")
         self.tabs.addTab(self.image_properties, "Image")
@@ -58,8 +66,15 @@ class Settings(QWidget):
 
 
 class ImagePropertiesPanel(QWidget):
-    def __init__(self):
+
+    brightness_changed = Signal(int)
+    contrast_changed = Signal(int)
+
+    def __init__(self, undo_stack: QUndoStack):
         super().__init__()
+
+        self._undo_stack = undo_stack
+
         self.setObjectName("imageProperties")
         layout = QVBoxLayout()
         self.setLayout(layout)
@@ -77,11 +92,34 @@ class ImagePropertiesPanel(QWidget):
         layout.addWidget(self.brightness_slider)
         layout.addWidget(self.contrast_slider)
 
+        self.brightness_slider.valueChanged.connect(self.on_brightness_changed)
+        self.contrast_slider.valueChanged.connect(self.on_contrast_changed)
+
         logging.debug("Image properties panel initialized")
 
     @Slot(int)
+    def on_brightness_changed(self, value: int):
+        """Handle user changing brightness setting"""
+        old_value = self.brightness_slider.value()
+
+        if value != old_value:
+            cmd = SetBrightnessCommand(self, old_value, value)
+            self._undo_stack.push(cmd)
+            self.brightness_changed.emit(value)
+
+    @Slot(int)
+    def on_contrast_changed(self, value: int):
+        """Handle user changing contrast setting"""
+        old_value = self.contrast_slider.value()
+
+        if value != old_value:
+            cmd = SetContrastCommand(self, old_value, value)
+            self._undo_stack.push(cmd)
+            self.contrast_changed.emit(value)
+
+    @Slot(int)
     def set_brightness(self, value: int):
-        self.brightness_slider.slider.setValue(value)
+        self.brightness_slider.setValue(value)
 
     @Slot(int)
     def set_contrast(self, value: int):
@@ -100,7 +138,7 @@ class ImagePropertiesPanel(QWidget):
 
 
 class StarPropertiesPanel(QWidget):
-    def __init__(self):
+    def __init__(self, undo_stack: QUndoStack):
         super().__init__()
         self.setObjectName("starProperties")
         layout = QVBoxLayout()
@@ -131,7 +169,7 @@ class StarPropertiesPanel(QWidget):
 
 
 class GeneralPropertiesPanel(QWidget):
-    def __init__(self):
+    def __init__(self, undo_stack: QUndoStack):
         super().__init__()
         layout = QVBoxLayout()
         self.setLayout(layout)

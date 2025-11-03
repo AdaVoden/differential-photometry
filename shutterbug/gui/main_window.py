@@ -41,15 +41,18 @@ class MainWindow(QMainWindow):
         self.setWindowTitle("Shutterbug")
         self.setGeometry(100, 100, 1200, 800)
 
+        self.fits_data: Dict[str, FITSImage] = {}  # Loaded FITS images
+        # filename -> FITSImage 
+
         # Set up undo stack
-        self.undo_stack = QUndoStack()
+        self._undo_stack = QUndoStack()
 
         # Set up save/load functionality
         self.project = ShutterbugProject()
 
         # Create sidebar and viewer
-        self.sidebar = Sidebar()
-        self.viewer = Viewer()
+        self.sidebar = Sidebar(self._undo_stack)
+        self.viewer = Viewer(self._undo_stack)
 
         # Set up central widget with horizontal layout
         central = QWidget()
@@ -83,18 +86,15 @@ class MainWindow(QMainWindow):
         # Add to status bar
         self.status_bar.addPermanentWidget(self.progress_bar)
 
-        self.fits_data: Dict[str, FITSImage] = {}  # Loaded FITS images
-        # filename -> FITSImage
-
         # Connect outliner signals
         self.sidebar.outliner.item_selected.connect(self.on_file_selected)
         self.sidebar.outliner.item_removed.connect(self.on_file_removed)
 
         # Set up image properties signals to slots
-        self.sidebar.settings.image_properties.brightness_slider.valueChanged.connect(
+        self.sidebar.settings.image_properties.brightness_changed.connect(
             self.viewer.set_brightness
         )
-        self.sidebar.settings.image_properties.contrast_slider.valueChanged.connect(
+        self.sidebar.settings.image_properties.contrast_changed.connect(
             self.viewer.set_contrast
         )
 
@@ -132,13 +132,25 @@ class MainWindow(QMainWindow):
         # Edit menu
         edit_menu = menu_bar.addMenu("Edit")
         undo_action = edit_menu.addAction("Undo")
+        undo_action.triggered.connect(self.on_undo)
+
         redo_action = edit_menu.addAction("Redo")
+        redo_action.triggered.connect(self.on_redo)
 
         # Help menu
         help_menu = menu_bar.addMenu("Help")
         about_action = help_menu.addAction("About Shutterbug")
 
         logging.debug("Menu bar set up")
+
+    @Slot()
+    def on_redo(self):
+        if self._undo_stack.canRedo():
+            self._undo_stack.redo()
+
+    def on_undo(self):
+        if self._undo_stack.canUndo():
+            self._undo_stack.undo()
 
     @Slot(str)
     def on_file_selected(self, filename: str):
@@ -147,7 +159,10 @@ class MainWindow(QMainWindow):
 
         # Tell viewer to display the image
         self.selected_file = filename
-        self.viewer.display_image(self.fits_data[filename])
+        image = self.fits_data[filename]
+        self.viewer.display_image(image)
+        self.sidebar.settings.image_properties.set_brightness(image.brightness_offset)
+        self.sidebar.settings.image_properties.set_contrast(image.contrast_factor)
 
     @Slot()
     def open_fits(self):

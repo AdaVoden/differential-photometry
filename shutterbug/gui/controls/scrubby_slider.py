@@ -2,6 +2,7 @@ from PySide6.QtWidgets import QWidget, QHBoxLayout, QLineEdit, QPushButton
 from PySide6.QtCore import Qt, Signal, QPoint, Slot
 from PySide6.QtGui import QIntValidator, QCursor, QMouseEvent
 
+import logging
 
 class ScrubbySlider(QWidget):
     """A blender-like value box with drag-changing"""
@@ -67,7 +68,7 @@ class ScrubbySlider(QWidget):
             delta = event.globalPosition().toPoint().x() - self.drag_start_pos.x()
             # adjust sensitivity: 1 pixel = 1 unit
             new_value = self.drag_start_val + delta
-            self.setValue(new_value)
+            self.valueChanged.emit(new_value)
             event.accept()
         else:
             QLineEdit.mouseMoveEvent(self.line_edit, event)
@@ -86,7 +87,7 @@ class ScrubbySlider(QWidget):
         """Handles line edit text being modified"""
         try:
             value = int(self.line_edit.text())
-            self.setValue(value)
+            self.valueChanged.emit(value)
         except ValueError:
             self.line_edit.setText(str(self.current_val))
 
@@ -97,7 +98,6 @@ class ScrubbySlider(QWidget):
         if value != self.current_val:
             self.current_val = value
             self.line_edit.setText(str(value))
-            self.valueChanged.emit(value)
 
     def value(self):
         """Returns the current value of the slider"""
@@ -106,9 +106,9 @@ class ScrubbySlider(QWidget):
     @Slot()
     def increment(self):
         """Increments slider by 1"""
-        self.setValue(self.current_val + 1)
+        self.valueChanged.emit(self.current_val + 1)
 
     @Slot()
     def decrement(self):
         """Decrements slider by 1"""
-        self.setValue(self.current_val - 1)
+        self.valueChanged.emit(self.current_val - 1)

@@ -1,6 +1,10 @@
-from PySide6.QtGui import QUndoCommand
+from __future__ import annotations
+from typing import TYPE_CHECKING
 
-from shutterbug.gui.tool_settings import ImagePropertiesPanel
+if TYPE_CHECKING:
+    from shutterbug.gui.tool_settings import ImagePropertiesPanel
+
+from PySide6.QtGui import QUndoCommand
 
 
 class SetBrightnessCommand(QUndoCommand):
