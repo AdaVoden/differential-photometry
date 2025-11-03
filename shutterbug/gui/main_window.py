@@ -18,8 +18,7 @@ from shutterbug.gui.viewer import Viewer
 from shutterbug.gui.project import ShutterbugProject
 from shutterbug.gui.image_data import FITSImage, SelectedStar
 from shutterbug.gui.progress_bar_handler import ProgressHandler
-
-from astropy.io import fits
+from shutterbug.gui.commands.main_commands import LoadImagesCommand, RemoveImagesCommand, FileSelectedCommand
 
 from pathlib import Path
 
@@ -161,6 +160,7 @@ class MainWindow(QMainWindow):
         self.selected_file = filename
         image = self.fits_data[filename]
         self.viewer.display_image(image)
+        # Update image settings with image's information
         self.sidebar.settings.image_properties.set_brightness(image.brightness_offset)
         self.sidebar.settings.image_properties.set_contrast(image.contrast_factor)
 
@@ -175,33 +175,11 @@ class MainWindow(QMainWindow):
             "FITS Files (*.fits *.fit *.fts);;All Files (*)",
         )
 
-        for filename in filenames:
-            image = self.load_fits_image(filename)
-            self.add_fits_to_project(image)
-
-        if filenames:
-            filepath = Path(filenames[0])
-            self.viewer.display_image(self.fits_data[filepath.name])
-            self.sidebar.outliner.select_item(filepath.name)
-
-    def add_fits_to_project(self, image: FITSImage):
-        # Add to outliner
-        self.sidebar.outliner.add_item(image.filename)
-
-        # Load and display in viewer
-        self.fits_data[image.filename] = image
-
-    def load_fits_image(self, filepath: str):
-        """Load FITS image from given filepath"""
-        # This method can be implemented to load FITS data
-        logging.debug(f"Loading FITS image from {filepath}")
-
-        with fits.open(filepath) as hdul:
-            data = hdul[0].data  # type: ignore
-            obs_time = hdul[0].header["JD"]  # type: ignore
-            image = FITSImage(filepath, data, obs_time)
-            # Assuming image data is in the primary HDU
-            return image
+        load_command = LoadImagesCommand(image_paths=filenames,
+                                         main_window=self,
+                                         viewer=self.viewer,
+                                         outliner=self.sidebar.outliner)
+        self._undo_stack.push(load_command)
 
     @Slot(str)
     def on_file_removed(self, item_name: str):

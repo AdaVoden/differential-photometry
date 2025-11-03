@@ -46,9 +46,9 @@ class FITSImage:
     BRIGHTNESS_OFFSET = 0
     CONTRAST_FACTOR = 100
 
-    def __init__(self, filepath: str, data, obs_time: str) -> None:
+    def __init__(self, filepath: Path, data, obs_time: str) -> None:
         # File data
-        self.filepath: Path = Path(filepath)
+        self.filepath: Path = filepath
         self.filename: str = self.filepath.name
         self.observation_time: float = float(obs_time)
         self.original_data = data

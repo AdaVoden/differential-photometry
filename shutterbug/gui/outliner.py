@@ -64,6 +64,7 @@ class Outliner(QWidget):
         for item in self.file_list.findItems(item_name, Qt.MatchFlag.MatchExactly):
             if item.text() == item_name:
                 self.file_list.setCurrentItem(item)
+                self.selected_item = item
                 return  # No more work to do
 
     @Slot(QListWidgetItem)
@@ -74,6 +75,12 @@ class Outliner(QWidget):
         removed = self.file_list.takeItem(row)
 
         self.item_removed.emit(removed.text())
+    
+    def get_item(self, item_name: str) -> QListWidgetItem | None:
+        for item in self.file_list.findItems(item_name, Qt.MatchFlag.MatchExactly):
+            if item.text() == item_name:
+                return item
+        return None
 
     @Slot(QListWidgetItem)
     def on_item_clicked(self, item: QListWidgetItem):
