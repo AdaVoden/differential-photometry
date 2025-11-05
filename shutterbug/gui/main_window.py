@@ -18,9 +18,10 @@ from shutterbug.gui.viewer import Viewer
 from shutterbug.gui.project import ShutterbugProject
 from shutterbug.gui.image_data import FITSImage, SelectedStar
 from shutterbug.gui.progress_bar_handler import ProgressHandler
+from shutterbug.gui.image_manager import ImageManager
 from shutterbug.gui.commands.image_commands import (
     SetBrightnessCommand,
-    SetContrastCommand
+    SetContrastCommand,
 )
 from shutterbug.gui.commands.main_commands import (
     LoadImagesCommand,
@@ -48,8 +49,7 @@ class MainWindow(QMainWindow):
         self.setWindowTitle("Shutterbug")
         self.setGeometry(100, 100, 1200, 800)
 
-        self.fits_data: Dict[str, FITSImage] = {}  # Loaded FITS images
-        # filename -> FITSImage
+        self.image_manager = ImageManager()
 
         # Set up undo stack
         self._undo_stack = QUndoStack()
@@ -58,8 +58,8 @@ class MainWindow(QMainWindow):
         self.project = ShutterbugProject()
 
         # Create sidebar and viewer
-        self.sidebar = Sidebar(self._undo_stack)
-        self.viewer = Viewer(self._undo_stack)
+        self.sidebar = Sidebar(self._undo_stack, self.image_manager)
+        self.viewer = Viewer(self._undo_stack, self.image_manager)
 
         # Set up central widget with horizontal layout
         central = QWidget()
@@ -94,18 +94,8 @@ class MainWindow(QMainWindow):
         self.status_bar.addPermanentWidget(self.progress_bar)
 
         # Connect outliner signals
-        self.sidebar.outliner.item_selected.connect(self.on_file_selected)
-        self.sidebar.outliner.remove_item_requested.connect(
-            self.on_remove_file_requested
-        )
 
         # Set up image properties signals to slots
-        self.sidebar.settings.image_properties.brightness_change_requested.connect(
-            self.on_brightness_change_requested
-        )
-        self.sidebar.settings.image_properties.contrast_change_requested.connect(
-            self.on_contrast_change_requested
-        )
 
         # Handle Viewer signals
         self.viewer.clicked.connect(self.on_viewer_clicked)
@@ -161,19 +151,6 @@ class MainWindow(QMainWindow):
         if self._undo_stack.canUndo():
             self._undo_stack.undo()
 
-    @Slot(str)
-    def on_file_selected(self, filename: str):
-        """Called when a file is selected in the outliner"""
-        logging.debug(f"File selected in outliner: {filename}")
-
-        # Tell viewer to display the image
-        self.selected_file = filename
-        image = self.fits_data[filename]
-        self.viewer.display_image(image)
-        # Update image settings with image's information
-        self.sidebar.settings.image_properties.set_brightness(image.brightness_offset)
-        self.sidebar.settings.image_properties.set_contrast(image.contrast_factor)
-
     @Slot()
     def open_fits(self):
         """Open a FITS image file and load it into the viewer"""
@@ -185,37 +162,8 @@ class MainWindow(QMainWindow):
             "FITS Files (*.fits *.fit *.fts);;All Files (*)",
         )
 
-        load_command = LoadImagesCommand(
-            filenames,
-            self,
-            self.viewer,
-            self.sidebar.outliner,
-        )
+        load_command = LoadImagesCommand(filenames, self.image_manager)
         self._undo_stack.push(load_command)
-
-    @Slot(str)
-    def on_remove_file_requested(self, item_name: str):
-        """Remove image from current project"""
-        remove_command = RemoveImagesCommand(
-            [item_name], self, self.viewer, self.sidebar.outliner
-        )
-        self._undo_stack.push(remove_command)
-
-    @Slot(int)
-    def on_brightness_change_requested(self, new_value: int):
-        command = SetBrightnessCommand(self.sidebar.settings.image_properties,
-                                       self.viewer,
-                                       new_value
-                                       )
-        self._undo_stack.push(command)
-
-    @Slot(int)
-    def on_contrast_change_requested(self, new_value: int):
-        command = SetContrastCommand(self.sidebar.settings.image_properties,
-                                       self.viewer,
-                                       new_value
-                                       )
-        self._undo_stack.push(command)
 
     @Slot()
     def save_project(self):
@@ -383,7 +331,7 @@ class MainWindow(QMainWindow):
     def process_all_images(self):
         """Generate light curve from all loaded images"""
         # Validate that there's data to work on
-        if not self.fits_data:
+        if not self.image_manager.images:
             logging.error(f"No images available to work on")
             return  # No images to work on
 
@@ -410,7 +358,7 @@ class MainWindow(QMainWindow):
 
         with self.progress_handler("Processing images..."):
             results = []
-            for img in self.fits_data.values():
+            for img in self.image_manager.images.values():
                 if img.target_star_idx is None:
                     logging.error(
                         f"Image {img.filename} did not successfully propagate stars, skipping"
@@ -469,7 +417,7 @@ class MainWindow(QMainWindow):
             logging.error(f"No markers in image {image.filename} to propagate")
             return  # No markers to propagate, no work to do
 
-        for img in self.fits_data.values():
+        for img in self.image_manager.images.values():
             with self.progress_handler("Propagating stars..."):
                 if img == image:
                     # Don't propagate to self

@@ -3,6 +3,8 @@ from astropy import stats
 from photutils.detection import DAOStarFinder
 from photutils.aperture import CircularAperture, CircularAnnulus, aperture_photometry
 
+from PySide6.QtCore import Signal, QObject
+
 from pydantic import BaseModel
 
 import numpy as np
@@ -28,7 +30,11 @@ class SelectedStar(BaseModel):
     is_reference: bool = False
 
 
-class FITSImage:
+class FITSImage(QObject):
+    """FITS image data and display class"""
+
+    brightness_changed = Signal(int)
+    contrast_changed = Signal(int)
 
     # Photometry defaults
     APERTURE_RADIUS_DEFAULT = 10  # pixels
@@ -47,6 +53,7 @@ class FITSImage:
     CONTRAST_FACTOR = 100
 
     def __init__(self, filepath: Path, data, obs_time: str) -> None:
+        super().__init__()
         # File data
         self.filepath: Path = filepath
         self.filename: str = self.filepath.name
@@ -55,7 +62,7 @@ class FITSImage:
 
         # Image display settings
         self.brightness_offset: int = self.BRIGHTNESS_OFFSET
-        self.contrast_factor: float = self.CONTRAST_FACTOR
+        self.contrast_factor: int = self.CONTRAST_FACTOR
 
         # photometry settings
         self.zero_point: float = self.ZERO_POINT_DEFAULT
@@ -228,3 +235,27 @@ class FITSImage:
         else:
             logging.info(f"No star found near ({x:.1f}, {y:.1f})")
             return None, None
+
+    @property
+    def brightness(self):
+        """Gets image's display brightness"""
+        return self.brightness_offset
+
+    @brightness.setter
+    def brightness(self, value: int):
+        """Sets image's display brightness"""
+        if self.brightness_offset != value:
+            self.brightness_offset = value
+            self.brightness_changed.emit(value)
+
+    @property
+    def contrast(self):
+        """Gets image's display contrast"""
+        return self.contrast_factor
+
+    @contrast.setter
+    def contrast(self, value: int):
+        """Sets image's display contrast"""
+        if self.contrast_factor != value:
+            self.contrast_factor = value
+            self.contrast_changed.emit(value)

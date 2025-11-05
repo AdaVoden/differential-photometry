@@ -22,6 +22,7 @@ from PySide6.QtGui import (
 )
 
 from shutterbug.gui.image_data import FITSImage
+from shutterbug.gui.image_manager import ImageManager
 
 from typing import Tuple
 
@@ -43,14 +44,15 @@ class Viewer(QGraphicsView):
     MARKER_COLOUR_DEFAULT = "cyan"
     MARKER_RADIUS_DEFAULT = 20  # pixels
 
-    def __init__(self, undo_stack: QUndoStack):
+    def __init__(self, undo_stack: QUndoStack, image_manager: ImageManager):
         super().__init__()
         # Initial variables
         self.setObjectName("viewer")
 
         self._undo_stack = undo_stack
+        self.image_manager = image_manager
 
-        self.current_image: FITSImage | None = None
+        self.current_image = image_manager.active_image
         self.markers = {}  # (x, y) -> marker
 
         # Zoom settings
@@ -85,7 +87,23 @@ class Viewer(QGraphicsView):
         self.setTransformationAnchor(QGraphicsView.ViewportAnchor.AnchorUnderMouse)
         self.setResizeAnchor(QGraphicsView.ViewportAnchor.AnchorUnderMouse)
 
+        # Set up signals
+        self.image_manager.active_image_changed.connect(self._on_image_changed)
+
         logging.debug("Viewer initialized")
+
+    def _on_image_changed(self, image: FITSImage):
+        """Handles image manager active image changing"""
+        if self.current_image:
+            self.current_image.brightness_changed.disconnect(self.update_display)
+            self.current_image.contrast_changed.disconnect(self.update_display)
+
+        self.current_image = image
+        if image:
+            image.brightness_changed.connect(self.update_display)
+            image.contrast_changed.connect(self.update_display)
+
+        self.update_display()
 
     # Zoom properties for animation
     def get_zoom(self):
@@ -289,26 +307,10 @@ class Viewer(QGraphicsView):
             if star is not None:
                 self.add_star_marker(star.x, star.y, colour="magenta")
 
+    @Slot()
     def update_display(self):
         if self.current_image is None:
+            self.pixmap_item.setPixmap(QPixmap())
             return
 
         self.display_image(self.current_image)
-
-    @Slot(int)
-    def set_brightness(self, value: int):
-        """Set the brightness of the current image"""
-        if self.current_image is None:
-            return
-
-        self.current_image.brightness_offset = value
-        self.update_display()
-
-    @Slot(int)
-    def set_contrast(self, value: int):
-        """Set the contrast of the current image"""
-        if self.current_image is None:
-            return
-
-        self.current_image.contrast_factor = value
-        self.update_display()

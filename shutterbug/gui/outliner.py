@@ -1,5 +1,9 @@
 import logging
 
+from shutterbug.gui.image_manager import ImageManager
+from shutterbug.gui.image_data import FITSImage
+from shutterbug.gui.commands.main_commands import RemoveImagesCommand
+
 from PySide6.QtWidgets import QWidget, QVBoxLayout, QListWidget, QListWidgetItem, QMenu
 from PySide6.QtCore import Signal, Slot, Qt, QPoint
 from PySide6.QtGui import QUndoStack
@@ -12,14 +16,17 @@ class Outliner(QWidget):
     item_selected = Signal(str)  # Signal emitted when an item is selected
     remove_item_requested = Signal(str)  # Signal emitted when an item is deleted
 
-    def __init__(self, undo_stack: QUndoStack):
+    def __init__(self, undo_stack: QUndoStack, image_manager: ImageManager):
         super().__init__()
         self.setObjectName("outliner")
 
         self._undo_stack = undo_stack
 
+        # Keep track of images
+        self.image_manager = image_manager
+
         self.selected_item = None
-        self.loaded_items: List[str] = []  # Dictionary to keep track of loaded items
+        self.loaded_items: List[str] = []  # List to keep track of loaded items
 
         # Set layout
         layout = QVBoxLayout()
@@ -38,7 +45,32 @@ class Outliner(QWidget):
         self.file_list.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self.file_list.customContextMenuRequested.connect(self.show_context_menu)
 
+        # Image manager signals
+        self.image_manager.active_image_changed.connect(self._on_active_image_changed)
+        self.image_manager.images_added.connect(self._on_images_added)
+        self.image_manager.images_removed.connect(self._on_images_removed)
+
         logging.debug("Outliner initialized")
+
+    @Slot(FITSImage)
+    def _on_active_image_changed(self, image: FITSImage | None):
+        """Handles active image being changed"""
+        if image:
+            self.select_item(image.filename)
+
+    @Slot(FITSImage)
+    def _on_images_removed(self, images: List[FITSImage]):
+        """Handles images being removed from manager"""
+        for image in images:
+            item = self.get_item(image.filename)
+            if item:
+                self.remove_item(item)
+
+    @Slot(FITSImage)
+    def _on_images_added(self, images: List[FITSImage]):
+        """Handles images being added to manager"""
+        for image in images:
+            self.add_item(image.filename)
 
     @Slot(QPoint)
     def show_context_menu(self, pos: QPoint):
@@ -48,11 +80,19 @@ class Outliner(QWidget):
             menu = QMenu()
 
             delete_action = menu.addAction("Delete")
-            delete_action.triggered.connect(
-                lambda: self.remove_item_requested.emit(clicked_item.text())
-            )
+            delete_action.triggered.connect(self._on_delete_item)
 
             menu.exec(self.file_list.mapToGlobal(pos))
+
+    @Slot(str)
+    def _on_delete_item(self, item_name: str):
+        """Create delete command of item"""
+        self._undo_stack.push(
+            RemoveImagesCommand(
+                [item_name],
+                self.image_manager,
+            )
+        )
 
     @Slot(str)
     def add_item(self, item_name: str):
@@ -76,13 +116,6 @@ class Outliner(QWidget):
         row = self.file_list.row(item)
         self.file_list.takeItem(row)
 
-    def get_item(self, item_name: str) -> QListWidgetItem | None:
-        """Get item from outliner by item name"""
-        for item in self.file_list.findItems(item_name, Qt.MatchFlag.MatchExactly):
-            if item.text() == item_name:
-                return item
-        return None
-
     @Slot(QListWidgetItem)
     def on_item_clicked(self, item: QListWidgetItem):
         """Handle item click events"""
@@ -90,6 +123,13 @@ class Outliner(QWidget):
         self.selected_item = item.text()
         # Emit signal
         self.item_selected.emit(item.text())
+
+    def get_item(self, item_name: str) -> QListWidgetItem | None:
+        """Get item from outliner by item name"""
+        for item in self.file_list.findItems(item_name, Qt.MatchFlag.MatchExactly):
+            if item.text() == item_name:
+                return item
+        return None
 
     def get_state(self):
         return {"items": self.loaded_items, "selected_item": self.selected_item}

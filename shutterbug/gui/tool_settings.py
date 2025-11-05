@@ -1,6 +1,8 @@
 import logging
 
 from shutterbug.gui.controls.labeled_slider import LabeledSlider
+from shutterbug.gui.image_manager import ImageManager
+from shutterbug.gui.image_data import FITSImage
 
 from PySide6.QtWidgets import (
     QWidget,
@@ -13,7 +15,7 @@ from PySide6.QtGui import QUndoStack
 
 
 class Settings(QWidget):
-    def __init__(self, undo_stack: QUndoStack):
+    def __init__(self, undo_stack: QUndoStack, image_manager: ImageManager):
         super().__init__()
         self.setObjectName("settings")
 
@@ -31,7 +33,7 @@ class Settings(QWidget):
         self.tabs.setTabPosition(QTabWidget.TabPosition.West)
 
         # Different property panels
-        self.image_properties = ImagePropertiesPanel(undo_stack)
+        self.image_properties = ImagePropertiesPanel(undo_stack, image_manager)
         self.star_properties = StarPropertiesPanel(undo_stack)
         self.general_properties = GeneralPropertiesPanel(undo_stack)
 
@@ -66,10 +68,13 @@ class ImagePropertiesPanel(QWidget):
     brightness_change_requested = Signal(int)
     contrast_change_requested = Signal(int)
 
-    def __init__(self, undo_stack: QUndoStack):
+    def __init__(self, undo_stack: QUndoStack, image_manager: ImageManager):
         super().__init__()
 
         self._undo_stack = undo_stack
+
+        self.image_manager = image_manager
+        self.current_image = image_manager.active_image
 
         self.setObjectName("imageProperties")
         layout = QVBoxLayout()
@@ -88,10 +93,30 @@ class ImagePropertiesPanel(QWidget):
         layout.addWidget(self.brightness_slider)
         layout.addWidget(self.contrast_slider)
 
+        # Signals to slots
         self.brightness_slider.valueChanged.connect(self.brightness_change_requested)
         self.contrast_slider.valueChanged.connect(self.contrast_change_requested)
 
+        self.image_manager.active_image_changed.connect(self._on_image_changed)
+
         logging.debug("Image properties panel initialized")
+
+    @Slot(FITSImage)
+    def _on_image_changed(self, image: FITSImage):
+        """Handles image changing in image manager"""
+        if self.current_image:
+            # There's a current image remove all previous subscriptions
+            self.current_image.brightness_changed.disconnect(self.set_brightness)
+            self.current_image.contrast_changed.disconnect(self.set_contrast)
+
+        self.current_image = image
+
+        if image:
+            # Add new subscriptions and set the slider values
+            image.brightness_changed.connect(self.set_brightness)
+            image.contrast_changed.connect(self.set_contrast)
+            self.set_brightness(image.brightness)
+            self.set_contrast(image.contrast)
 
     @Slot(int)
     def set_brightness(self, value: int):
