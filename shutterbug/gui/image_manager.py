@@ -22,6 +22,7 @@ class ImageManager(QObject):
     def add_image(self, image: FITSImage):
         """Add image to manager"""
         self.images[image.filename] = image
+        self.images_added.emit([image])
         if self.active_image is None:
             self.set_active_image(image)
 
@@ -31,13 +32,16 @@ class ImageManager(QObject):
             self.images[image.filename] = image
 
         if images:  # if handed empty list
-            self.set_active_image(images[0])
             self.images_added.emit(images)
+            self.set_active_image(images[0])
 
-    def set_active_image(self, image: FITSImage):
+    def set_active_image(self, image: FITSImage | None):
         """Sets active image"""
         if self.active_image != image:
-            logging.debug(f"Setting image as active: {image.filename}")
+            if image is None:
+                logging.debug(f"Setting active image to None")
+            else:
+                logging.debug(f"Setting image as active: {image.filename}")
             self.active_image = image
             self.active_image_changed.emit(image)
 

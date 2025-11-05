@@ -3,6 +3,10 @@ import logging
 from shutterbug.gui.controls.labeled_slider import LabeledSlider
 from shutterbug.gui.image_manager import ImageManager
 from shutterbug.gui.image_data import FITSImage
+from shutterbug.gui.commands.image_commands import (
+    SetBrightnessCommand,
+    SetContrastCommand,
+)
 
 from PySide6.QtWidgets import (
     QWidget,
@@ -10,7 +14,7 @@ from PySide6.QtWidgets import (
     QLabel,
     QTabWidget,
 )
-from PySide6.QtCore import Qt, Slot, Signal
+from PySide6.QtCore import Qt, Slot
 from PySide6.QtGui import QUndoStack
 
 
@@ -65,9 +69,6 @@ class Settings(QWidget):
 
 class ImagePropertiesPanel(QWidget):
 
-    brightness_change_requested = Signal(int)
-    contrast_change_requested = Signal(int)
-
     def __init__(self, undo_stack: QUndoStack, image_manager: ImageManager):
         super().__init__()
 
@@ -94,8 +95,8 @@ class ImagePropertiesPanel(QWidget):
         layout.addWidget(self.contrast_slider)
 
         # Signals to slots
-        self.brightness_slider.valueChanged.connect(self.brightness_change_requested)
-        self.contrast_slider.valueChanged.connect(self.contrast_change_requested)
+        self.brightness_slider.valueChanged.connect(self._on_brightness_changed)
+        self.contrast_slider.valueChanged.connect(self._on_contrast_changed)
 
         self.image_manager.active_image_changed.connect(self._on_image_changed)
 
@@ -117,6 +118,16 @@ class ImagePropertiesPanel(QWidget):
             image.contrast_changed.connect(self.set_contrast)
             self.set_brightness(image.brightness)
             self.set_contrast(image.contrast)
+
+    @Slot(int)
+    def _on_brightness_changed(self, value: int):
+        if self.current_image:
+            self._undo_stack.push(SetBrightnessCommand(value, self.current_image))
+
+    @Slot(int)
+    def _on_contrast_changed(self, value: int):
+        if self.current_image:
+            self._undo_stack.push(SetContrastCommand(value, self.current_image))
 
     @Slot(int)
     def set_brightness(self, value: int):

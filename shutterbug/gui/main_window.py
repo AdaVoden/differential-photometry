@@ -25,13 +25,9 @@ from shutterbug.gui.commands.image_commands import (
 )
 from shutterbug.gui.commands.main_commands import (
     LoadImagesCommand,
-    RemoveImagesCommand,
-    FileSelectedCommand,
 )
 
-from pathlib import Path
-
-from typing import List, Dict
+from typing import List
 
 import numpy as np
 
