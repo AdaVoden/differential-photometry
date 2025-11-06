@@ -1,7 +1,7 @@
 from PySide6.QtGui import QUndoCommand
 
 
-class SelectStar(QUndoCommand):
+class SelectStarCommand(QUndoCommand):
     """Command to select a star"""
 
     def __init__(self):
@@ -14,7 +14,7 @@ class SelectStar(QUndoCommand):
         pass
 
 
-class DeselectStar(QUndoCommand):
+class DeselectStarCommand(QUndoCommand):
     """Command to deselect a star"""
 
     def __init__(self):

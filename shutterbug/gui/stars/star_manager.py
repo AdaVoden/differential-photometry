@@ -10,7 +10,7 @@ class StarManager(QObject):
     """Manager for an image's stars"""
 
     star_added = Signal(StarMeasurement)
-    target_star_changed = Signal(SelectedStar)
+    target_star_changed = Signal(StarMeasurement)
     star_removed = Signal(StarMeasurement)
 
     def __init__(self):

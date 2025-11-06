@@ -18,14 +18,14 @@ class Outliner(QWidget):
 
     remove_item_requested = Signal(str)  # Signal emitted when an item is deleted
 
-    def __init__(self, undo_stack: QUndoStack, image_manager: ImageManager):
+    def __init__(self, undo_stack: QUndoStack):
         super().__init__()
         self.setObjectName("outliner")
 
         self._undo_stack = undo_stack
 
         # Keep track of images
-        self.image_manager = image_manager
+        self.image_manager = ImageManager()  # singleton
 
         self.selected_item = None
         self.loaded_items: List[str] = []  # List to keep track of loaded items

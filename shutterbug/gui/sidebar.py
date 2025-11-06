@@ -10,7 +10,7 @@ from shutterbug.gui.image_manager import ImageManager
 
 class Sidebar(QWidget):
 
-    def __init__(self, undo_stack: QUndoStack, image_manager: ImageManager):
+    def __init__(self, undo_stack: QUndoStack):
         super().__init__()
         # Initialize sidebar components here
         self.setObjectName("sidebar")
@@ -20,8 +20,8 @@ class Sidebar(QWidget):
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(2)
         # Outliner on top, Settings below
-        self.outliner = Outliner(undo_stack, image_manager)
-        self.settings = Settings(undo_stack, image_manager)
+        self.outliner = Outliner(undo_stack)
+        self.settings = Settings(undo_stack)
 
         layout.addWidget(self.outliner, stretch=1)
         layout.addWidget(self.settings, stretch=3)

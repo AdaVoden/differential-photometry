@@ -10,7 +10,7 @@ class StarCatalog:
 
     def __new__(cls):
         if cls._instance is None:
-            logging.debug("Creating Star Catalog object")
+            logging.debug("Creating Star Catalog singleton")
             cls._instance = super(StarCatalog, cls).__new__(cls)
             # initial variables
             self.stars = {}  # id -> StarIdentity

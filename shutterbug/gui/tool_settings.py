@@ -19,7 +19,7 @@ from PySide6.QtGui import QUndoStack
 
 
 class Settings(QWidget):
-    def __init__(self, undo_stack: QUndoStack, image_manager: ImageManager):
+    def __init__(self, undo_stack: QUndoStack):
         super().__init__()
         self.setObjectName("settings")
 
@@ -69,12 +69,12 @@ class Settings(QWidget):
 
 class ImagePropertiesPanel(QWidget):
 
-    def __init__(self, undo_stack: QUndoStack, image_manager: ImageManager):
+    def __init__(self, undo_stack: QUndoStack):
         super().__init__()
 
         self._undo_stack = undo_stack
 
-        self.image_manager = image_manager
+        self.image_manager = ImageManager()
         self.current_image = image_manager.active_image
 
         self.setObjectName("imageProperties")

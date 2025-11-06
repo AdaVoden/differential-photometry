@@ -19,13 +19,8 @@ from shutterbug.gui.project import ShutterbugProject
 from shutterbug.gui.image_data import FITSImage, SelectedStar
 from shutterbug.gui.progress_bar_handler import ProgressHandler
 from shutterbug.gui.image_manager import ImageManager
-from shutterbug.gui.commands.image_commands import (
-    SetBrightnessCommand,
-    SetContrastCommand,
-)
-from shutterbug.gui.commands.file_commands import (
-    LoadImagesCommand,
-)
+from .commands import LoadImagesCommand, SetBrightnessCommand, SetContrastCommand
+from .stars import StarCatalog
 
 from typing import List
 
@@ -46,6 +41,7 @@ class MainWindow(QMainWindow):
         self.setGeometry(100, 100, 1200, 800)
 
         self.image_manager = ImageManager()
+        self.star_catalog = StarCatalog()
 
         # Set up undo stack
         self._undo_stack = QUndoStack()
@@ -54,8 +50,8 @@ class MainWindow(QMainWindow):
         self.project = ShutterbugProject()
 
         # Create sidebar and viewer
-        self.sidebar = Sidebar(self._undo_stack, self.image_manager)
-        self.viewer = Viewer(self._undo_stack, self.image_manager)
+        self.sidebar = Sidebar(self._undo_stack)
+        self.viewer = Viewer(self._undo_stack)
 
         # Set up central widget with horizontal layout
         central = QWidget()

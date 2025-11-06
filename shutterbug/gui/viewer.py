@@ -44,13 +44,13 @@ class Viewer(QGraphicsView):
     MARKER_COLOUR_DEFAULT = "cyan"
     MARKER_RADIUS_DEFAULT = 20  # pixels
 
-    def __init__(self, undo_stack: QUndoStack, image_manager: ImageManager):
+    def __init__(self, undo_stack: QUndoStack):
         super().__init__()
         # Initial variables
         self.setObjectName("viewer")
 
         self._undo_stack = undo_stack
-        self.image_manager = image_manager
+        self.image_manager = ImageManager()
 
         self.current_image = image_manager.active_image
         self.markers = {}  # (x, y) -> marker

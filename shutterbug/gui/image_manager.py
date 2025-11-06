@@ -8,16 +8,23 @@ import logging
 
 
 class ImageManager(QObject):
-    """Managed multiple images and tracks which is active"""
+    """Manages multiple images and tracks which is active"""
+
+    _instance = None
 
     images_added = Signal(list)
     active_image_changed = Signal(FITSImage)
     images_removed = Signal(list)
 
-    def __init__(self):
-        super().__init__()
-        self.images: Dict[str, FITSImage] = {}
-        self.active_image: FITSImage | None = None
+    def __new__(cls):
+        if cls._instance is None:
+            logging.debug("Creating Image Manager singleton")
+            cls._instance = super(ImageManager, cls).__new__(cls)
+            super().__init__()
+            self.images: Dict[str, FITSImage] = {}
+            self.active_image: FITSImage | None = None
+
+        return cls._instance
 
     def add_image(self, image: FITSImage):
         """Add image to manager"""

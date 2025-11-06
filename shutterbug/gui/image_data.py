@@ -15,7 +15,7 @@ import logging
 
 from typing import List
 
-from shutterbug.gui.stars import StarManager
+from shutterbug.gui.stars import StarManager, StarMeasurement
 
 
 class FITSImage(QObject):
@@ -146,19 +146,6 @@ class FITSImage(QObject):
         data = (data * 255).astype(np.uint8)
 
         return data
-
-    def get_star(self, idx):
-        if self.stars is None:
-            return None
-        star = self.stars[idx]
-
-        return SelectedStar(
-            index=idx,
-            x=star["xcentroid"],
-            y=star["ycentroid"],
-            flux=star["flux"],
-            magnitude=None,
-        )
 
     def measure_star_magnitude(
         self,
