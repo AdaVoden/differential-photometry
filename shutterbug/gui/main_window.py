@@ -23,7 +23,7 @@ from shutterbug.gui.commands.image_commands import (
     SetBrightnessCommand,
     SetContrastCommand,
 )
-from shutterbug.gui.commands.main_commands import (
+from shutterbug.gui.commands.file_commands import (
     LoadImagesCommand,
 )
 
@@ -89,10 +89,6 @@ class MainWindow(QMainWindow):
         # Add to status bar
         self.status_bar.addPermanentWidget(self.progress_bar)
 
-        # Connect outliner signals
-
-        # Set up image properties signals to slots
-
         # Handle Viewer signals
         self.viewer.clicked.connect(self.on_viewer_clicked)
         self.viewer.find_stars_requested.connect(self.find_stars_in_image)
@@ -143,6 +139,7 @@ class MainWindow(QMainWindow):
         if self._undo_stack.canRedo():
             self._undo_stack.redo()
 
+    @Slot()
     def on_undo(self):
         if self._undo_stack.canUndo():
             self._undo_stack.undo()

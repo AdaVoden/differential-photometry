@@ -32,3 +32,6 @@ shutterbug-gui = "shutterbug.gui.app:main"
 dev = [
     "black (>=25.9.0,<26.0.0)"
 ]
+
+[virtualenvs]
+in-project = true

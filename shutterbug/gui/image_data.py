@@ -15,19 +15,7 @@ import logging
 
 from typing import List
 
-
-class SelectedStar(BaseModel):
-    """Only for stars the user as explicitly selected"""
-
-    index: int
-    x: float
-    y: float
-    fwhm: float | None = None
-    flux: float | None = None
-    magnitude: float | None = None
-    mag_error: float | None = None
-    is_target: bool = False
-    is_reference: bool = False
+from shutterbug.gui.stars import StarManager
 
 
 class FITSImage(QObject):
@@ -60,6 +48,9 @@ class FITSImage(QObject):
         self.observation_time: float = float(obs_time)
         self.original_data = data
 
+        # Star manager
+        self.star_manager = StarManager()
+
         # Image display settings
         self.brightness_offset: int = self.BRIGHTNESS_OFFSET
         self.contrast_factor: int = self.CONTRAST_FACTOR
@@ -75,7 +66,6 @@ class FITSImage(QObject):
         self.stars = None  # Detected stars
         self.target_star_idx: int | None = None  # Index into the stars table
         self.reference_star_idxs: List[int] = []
-        self._background_subtracted = None
 
     def compute_background(self):
         """Calculate background of image using sigma-clipped statistics"""
@@ -88,12 +78,11 @@ class FITSImage(QObject):
 
     def get_background_subtracted(self):
         """Get background-subtracted data, creates if unavailable"""
-        if self._background_subtracted is None:
-            if self.background is None:
-                self.compute_background()
+        if self.background is None:
+            self.compute_background()
             # Simply subtract background from original data
-            self._background_subtracted = self.original_data - self.background
-        return self._background_subtracted
+        background_subtracted = self.original_data - self.background
+        return background_subtracted
 
     def find_stars(self):
         """Detect stars using DAOStarFinder"""

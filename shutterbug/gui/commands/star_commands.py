@@ -1,17 +1,27 @@
 from PySide6.QtGui import QUndoCommand
 
 
-class SelectTargetStar(QUndoCommand):
-    pass
+class SelectStar(QUndoCommand):
+    """Command to select a star"""
+
+    def __init__(self):
+        super().__init__()
+
+    def redo(self):
+        pass
+
+    def undo(self):
+        pass
 
 
-class DeselectTargetStar(QUndoCommand):
-    pass
+class DeselectStar(QUndoCommand):
+    """Command to deselect a star"""
 
+    def __init__(self):
+        super().__init__()
 
-class SelectReferenceStar(QUndoCommand):
-    pass
+    def redo(self):
+        pass
 
-
-class DeselectReferenceStar(QUndoCommand):
-    pass
+    def undo(self):
+        pass
