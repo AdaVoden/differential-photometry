@@ -1,21 +1,12 @@
-from astropy import stats
-
-from photutils.detection import DAOStarFinder
-from photutils.aperture import CircularAperture, CircularAnnulus, aperture_photometry
-
-from PySide6.QtCore import Signal, QObject
-
-from pydantic import BaseModel
-
-import numpy as np
-
 from pathlib import Path
-
-import logging
-
 from typing import List
 
-from shutterbug.gui.stars import StarManager, StarMeasurement
+import numpy as np
+from astropy import stats
+from photutils.aperture import CircularAnnulus, CircularAperture, aperture_photometry
+from photutils.detection import DAOStarFinder
+from PySide6.QtCore import QObject, Signal
+from shutterbug.gui.stars import StarManager
 
 
 class FITSImage(QObject):

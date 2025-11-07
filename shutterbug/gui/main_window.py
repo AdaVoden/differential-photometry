@@ -3,7 +3,7 @@ from typing import List
 
 import matplotlib.pyplot as plt
 import numpy as np
-from PySide6.QtCore import QCoreApplication, QPoint, Signal, Slot
+from PySide6.QtCore import QCoreApplication, QPoint, Slot
 from PySide6.QtGui import QUndoStack
 from PySide6.QtWidgets import (
     QFileDialog,
@@ -188,8 +188,6 @@ class MainWindow(QMainWindow):
 
         star = current_image.measure_magnitude_at_idx(current_image.target_star_idx)
 
-        self.star_selected.emit(star)
-
     @Slot()
     def find_stars_in_image(self):
         current_image = self.image_manager.active_image
@@ -208,29 +206,6 @@ class MainWindow(QMainWindow):
         tolerance=NEARNESS_TOLERANCE_DEFAULT,
     ):
         return ((x1 - x2) ** 2 + (y1 - y2) ** 2) ** 0.5 <= tolerance
-
-    def add_reference_star(self, coordinates: QPoint):
-        """Select star at point as a reference star for calculations"""
-
-        current_image = self.viewer.current_image
-
-        if current_image is None:
-            return
-
-        x, y = self.viewer.convert_to_image_coordinates(coordinates)
-
-        star, idx = current_image.select_star_at_position(x, y)
-        # Star not found
-        if star is None or idx is None:
-            return
-
-        if current_image.target_star_idx is not None:
-            if current_image.target_star_idx == idx:
-                # We cannot mark a target star as a reference to itself
-                return
-        self.viewer.add_star_marker(star.x, star.y, colour="magenta")
-
-        current_image.reference_star_idxs.append(int(idx))
 
     @Slot()
     def process_all_images(self):
@@ -359,11 +334,11 @@ class MainWindow(QMainWindow):
         self, target_star: StarMeasurement, ref_stars: List[StarMeasurement]
     ):
         """Calculate differential magnitude on target image and stars"""
-        ref_mags = [ref.magnitude for ref in ref_stars]
+        ref_mags = [ref.mag for ref in ref_stars]
         ref_mags = np.asarray(ref_mags)
 
         # - ref_mags + target_mag == target_mag - ref_mags
-        return np.mean((-1 * ref_mags) + target_star.magnitude)
+        return np.mean((-1 * ref_mags) + target_star.mag)
 
     def generate_light_curve(self, results):
         """Create light curve from data"""

@@ -208,28 +208,44 @@ class Viewer(QGraphicsView):
         # Alt + Click, remove a star
         if event.modifiers() == Qt.KeyboardModifier.AltModifier:
             if event.button() == Qt.MouseButton.LeftButton:
-                self.remove_star_at_position(event.pos())
+                self.deselect_star(event.pos())
             return
 
         if event.button() == Qt.MouseButton.LeftButton:
             self.select_star(event.pos())
             return
 
-    def select_star(self, coordinates: QPoint):
-        """Creates the select star command and pushes command to the stack"""
+    def get_star(self, coordinates: QPoint):
+        """Gets star, if any, under point"""
         current_image = self.image_manager.active_image
         if current_image is None:
             # No work to do
-            return
+            return None
 
         x, y = self.convert_to_image_coordinates(coordinates)
 
         star, _ = current_image.find_nearest_star(x, y)
 
-        if star is None:
+        return star
+
+    def select_star(self, coordinates: QPoint):
+        """Creates the select star command and pushes command to the stack"""
+        current_image = self.image_manager.active_image
+        star = self.get_star(coordinates)
+        if star is None or current_image is None:
             return  # No work to do
 
         self._undo_stack.push(SelectStarCommand(star, current_image))
+
+    def deselect_star(self, coordinates: QPoint):
+        """Creates the deselect star command and pushes command to the stack"""
+        current_image = self.image_manager.active_image
+        star = self.get_star(coordinates)
+
+        if star is None or current_image is None:
+            return  # No work to do
+
+        self._undo_stack.push(DeselectStarCommand(star, current_image))
 
     @Slot()
     def on_propagate_requested(self):

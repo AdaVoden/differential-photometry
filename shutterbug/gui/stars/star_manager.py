@@ -56,7 +56,7 @@ class StarManager(QObject):
         if self._kdtree is None:
             return None
 
-        dist, idx = self._kdtree.query((x, y), distance_upper_bound=tolerance)
+        _, idx = self._kdtree.query((x, y), distance_upper_bound=tolerance)
 
         if idx == self._kdtree.n:
             # Found nothing
