@@ -48,7 +48,7 @@ class FITSImage(QObject):
         self.observation_time: float = float(obs_time)
         self.original_data = data
 
-        # Star manager
+        # Star manager per image
         self.star_manager = StarManager()
 
         # Image display settings
@@ -193,24 +193,6 @@ class FITSImage(QObject):
         star.flux = star_flux.value[0]
 
         return star
-
-    def select_star_at_position(self, x: float, y: float):
-        """From specified coordinates, find star nearest to click"""
-
-        if self.stars is None:
-            return None, None
-
-        nearest_star, idx = self.find_nearest_star(x, y)
-
-        if nearest_star and idx:
-            star_x = nearest_star["xcentroid"]
-            star_y = nearest_star["ycentroid"]
-            logging.info(f"Selected star at ({star_x:.1f}, {star_y:.1f})")
-            return self.get_star(idx), idx
-
-        else:
-            logging.info(f"No star found near ({x:.1f}, {y:.1f})")
-            return None, None
 
     @property
     def brightness(self):

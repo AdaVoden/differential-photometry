@@ -8,34 +8,48 @@ from shutterbug.gui.stars import StarMeasurement
 class SelectStarCommand(QUndoCommand):
     """Command to select a star"""
 
-    def __init__(self, star, image: FITSImage, is_reference: bool):
+    def __init__(self, star, image: FITSImage):
         super().__init__()
         self.star = star
         self.image = image
+        self.time = image.observation_time
         self.star_manager = image.star_manager
-        self.is_reference = is_reference
+        self.measurement = StarMeasurement(
+            x=self.star["xcentroid"],
+            y=self.star["ycentroid"],
+            time=self.time,
+            image=self.image.filename,
+        )
 
     def redo(self):
-        measurement = StarMeasurement(
-            self.star["xcentroid"], self.star["ycentroid"], self.star["flux"]
-        )
-        self.star_manager.add_star(measurement)
+        self.star_manager.add_star(self.measurement)
+        self.star_manager.catalog.register_measurement(self.measurement)
 
     def undo(self):
-        measurement = self.star_manager.find_nearest(
-            star["xcentroid"], star["ycentroid"]
-        )
-        self.star_manager.remove_star(measurement)
+        self.star_manager.remove_star(self.measurement)
+        self.star_manager.catalog.unregister_measurement(self.measurement)
 
 
 class DeselectStarCommand(QUndoCommand):
     """Command to deselect a star"""
 
-    def __init__(self):
+    def __init__(self, star, image: FITSImage):
         super().__init__()
+        self.star = star
+        self.image = image
+        self.time = image.observation_time
+        self.star_manager = image.star_manager
+        self.measurement = StarMeasurement(
+            x=self.star["xcentroid"],
+            y=self.star["ycentroid"],
+            time=self.time,
+            image=self.image.filename,
+        )
 
     def redo(self):
-        pass
+        self.star_manager.remove_star(self.measurement)
+        self.star_manager.catalog.unregister_measurement(self.measurement)
 
     def undo(self):
-        pass
+        self.star_manager.add_star(self.measurement)
+        self.star_manager.catalog.register_measurement(self.measurement)

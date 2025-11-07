@@ -16,13 +16,18 @@ class ImageManager(QObject):
     active_image_changed = Signal(FITSImage)
     images_removed = Signal(list)
 
-    def __new__(cls):
-        if cls._instance is None:
-            logging.debug("Creating Image Manager singleton")
-            cls._instance = super(ImageManager, cls).__new__(cls)
+    def __init__(self):
+        if not hasattr(self, "_initialized"):
+            self._initialized = True
+
             super().__init__()
             self.images: Dict[str, FITSImage] = {}
             self.active_image: FITSImage | None = None
+
+    def __new__(cls):
+        if cls._instance is None:
+            logging.debug("Creating Image Manager singleton")
+            cls._instance = super().__new__(cls)
 
         return cls._instance
 

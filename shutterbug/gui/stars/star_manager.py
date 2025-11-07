@@ -43,6 +43,9 @@ class StarManager(QObject):
     def _ensure_tree(self):
         """Create or rebuild the KDTree for spacial detection"""
         if self._kdtree is None or self._dirty is True:
+            if not self.star_coords:
+                self._kdtree = None
+                return
             # Generate new tree!
             self._kdtree = KDTree(self.star_coords)
         self._dirty = False
@@ -50,6 +53,9 @@ class StarManager(QObject):
     def find_nearest(self, x: float, y: float, tolerance: float = 3.0):
         """Finds the nearest star from coordinate"""
         self._ensure_tree()
+        if self._kdtree is None:
+            return None
+
         dist, idx = self._kdtree.query((x, y), distance_upper_bound=tolerance)
 
         if idx == self._kdtree.n:

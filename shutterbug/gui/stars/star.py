@@ -1,22 +1,28 @@
 from pydantic import BaseModel
 
-from typing import Dict
+from typing import Dict, Optional
 
 
 class StarMeasurement(BaseModel):
     """Measurement of a star within an image"""
 
-    x: int
-    y: int
-    flux: float
-    fwhm: float | None
-    magnitude: float | None
-    mag_error: float | None
+    # Intrinsic
+    x: float
+    y: float
+    time: float
+    image: str
+    # Calculated from measurement
+    flux: Optional[float] = None
+    flux_error: Optional[float] = None
+    fwhm: Optional[float] = None
+    mag: Optional[float] = None
+    mag_error: Optional[float] = None
 
 
 class StarIdentity(BaseModel):
     """Identity of star for cross-image synchronization"""
 
-    id: int
-    is_target: bool
-    measurements: Dict[str, StarMeasurement]  # Image name -> StarMeasurement
+    id: str
+    measurements: Dict[str, StarMeasurement] = {}  # Image name -> StarMeasurement
+    use_in_ensemble: bool = True
+    label: Optional[str] = None

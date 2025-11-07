@@ -37,7 +37,7 @@ class Settings(QWidget):
         self.tabs.setTabPosition(QTabWidget.TabPosition.West)
 
         # Different property panels
-        self.image_properties = ImagePropertiesPanel(undo_stack, image_manager)
+        self.image_properties = ImagePropertiesPanel(undo_stack)
         self.star_properties = StarPropertiesPanel(undo_stack)
         self.general_properties = GeneralPropertiesPanel(undo_stack)
 
@@ -75,7 +75,7 @@ class ImagePropertiesPanel(QWidget):
         self._undo_stack = undo_stack
 
         self.image_manager = ImageManager()
-        self.current_image = image_manager.active_image
+        self.current_image = self.image_manager.active_image
 
         self.setObjectName("imageProperties")
         layout = QVBoxLayout()

@@ -30,7 +30,6 @@ from typing import Tuple
 
 class Viewer(QGraphicsView):
 
-    clicked = Signal(QMouseEvent)
     find_stars_requested = Signal()
     photometry_requested = Signal()
     propagation_requested = Signal(FITSImage)
@@ -53,7 +52,7 @@ class Viewer(QGraphicsView):
         self._undo_stack = undo_stack
         self.image_manager = ImageManager()
 
-        self.current_image = image_manager.active_image
+        self.current_image = self.image_manager.active_image
         self.markers = {}  # (x, y) -> marker
 
         # Zoom settings
@@ -212,17 +211,11 @@ class Viewer(QGraphicsView):
                 self.remove_star_at_position(event.pos())
             return
 
-        # if CTRL is held, add a reference star
-        if event.modifiers() == Qt.KeyboardModifier.ControlModifier:
-            if event.button() == Qt.MouseButton.LeftButton:
-                self.select_star(event.pos(), True)
-            return
-
         if event.button() == Qt.MouseButton.LeftButton:
-            self.select_star(event.pos(), False)
+            self.select_star(event.pos())
             return
 
-    def select_star(self, coordinates: QPoint, is_reference: bool):
+    def select_star(self, coordinates: QPoint):
         """Creates the select star command and pushes command to the stack"""
         current_image = self.image_manager.active_image
         if current_image is None:
@@ -236,7 +229,7 @@ class Viewer(QGraphicsView):
         if star is None:
             return  # No work to do
 
-        self._undo_stack.push(SelectStarCommand(star, current_image, is_reference))
+        self._undo_stack.push(SelectStarCommand(star, current_image))
 
     @Slot()
     def on_propagate_requested(self):
@@ -246,6 +239,7 @@ class Viewer(QGraphicsView):
         self.propagation_requested.emit(self.current_image)
 
     def convert_to_image_coordinates(self, coordinate: QPoint) -> Tuple[float, float]:
+        """Converts coordinates of click to coordinates of active image"""
         # Step 1, convert to scene coordinates
         scene_pos = self.mapToScene(coordinate)
 

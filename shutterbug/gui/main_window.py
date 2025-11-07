@@ -1,37 +1,33 @@
 import logging
-
-import matplotlib.pyplot as plt
-
-from PySide6.QtWidgets import (
-    QMainWindow,
-    QHBoxLayout,
-    QFileDialog,
-    QWidget,
-    QProgressBar,
-    QLabel,
-)
-from PySide6.QtCore import Slot, QCoreApplication, QPoint, Qt, Signal
-from PySide6.QtGui import QMouseEvent, QUndoStack
-
-from shutterbug.gui.sidebar import Sidebar
-from shutterbug.gui.viewer import Viewer
-from shutterbug.gui.project import ShutterbugProject
-from shutterbug.gui.image_data import FITSImage, SelectedStar
-from shutterbug.gui.progress_bar_handler import ProgressHandler
-from shutterbug.gui.image_manager import ImageManager
-from .commands import LoadImagesCommand, SetBrightnessCommand, SetContrastCommand
-from .stars import StarCatalog
-
 from typing import List
 
+import matplotlib.pyplot as plt
 import numpy as np
+from PySide6.QtCore import QCoreApplication, QPoint, Signal, Slot
+from PySide6.QtGui import QUndoStack
+from PySide6.QtWidgets import (
+    QFileDialog,
+    QHBoxLayout,
+    QLabel,
+    QMainWindow,
+    QProgressBar,
+    QWidget,
+)
+from .image_data import FITSImage
+from .image_manager import ImageManager
+from .progress_bar_handler import ProgressHandler
+from .project import ShutterbugProject
+from .sidebar import Sidebar
+from .viewer import Viewer
+from .stars import StarMeasurement
+
+from .commands import LoadImagesCommand
+from .stars import StarCatalog
 
 
 class MainWindow(QMainWindow):
 
     NEARNESS_TOLERANCE_DEFAULT = 20  # pixels
-
-    star_selected = Signal(SelectedStar)
 
     def __init__(self):
         super().__init__()
@@ -86,14 +82,10 @@ class MainWindow(QMainWindow):
         self.status_bar.addPermanentWidget(self.progress_bar)
 
         # Handle Viewer signals
-        self.viewer.clicked.connect(self.on_viewer_clicked)
         self.viewer.find_stars_requested.connect(self.find_stars_in_image)
         self.viewer.photometry_requested.connect(self.calculate_aperture_photometry)
         self.viewer.propagation_requested.connect(self.propagate_star_selection)
         self.viewer.batch_requested.connect(self.process_all_images)
-
-        # Handle star selection signals
-        self.star_selected.connect(self.sidebar.settings.show_star_properties)
 
         logging.debug("Main window initialized")
 
@@ -364,7 +356,7 @@ class MainWindow(QMainWindow):
                             img.reference_star_idxs.append(int(ref_idx))
 
     def calculate_differential_magnitude(
-        self, target_star: SelectedStar, ref_stars: List[SelectedStar]
+        self, target_star: StarMeasurement, ref_stars: List[StarMeasurement]
     ):
         """Calculate differential magnitude on target image and stars"""
         ref_mags = [ref.magnitude for ref in ref_stars]
