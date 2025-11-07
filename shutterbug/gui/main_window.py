@@ -184,32 +184,9 @@ class MainWindow(QMainWindow):
         self.sidebar.outliner.set_state(state["outliner"])
         self.sidebar.settings.set_state(state["settings"])
 
-    @Slot(QMouseEvent)
-    def on_viewer_clicked(self, event: QMouseEvent):
-        """Handler for a click in the viewer"""
-        if self.viewer.current_image is None:
-            # No image, we don't care
-            return
-
-        # Alt + Click, remove a star
-        if event.modifiers() == Qt.KeyboardModifier.AltModifier:
-            if event.button() == Qt.MouseButton.LeftButton:
-                self.remove_star_at_position(event.pos())
-            return
-
-        # if CTRL is held, add a reference star
-        if event.modifiers() == Qt.KeyboardModifier.ControlModifier:
-            if event.button() == Qt.MouseButton.LeftButton:
-                self.add_reference_star(event.pos())
-            return
-
-        if event.button() == Qt.MouseButton.LeftButton:
-            self.select_target_star(event.pos())
-            return
-
     @Slot()
     def calculate_aperture_photometry(self):
-        current_image = self.viewer.current_image
+        current_image = self.image_manager.active_image
         if current_image is None:
             return
         if current_image.stars is None:
@@ -223,65 +200,12 @@ class MainWindow(QMainWindow):
 
     @Slot()
     def find_stars_in_image(self):
-        current_image = self.viewer.current_image
+        current_image = self.image_manager.active_image
         if current_image is None:
             return
 
         with self.progress_handler("Finding stars..."):
             current_image.find_stars()
-
-    def select_target_star(self, coordinates: QPoint):
-        """Creates a marker on image at coordinates"""
-        current_image = self.viewer.current_image
-
-        if current_image is None:
-            return
-
-        x, y = self.viewer.convert_to_image_coordinates(coordinates)
-
-        star, idx = current_image.select_star_at_position(x, y)
-        # Star not found
-        if star is None or idx is None:
-            return
-        if idx in current_image.reference_star_idxs:
-            # Target star cannot be a reference to itself
-            return
-        # Add new marker, replace old target if present
-        if current_image.target_star_idx:
-            old_target = current_image.get_star(current_image.target_star_idx)
-            if old_target:
-                self.viewer.remove_star_marker(old_target.x, old_target.y)
-
-        self.viewer.add_star_marker(star.x, star.y, colour="cyan")
-
-        current_image.target_star_idx = int(idx)
-
-        self.star_selected.emit(star)
-
-    def remove_star_at_position(self, coordinates: QPoint):
-        """Removes a star at selected point"""
-        img = self.viewer.current_image
-
-        x, y = self.viewer.convert_to_image_coordinates(coordinates)
-
-        if img is None:
-            return  # No work required
-
-        # Are we clicking near a target star?
-        if img.target_star_idx is not None:
-            target = img.get_star(img.target_star_idx)
-            if target and self.is_near(x, y, target.x, target.y):
-                img.target_star_idx = None
-                self.viewer.remove_star_marker(target.x, target.y)
-                return
-
-        # Are we clicking near a reference star?
-        for idx in img.reference_star_idxs[:]:  # make a copy
-            ref = img.get_star(idx)
-            if ref and self.is_near(x, y, ref.x, ref.y):
-                img.reference_star_idxs.remove(idx)
-                self.viewer.remove_star_marker(ref.x, ref.y)
-                return
 
     def is_near(
         self,

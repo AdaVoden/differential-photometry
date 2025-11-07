@@ -23,6 +23,7 @@ from PySide6.QtGui import (
 
 from shutterbug.gui.image_data import FITSImage
 from shutterbug.gui.image_manager import ImageManager
+from .commands import SelectStarCommand, DeselectStarCommand
 
 from typing import Tuple
 
@@ -167,7 +168,7 @@ class Viewer(QGraphicsView):
             super().mousePressEvent(fake_event)
         else:
             # Normal left click
-            self.clicked.emit(event)
+            self.on_viewer_clicked(event)
             super().mousePressEvent(event)
 
     def mouseReleaseEvent(self, event: QMouseEvent) -> None:
@@ -197,6 +198,45 @@ class Viewer(QGraphicsView):
         menu.exec(event.globalPos())
 
         super().contextMenuEvent(event)
+
+    def on_viewer_clicked(self, event: QMouseEvent):
+        """Handler for a click in the viewer"""
+        current_image = self.image_manager.active_image
+        if current_image is None:
+            # No image, we don't care
+            return
+
+        # Alt + Click, remove a star
+        if event.modifiers() == Qt.KeyboardModifier.AltModifier:
+            if event.button() == Qt.MouseButton.LeftButton:
+                self.remove_star_at_position(event.pos())
+            return
+
+        # if CTRL is held, add a reference star
+        if event.modifiers() == Qt.KeyboardModifier.ControlModifier:
+            if event.button() == Qt.MouseButton.LeftButton:
+                self.select_star(event.pos(), True)
+            return
+
+        if event.button() == Qt.MouseButton.LeftButton:
+            self.select_star(event.pos(), False)
+            return
+
+    def select_star(self, coordinates: QPoint, is_reference: bool):
+        """Creates the select star command and pushes command to the stack"""
+        current_image = self.image_manager.active_image
+        if current_image is None:
+            # No work to do
+            return
+
+        x, y = self.convert_to_image_coordinates(coordinates)
+
+        star, _ = current_image.find_nearest_star(x, y)
+
+        if star is None:
+            return  # No work to do
+
+        self._undo_stack.push(SelectStarCommand(star, current_image, is_reference))
 
     @Slot()
     def on_propagate_requested(self):
