@@ -73,3 +73,7 @@ class ImageManager(QObject):
         if image_name in self.images.keys():
             return self.images[image_name]
         return None
+
+    def get_all_images(self) -> List[FITSImage]:
+        """Returns the master list of images from manager"""
+        return list(self.images.values())

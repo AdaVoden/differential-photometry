@@ -1,11 +1,11 @@
-from PySide6.QtCore import Signal, QObject
+import logging
+from typing import List
+
+from PySide6.QtCore import QObject, Signal
+from scipy.spatial import KDTree
 
 from .star import StarMeasurement
 from .star_catalog import StarCatalog
-
-from scipy.spatial import KDTree
-
-import logging
 
 
 class StarManager(QObject):
@@ -47,6 +47,9 @@ class StarManager(QObject):
                 self._kdtree = None
                 return
             # Generate new tree!
+            logging.debug(
+                f"StarManager rebuilt KDTree with {len(self.star_coords)} coordinates"
+            )
             self._kdtree = KDTree(self.star_coords)
         self._dirty = False
 
@@ -65,3 +68,7 @@ class StarManager(QObject):
             pure_coords = self.star_coords[idx]
             coords = (round(pure_coords[0]), round(pure_coords[1]))
             return self.stars[coords]
+
+    def get_all_stars(self) -> List:
+        """Gets all stars from the manager"""
+        return list(self.stars.values())

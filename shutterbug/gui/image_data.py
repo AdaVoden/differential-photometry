@@ -1,12 +1,11 @@
 from pathlib import Path
-from typing import List
 
 import numpy as np
 from astropy import stats
 from photutils.aperture import CircularAnnulus, CircularAperture, aperture_photometry
 from photutils.detection import DAOStarFinder
 from PySide6.QtCore import QObject, Signal
-from shutterbug.gui.stars import StarManager
+from .stars import StarMeasurement, StarManager
 
 
 class FITSImage(QObject):
@@ -55,8 +54,6 @@ class FITSImage(QObject):
         # Star variables, computed
         self.background: float | None = None
         self.stars = None  # Detected stars
-        self.target_star_idx: int | None = None  # Index into the stars table
-        self.reference_star_idxs: List[int] = []
 
     def compute_background(self):
         """Calculate background of image using sigma-clipped statistics"""
@@ -140,29 +137,11 @@ class FITSImage(QObject):
 
     def measure_star_magnitude(
         self,
+        star: StarMeasurement,
         aperture_radius: int = APERTURE_RADIUS_DEFAULT,
         annulus_inner: int = ANNULUS_INNER_DEFAULT,
         annulus_outer: int = ANNULUS_OUTER_DEFAULT,
     ):
-        """Measure the instrumental magnitude of a star"""
-        if self.target_star_idx is None:
-            return
-
-        return self.measure_magnitude_at_idx(
-            self.target_star_idx, aperture_radius, annulus_inner, annulus_outer
-        )
-
-    def measure_magnitude_at_idx(
-        self,
-        idx: int,
-        aperture_radius: int = APERTURE_RADIUS_DEFAULT,
-        annulus_inner: int = ANNULUS_INNER_DEFAULT,
-        annulus_outer: int = ANNULUS_OUTER_DEFAULT,
-    ):
-        star = self.get_star(idx)
-        if star is None:
-            return
-
         # Define apertures
         position = [(star.x, star.y)]
         aperture = CircularAperture(position, r=aperture_radius)
@@ -180,7 +159,7 @@ class FITSImage(QObject):
         # Convert to magnitude (25 is an arbitrary zero_point)
         magnitude = -2.5 * np.log10(star_flux.value[0]) + self.zero_point
 
-        star.magnitude = magnitude
+        star.mag = magnitude
         star.flux = star_flux.value[0]
 
         return star

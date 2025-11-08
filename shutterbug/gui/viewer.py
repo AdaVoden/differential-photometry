@@ -1,36 +1,35 @@
 import logging
+from typing import Tuple
 
-from PySide6.QtWidgets import QGraphicsView, QGraphicsScene, QMenu
 from PySide6.QtCore import (
-    Qt,
-    Slot,
-    QPoint,
-    Signal,
-    QPointF,
     Property,
+    QPoint,
+    QPointF,
     QPropertyAnimation,
+    Qt,
+    Signal,
+    Slot,
 )
 from PySide6.QtGui import (
-    QContextMenuEvent,
-    QPixmap,
-    QImage,
-    QPen,
     QColor,
+    QContextMenuEvent,
+    QImage,
     QMouseEvent,
-    QWheelEvent,
+    QPen,
+    QPixmap,
     QUndoStack,
+    QWheelEvent,
 )
+from PySide6.QtWidgets import QGraphicsScene, QGraphicsView, QMenu
 
-from shutterbug.gui.image_data import FITSImage
-from shutterbug.gui.image_manager import ImageManager
-from .commands import SelectStarCommand, DeselectStarCommand
-
-from typing import Tuple
+from .image_data import FITSImage
+from .image_manager import ImageManager
+from .stars import StarMeasurement
+from .commands import DeselectStarCommand, SelectStarCommand
 
 
 class Viewer(QGraphicsView):
 
-    find_stars_requested = Signal()
     photometry_requested = Signal()
     propagation_requested = Signal(FITSImage)
     batch_requested = Signal()
@@ -97,11 +96,19 @@ class Viewer(QGraphicsView):
         if self.current_image:
             self.current_image.brightness_changed.disconnect(self.update_display)
             self.current_image.contrast_changed.disconnect(self.update_display)
+            self.current_image.star_manager.star_added.disconnect(self.add_star_marker)
+            self.current_image.star_manager.star_removed.disconnect(
+                self.remove_star_marker
+            )
 
         self.current_image = image
         if image:
             image.brightness_changed.connect(self.update_display)
             image.contrast_changed.connect(self.update_display)
+            self.current_image.star_manager.star_added.connect(self.add_star_marker)
+            self.current_image.star_manager.star_removed.connect(
+                self.remove_star_marker
+            )
 
         self.update_display()
 
@@ -183,7 +190,7 @@ class Viewer(QGraphicsView):
         # select_star_action = menu.addAction("Select as Target Star")
 
         find_stars_action = menu.addAction("Find all stars in image")
-        find_stars_action.triggered.connect(self.find_stars_requested)
+        find_stars_action.triggered.connect(self.find_stars_in_image)
 
         calc_phot_action = menu.addAction("Calculate magnitude for selected star")
         calc_phot_action.triggered.connect(self.photometry_requested)
@@ -215,6 +222,12 @@ class Viewer(QGraphicsView):
             self.select_star(event.pos())
             return
 
+    def find_stars_in_image(self):
+        if self.current_image is None:
+            return  # No work to do
+
+        self.current_image.find_stars()
+
     def get_star(self, coordinates: QPoint):
         """Gets star, if any, under point"""
         current_image = self.image_manager.active_image
@@ -232,8 +245,16 @@ class Viewer(QGraphicsView):
         """Creates the select star command and pushes command to the stack"""
         current_image = self.image_manager.active_image
         star = self.get_star(coordinates)
+
         if star is None or current_image is None:
             return  # No work to do
+
+        nearest = self.current_image.star_manager.find_nearest(
+            star["xcentroid"], star["ycentroid"]
+        )
+
+        if nearest is not None:
+            return
 
         self._undo_stack.push(SelectStarCommand(star, current_image))
 
@@ -244,6 +265,13 @@ class Viewer(QGraphicsView):
 
         if star is None or current_image is None:
             return  # No work to do
+
+        nearest = self.current_image.star_manager.find_nearest(
+            star["xcentroid"], star["ycentroid"]
+        )
+
+        if nearest is None:
+            return
 
         self._undo_stack.push(DeselectStarCommand(star, current_image))
 
@@ -267,35 +295,36 @@ class Viewer(QGraphicsView):
 
     def add_star_marker(
         self,
-        x: float,
-        y: float,
+        star: StarMeasurement,
         radius: int = MARKER_RADIUS_DEFAULT,
         colour: str = MARKER_COLOUR_DEFAULT,
     ):
         """Add a circular marker at image coordinates x, y"""
-        logging.debug(f"Adding marker at position ({x:.1f},{y:.1f}), colour: {colour}")
+        logging.debug(
+            f"Adding marker at position ({star.x:.1f},{star.y:.1f}), colour: {colour}"
+        )
         # Create circle
         pen = QPen(QColor(colour))
         pen.setWidth(2)
 
         circle = self.scene().addEllipse(
-            x - radius,
-            y - radius,  # top-left corner of circle
+            star.x - radius,
+            star.y - radius,  # top-left corner of circle
             radius * 2,
             radius * 2,  # Width, height
             pen,
         )
 
-        self.markers[(x, y)] = circle
+        self.markers[(star.x, star.y)] = circle
 
         return circle
 
-    def remove_star_marker(self, x: float, y: float):
+    def remove_star_marker(self, star: StarMeasurement):
         """Remove a circular marker at image coordinates x, y"""
-        logging.debug(f"Removing marker at position ({x:.1f},{y:.1f})")
+        logging.debug(f"Removing marker at position ({star.x:.1f},{star.y:.1f})")
 
-        if (x, y) in self.markers:
-            marker = self.markers.pop((x, y))
+        if (star.x, star.y) in self.markers:
+            marker = self.markers.pop((star.x, star.y))
             self.scene().removeItem(marker)
 
     def clear_markers(self):
@@ -335,7 +364,7 @@ class Viewer(QGraphicsView):
         self.scale(old_zoom, old_zoom)
         self.centerOn(old_center)
 
-        self.display_markers_for_image(image)
+        self.display_markers_for_image()
 
     def clear_image(self):
         """Clear current image from view"""
@@ -343,19 +372,15 @@ class Viewer(QGraphicsView):
         self.clear_markers()
         self.pixmap_item.setPixmap(QPixmap())
 
-    def display_markers_for_image(self, image):
+    def display_markers_for_image(self):
         """Restore markers from image state"""
         # Add markers from image
+        if self.current_image is None:
+            return
 
-        if image.target_star_idx is not None:
-            star = image.get_star(image.target_star_idx)
-            if star is not None:
-                self.add_star_marker(star.x, star.y, colour="cyan")
-
-        for idx in image.reference_star_idxs:
-            star = image.get_star(idx)
-            if star is not None:
-                self.add_star_marker(star.x, star.y, colour="magenta")
+        stars = self.current_image.star_manager.get_all_stars()
+        for star in stars:
+            self.add_star_marker(star, colour="cyan")
 
     @Slot()
     def update_display(self):

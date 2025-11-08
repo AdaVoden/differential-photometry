@@ -3,7 +3,7 @@ from typing import List
 
 import matplotlib.pyplot as plt
 import numpy as np
-from PySide6.QtCore import QCoreApplication, QPoint, Slot
+from PySide6.QtCore import QCoreApplication, Slot
 from PySide6.QtGui import QUndoStack
 from PySide6.QtWidgets import (
     QFileDialog,
@@ -82,8 +82,6 @@ class MainWindow(QMainWindow):
         self.status_bar.addPermanentWidget(self.progress_bar)
 
         # Handle Viewer signals
-        self.viewer.find_stars_requested.connect(self.find_stars_in_image)
-        self.viewer.photometry_requested.connect(self.calculate_aperture_photometry)
         self.viewer.propagation_requested.connect(self.propagate_star_selection)
         self.viewer.batch_requested.connect(self.process_all_images)
 
@@ -117,8 +115,8 @@ class MainWindow(QMainWindow):
         redo_action.triggered.connect(self.on_redo)
 
         # Help menu
-        help_menu = menu_bar.addMenu("Help")
-        about_action = help_menu.addAction("About Shutterbug")
+        # help_menu = menu_bar.addMenu("Help")
+        # about_action = help_menu.addAction("About Shutterbug")
 
         logging.debug("Menu bar set up")
 
@@ -177,18 +175,6 @@ class MainWindow(QMainWindow):
         self.sidebar.settings.set_state(state["settings"])
 
     @Slot()
-    def calculate_aperture_photometry(self):
-        current_image = self.image_manager.active_image
-        if current_image is None:
-            return
-        if current_image.stars is None:
-            return
-        if current_image.target_star_idx is None:
-            return
-
-        star = current_image.measure_magnitude_at_idx(current_image.target_star_idx)
-
-    @Slot()
     def find_stars_in_image(self):
         current_image = self.image_manager.active_image
         if current_image is None:
@@ -210,125 +196,44 @@ class MainWindow(QMainWindow):
     @Slot()
     def process_all_images(self):
         """Generate light curve from all loaded images"""
-        # Validate that there's data to work on
-        if not self.image_manager.images:
-            logging.error(f"No images available to work on")
-            return  # No images to work on
+        current_image = self.image_manager.active_image
 
-        target_image = self.viewer.current_image
+        if current_image is None:
+            return  # No work required
 
-        if target_image is None:
-            logging.error(f"No image currently loaded, aborting process")
-            return  # No primary image to propagate from
-
-        if target_image.target_star_idx is None:
-            logging.error(
-                f"Image {target_image.filename} has no target star, aborting process"
-            )
-            return  # We need a target star
-
-        if target_image.reference_star_idxs is None:
-            logging.error(
-                f"Image {target_image.filename} has no reference stars, aborting process"
-            )
-            return  # We need reference stars to do math with
-
-        # Unify star selections
-        self.propagate_star_selection(target_image)
-
-        with self.progress_handler("Processing images..."):
-            results = []
-            for img in self.image_manager.images.values():
-                if img.target_star_idx is None:
-                    logging.error(
-                        f"Image {img.filename} did not successfully propagate stars, skipping"
-                    )
-                    continue  # Did not propagate, do not use
-
-                # No repetition if it's in one list
-                idxs = [img.target_star_idx]
-                idxs.extend(img.reference_star_idxs)
-
-                stars = []
-                for idx in idxs:
-                    # Need magnitude for diff mag
-                    star = img.measure_magnitude_at_idx(
-                        idx=idx,
-                        aperture_radius=img.APERTURE_RADIUS_DEFAULT,
-                        annulus_inner=img.ANNULUS_INNER_DEFAULT,
-                        annulus_outer=img.ANNULUS_OUTER_DEFAULT,
-                    )
-                    if star:
-                        stars.append(star)
-                    else:
-                        logging.error(
-                            f"Failed to measure star magnitude in image {img.filename}, index {idx}, skipping"
-                        )
-                        break
-                # Cannot continue without sufficient number of stars
-                if len(stars) != len(idxs):
-                    logging.error(
-                        f"Failed to measure sufficient stars in image {img.filename}, skipping image"
-                    )
-                    continue
-
-                result = self.calculate_differential_magnitude(
-                    target_star=stars[0], ref_stars=stars[1:]
-                )
-                results.append(
-                    {
-                        "filename": img.filename,
-                        "time": img.observation_time,
-                        "magnitude": result,
-                        "n_references": len(stars[1:]),
-                    }
-                )
-
-            self.generate_light_curve(results)
+        self.propagate_star_selection(current_image)
+        for image in self.image_manager.get_all_images():
+            self.process_single_image(image)
 
     def process_single_image(self, image: FITSImage):
         """Process one image for differential photometry"""
-        pass
+
+        for star in image.star_manager.get_all_stars():
+            image.measure_star_magnitude(star)
 
     @Slot(FITSImage)
     def propagate_star_selection(self, image: FITSImage):
         """Propagates star selection across all images"""
-        if not image.target_star_idx and not image.reference_star_idxs:
-            logging.error(f"No markers in image {image.filename} to propagate")
-            return  # No markers to propagate, no work to do
+        image_manager = self.image_manager
+        stars = image.star_manager.get_all_stars()
 
-        for img in self.image_manager.images.values():
-            with self.progress_handler("Propagating stars..."):
-                if img == image:
-                    # Don't propagate to self
-                    continue
+        with self.progress_handler("Propagating stars..."):
+            for img in image_manager.get_all_images():
+                if img != image:
+                    # Propagate to all other images, ignore target
 
-                if img.stars is None:
-                    img.find_stars()
+                    for star in stars:
+                        with self.progress_handler("Finding stars in image..."):
+                            star_data, _ = img.find_nearest_star(star.x, star.y)
 
-                # Clear existing selections before propagation
-                img.target_star_idx = None
-                img.reference_star_idxs = []
-
-                # Propagate target
-                if image.target_star_idx:
-                    star = image.get_star(image.target_star_idx)
-                    if star:
-                        _, t_s_idx = img.find_nearest_star(
-                            star.x, star.y, FITSImage.MAX_DISTANCE_DEFAULT
-                        )
-                        if t_s_idx:
-                            img.target_star_idx = int(t_s_idx)
-
-                # Propagate references
-                for idx in image.reference_star_idxs:
-                    star = image.get_star(idx)
-                    if star:
-                        _, ref_idx = img.find_nearest_star(
-                            star.x, star.y, FITSImage.MAX_DISTANCE_DEFAULT
-                        )
-                        if ref_idx:
-                            img.reference_star_idxs.append(int(ref_idx))
+                        if star_data:
+                            measurement = StarMeasurement(
+                                x=star_data["xcentroid"],
+                                y=star_data["ycentroid"],
+                                time=img.observation_time,
+                                image=img.filename,
+                            )
+                            img.star_manager.add_star(measurement)
 
     def calculate_differential_magnitude(
         self, target_star: StarMeasurement, ref_stars: List[StarMeasurement]

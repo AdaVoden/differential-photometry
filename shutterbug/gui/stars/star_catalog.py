@@ -1,8 +1,8 @@
 import logging
 
-from .star import StarIdentity, StarMeasurement
-
 from scipy.spatial import KDTree
+
+from .star import StarIdentity, StarMeasurement
 
 
 class StarCatalog:
@@ -43,6 +43,9 @@ class StarCatalog:
                 self._kdtree = None
                 return
             # Generate new tree!
+            logging.debug(
+                f"StarManager rebuilt KDTree with {len(self._coords)} coordinates"
+            )
             self._kdtree = KDTree(self._coords)
         self._dirty = False
 
