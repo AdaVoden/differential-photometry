@@ -17,7 +17,8 @@ dependencies = [
     "photutils (>=2.3.0,<3.0.0)",
     "pydantic (>=2.12.3,<3.0.0)",
     "matplotlib (>=3.10.7,<4.0.0)",
-    "qt-material (>=2.17,<3.0)"
+    "qt-material (>=2.17,<3.0)",
+    "scipy (>=1.16.3,<2.0.0)"
 ]
 
 [build-system]
@@ -32,3 +33,6 @@ shutterbug-gui = "shutterbug.gui.app:main"
 dev = [
     "black (>=25.9.0,<26.0.0)"
 ]
+
+[virtualenvs]
+in-project = true

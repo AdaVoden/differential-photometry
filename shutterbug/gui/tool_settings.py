@@ -1,6 +1,12 @@
 import logging
 
 from shutterbug.gui.controls.labeled_slider import LabeledSlider
+from shutterbug.gui.image_manager import ImageManager
+from shutterbug.gui.image_data import FITSImage
+from shutterbug.gui.commands.image_commands import (
+    SetBrightnessCommand,
+    SetContrastCommand,
+)
 
 from PySide6.QtWidgets import (
     QWidget,
@@ -9,12 +15,16 @@ from PySide6.QtWidgets import (
     QTabWidget,
 )
 from PySide6.QtCore import Qt, Slot
+from PySide6.QtGui import QUndoStack
 
 
 class Settings(QWidget):
-    def __init__(self):
+    def __init__(self, undo_stack: QUndoStack):
         super().__init__()
         self.setObjectName("settings")
+
+        self._undo_stack = undo_stack
+
         layout = QVBoxLayout()
         self.setLayout(layout)
         # Remove layout styling
@@ -27,9 +37,9 @@ class Settings(QWidget):
         self.tabs.setTabPosition(QTabWidget.TabPosition.West)
 
         # Different property panels
-        self.image_properties = ImagePropertiesPanel()
-        self.star_properties = StarPropertiesPanel()
-        self.general_properties = GeneralPropertiesPanel()
+        self.image_properties = ImagePropertiesPanel(undo_stack)
+        self.star_properties = StarPropertiesPanel(undo_stack)
+        self.general_properties = GeneralPropertiesPanel(undo_stack)
 
         self.tabs.addTab(self.general_properties, "Gen")
         self.tabs.addTab(self.image_properties, "Image")
@@ -58,8 +68,15 @@ class Settings(QWidget):
 
 
 class ImagePropertiesPanel(QWidget):
-    def __init__(self):
+
+    def __init__(self, undo_stack: QUndoStack):
         super().__init__()
+
+        self._undo_stack = undo_stack
+
+        self.image_manager = ImageManager()
+        self.current_image = self.image_manager.active_image
+
         self.setObjectName("imageProperties")
         layout = QVBoxLayout()
         self.setLayout(layout)
@@ -77,11 +94,44 @@ class ImagePropertiesPanel(QWidget):
         layout.addWidget(self.brightness_slider)
         layout.addWidget(self.contrast_slider)
 
+        # Signals to slots
+        self.brightness_slider.valueChanged.connect(self._on_brightness_changed)
+        self.contrast_slider.valueChanged.connect(self._on_contrast_changed)
+
+        self.image_manager.active_image_changed.connect(self._on_image_changed)
+
         logging.debug("Image properties panel initialized")
+
+    @Slot(FITSImage)
+    def _on_image_changed(self, image: FITSImage):
+        """Handles image changing in image manager"""
+        if self.current_image:
+            # There's a current image remove all previous subscriptions
+            self.current_image.brightness_changed.disconnect(self.set_brightness)
+            self.current_image.contrast_changed.disconnect(self.set_contrast)
+
+        self.current_image = image
+
+        if image:
+            # Add new subscriptions and set the slider values
+            image.brightness_changed.connect(self.set_brightness)
+            image.contrast_changed.connect(self.set_contrast)
+            self.set_brightness(image.brightness)
+            self.set_contrast(image.contrast)
+
+    @Slot(int)
+    def _on_brightness_changed(self, value: int):
+        if self.current_image:
+            self._undo_stack.push(SetBrightnessCommand(value, self.current_image))
+
+    @Slot(int)
+    def _on_contrast_changed(self, value: int):
+        if self.current_image:
+            self._undo_stack.push(SetContrastCommand(value, self.current_image))
 
     @Slot(int)
     def set_brightness(self, value: int):
-        self.brightness_slider.slider.setValue(value)
+        self.brightness_slider.setValue(value)
 
     @Slot(int)
     def set_contrast(self, value: int):
@@ -100,7 +150,7 @@ class ImagePropertiesPanel(QWidget):
 
 
 class StarPropertiesPanel(QWidget):
-    def __init__(self):
+    def __init__(self, undo_stack: QUndoStack):
         super().__init__()
         self.setObjectName("starProperties")
         layout = QVBoxLayout()
@@ -131,7 +181,7 @@ class StarPropertiesPanel(QWidget):
 
 
 class GeneralPropertiesPanel(QWidget):
-    def __init__(self):
+    def __init__(self, undo_stack: QUndoStack):
         super().__init__()
         layout = QVBoxLayout()
         self.setLayout(layout)

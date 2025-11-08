@@ -1,38 +1,33 @@
 import logging
+from typing import List
 
 import matplotlib.pyplot as plt
-
-from PySide6.QtWidgets import (
-    QMainWindow,
-    QHBoxLayout,
-    QFileDialog,
-    QWidget,
-    QProgressBar,
-    QLabel,
-)
-from PySide6.QtCore import Slot, QCoreApplication, QPoint, Qt, Signal
-from PySide6.QtGui import QMouseEvent
-
-from shutterbug.gui.sidebar import Sidebar
-from shutterbug.gui.viewer import Viewer
-from shutterbug.gui.project import ShutterbugProject
-from shutterbug.gui.image_data import FITSImage, SelectedStar
-from shutterbug.gui.progress_bar_handler import ProgressHandler
-
-from astropy.io import fits
-
-from pathlib import Path
-
-from typing import List, Dict
-
 import numpy as np
+from PySide6.QtCore import QCoreApplication, Slot
+from PySide6.QtGui import QUndoStack
+from PySide6.QtWidgets import (
+    QFileDialog,
+    QHBoxLayout,
+    QLabel,
+    QMainWindow,
+    QProgressBar,
+    QWidget,
+)
+from .image_data import FITSImage
+from .image_manager import ImageManager
+from .progress_bar_handler import ProgressHandler
+from .project import ShutterbugProject
+from .sidebar import Sidebar
+from .viewer import Viewer
+from .stars import StarMeasurement
+
+from .commands import LoadImagesCommand
+from .stars import StarCatalog
 
 
 class MainWindow(QMainWindow):
 
     NEARNESS_TOLERANCE_DEFAULT = 20  # pixels
-
-    star_selected = Signal(SelectedStar)
 
     def __init__(self):
         super().__init__()
@@ -41,12 +36,18 @@ class MainWindow(QMainWindow):
         self.setWindowTitle("Shutterbug")
         self.setGeometry(100, 100, 1200, 800)
 
+        self.image_manager = ImageManager()
+        self.star_catalog = StarCatalog()
+
+        # Set up undo stack
+        self._undo_stack = QUndoStack()
+
         # Set up save/load functionality
         self.project = ShutterbugProject()
 
         # Create sidebar and viewer
-        self.sidebar = Sidebar()
-        self.viewer = Viewer()
+        self.sidebar = Sidebar(self._undo_stack)
+        self.viewer = Viewer(self._undo_stack)
 
         # Set up central widget with horizontal layout
         central = QWidget()
@@ -80,30 +81,9 @@ class MainWindow(QMainWindow):
         # Add to status bar
         self.status_bar.addPermanentWidget(self.progress_bar)
 
-        self.fits_data: Dict[str, FITSImage] = {}  # Loaded FITS images
-        # filename -> FITSImage
-
-        # Connect outliner signals
-        self.sidebar.outliner.item_selected.connect(self.on_file_selected)
-        self.sidebar.outliner.item_removed.connect(self.on_file_removed)
-
-        # Set up image properties signals to slots
-        self.sidebar.settings.image_properties.brightness_slider.valueChanged.connect(
-            self.viewer.set_brightness
-        )
-        self.sidebar.settings.image_properties.contrast_slider.valueChanged.connect(
-            self.viewer.set_contrast
-        )
-
         # Handle Viewer signals
-        self.viewer.clicked.connect(self.on_viewer_clicked)
-        self.viewer.find_stars_requested.connect(self.find_stars_in_image)
-        self.viewer.photometry_requested.connect(self.calculate_aperture_photometry)
         self.viewer.propagation_requested.connect(self.propagate_star_selection)
         self.viewer.batch_requested.connect(self.process_all_images)
-
-        # Handle star selection signals
-        self.star_selected.connect(self.sidebar.settings.show_star_properties)
 
         logging.debug("Main window initialized")
 
@@ -129,22 +109,26 @@ class MainWindow(QMainWindow):
         # Edit menu
         edit_menu = menu_bar.addMenu("Edit")
         undo_action = edit_menu.addAction("Undo")
+        undo_action.triggered.connect(self.on_undo)
+
         redo_action = edit_menu.addAction("Redo")
+        redo_action.triggered.connect(self.on_redo)
 
         # Help menu
-        help_menu = menu_bar.addMenu("Help")
-        about_action = help_menu.addAction("About Shutterbug")
+        # help_menu = menu_bar.addMenu("Help")
+        # about_action = help_menu.addAction("About Shutterbug")
 
         logging.debug("Menu bar set up")
 
-    @Slot(str)
-    def on_file_selected(self, filename: str):
-        """Called when a file is selected in the outliner"""
-        logging.debug(f"File selected in outliner: {filename}")
+    @Slot()
+    def on_redo(self):
+        if self._undo_stack.canRedo():
+            self._undo_stack.redo()
 
-        # Tell viewer to display the image
-        self.selected_file = filename
-        self.viewer.display_image(self.fits_data[filename])
+    @Slot()
+    def on_undo(self):
+        if self._undo_stack.canUndo():
+            self._undo_stack.undo()
 
     @Slot()
     def open_fits(self):
@@ -157,43 +141,8 @@ class MainWindow(QMainWindow):
             "FITS Files (*.fits *.fit *.fts);;All Files (*)",
         )
 
-        for filename in filenames:
-            image = self.load_fits_image(filename)
-            self.add_fits_to_project(image)
-
-        if filenames:
-            filepath = Path(filenames[0])
-            self.viewer.display_image(self.fits_data[filepath.name])
-            self.sidebar.outliner.select_item(filepath.name)
-
-    def add_fits_to_project(self, image: FITSImage):
-        # Add to outliner
-        self.sidebar.outliner.add_item(image.filename)
-
-        # Load and display in viewer
-        self.fits_data[image.filename] = image
-
-    def load_fits_image(self, filepath: str):
-        """Load FITS image from given filepath"""
-        # This method can be implemented to load FITS data
-        logging.debug(f"Loading FITS image from {filepath}")
-
-        with fits.open(filepath) as hdul:
-            data = hdul[0].data  # type: ignore
-            obs_time = hdul[0].header["JD"]  # type: ignore
-            image = FITSImage(filepath, data, obs_time)
-            # Assuming image data is in the primary HDU
-            return image
-
-    @Slot(str)
-    def on_file_removed(self, item_name: str):
-        """Remove image from current project"""
-        if item_name not in self.fits_data:
-            return
-
-        image = self.fits_data.pop(item_name)
-        if self.viewer.current_image == image:
-            self.viewer.clear_image()
+        load_command = LoadImagesCommand(filenames, self.image_manager)
+        self._undo_stack.push(load_command)
 
     @Slot()
     def save_project(self):
@@ -225,105 +174,6 @@ class MainWindow(QMainWindow):
         self.sidebar.outliner.set_state(state["outliner"])
         self.sidebar.settings.set_state(state["settings"])
 
-    @Slot(QMouseEvent)
-    def on_viewer_clicked(self, event: QMouseEvent):
-        """Handler for a click in the viewer"""
-        if self.viewer.current_image is None:
-            # No image, we don't care
-            return
-
-        # Alt + Click, remove a star
-        if event.modifiers() == Qt.KeyboardModifier.AltModifier:
-            if event.button() == Qt.MouseButton.LeftButton:
-                self.remove_star_at_position(event.pos())
-            return
-
-        # if CTRL is held, add a reference star
-        if event.modifiers() == Qt.KeyboardModifier.ControlModifier:
-            if event.button() == Qt.MouseButton.LeftButton:
-                self.add_reference_star(event.pos())
-            return
-
-        if event.button() == Qt.MouseButton.LeftButton:
-            self.select_target_star(event.pos())
-            return
-
-    @Slot()
-    def calculate_aperture_photometry(self):
-        current_image = self.viewer.current_image
-        if current_image is None:
-            return
-        if current_image.stars is None:
-            return
-        if current_image.target_star_idx is None:
-            return
-
-        star = current_image.measure_magnitude_at_idx(current_image.target_star_idx)
-
-        self.star_selected.emit(star)
-
-    @Slot()
-    def find_stars_in_image(self):
-        current_image = self.viewer.current_image
-        if current_image is None:
-            return
-
-        with self.progress_handler("Finding stars..."):
-            current_image.find_stars()
-
-    def select_target_star(self, coordinates: QPoint):
-        """Creates a marker on image at coordinates"""
-        current_image = self.viewer.current_image
-
-        if current_image is None:
-            return
-
-        x, y = self.viewer.convert_to_image_coordinates(coordinates)
-
-        star, idx = current_image.select_star_at_position(x, y)
-        # Star not found
-        if star is None or idx is None:
-            return
-        if idx in current_image.reference_star_idxs:
-            # Target star cannot be a reference to itself
-            return
-        # Add new marker, replace old target if present
-        if current_image.target_star_idx:
-            old_target = current_image.get_star(current_image.target_star_idx)
-            if old_target:
-                self.viewer.remove_star_marker(old_target.x, old_target.y)
-
-        self.viewer.add_star_marker(star.x, star.y, colour="cyan")
-
-        current_image.target_star_idx = int(idx)
-
-        self.star_selected.emit(star)
-
-    def remove_star_at_position(self, coordinates: QPoint):
-        """Removes a star at selected point"""
-        img = self.viewer.current_image
-
-        x, y = self.viewer.convert_to_image_coordinates(coordinates)
-
-        if img is None:
-            return  # No work required
-
-        # Are we clicking near a target star?
-        if img.target_star_idx is not None:
-            target = img.get_star(img.target_star_idx)
-            if target and self.is_near(x, y, target.x, target.y):
-                img.target_star_idx = None
-                self.viewer.remove_star_marker(target.x, target.y)
-                return
-
-        # Are we clicking near a reference star?
-        for idx in img.reference_star_idxs[:]:  # make a copy
-            ref = img.get_star(idx)
-            if ref and self.is_near(x, y, ref.x, ref.y):
-                img.reference_star_idxs.remove(idx)
-                self.viewer.remove_star_marker(ref.x, ref.y)
-                return
-
     def is_near(
         self,
         x1: float,
@@ -334,161 +184,57 @@ class MainWindow(QMainWindow):
     ):
         return ((x1 - x2) ** 2 + (y1 - y2) ** 2) ** 0.5 <= tolerance
 
-    def add_reference_star(self, coordinates: QPoint):
-        """Select star at point as a reference star for calculations"""
-
-        current_image = self.viewer.current_image
-
-        if current_image is None:
-            return
-
-        x, y = self.viewer.convert_to_image_coordinates(coordinates)
-
-        star, idx = current_image.select_star_at_position(x, y)
-        # Star not found
-        if star is None or idx is None:
-            return
-
-        if current_image.target_star_idx is not None:
-            if current_image.target_star_idx == idx:
-                # We cannot mark a target star as a reference to itself
-                return
-        self.viewer.add_star_marker(star.x, star.y, colour="magenta")
-
-        current_image.reference_star_idxs.append(int(idx))
-
     @Slot()
     def process_all_images(self):
         """Generate light curve from all loaded images"""
-        # Validate that there's data to work on
-        if not self.fits_data:
-            logging.error(f"No images available to work on")
-            return  # No images to work on
+        current_image = self.image_manager.active_image
 
-        target_image = self.viewer.current_image
+        if current_image is None:
+            return  # No work required
 
-        if target_image is None:
-            logging.error(f"No image currently loaded, aborting process")
-            return  # No primary image to propagate from
-
-        if target_image.target_star_idx is None:
-            logging.error(
-                f"Image {target_image.filename} has no target star, aborting process"
-            )
-            return  # We need a target star
-
-        if target_image.reference_star_idxs is None:
-            logging.error(
-                f"Image {target_image.filename} has no reference stars, aborting process"
-            )
-            return  # We need reference stars to do math with
-
-        # Unify star selections
-        self.propagate_star_selection(target_image)
-
-        with self.progress_handler("Processing images..."):
-            results = []
-            for img in self.fits_data.values():
-                if img.target_star_idx is None:
-                    logging.error(
-                        f"Image {img.filename} did not successfully propagate stars, skipping"
-                    )
-                    continue  # Did not propagate, do not use
-
-                # No repetition if it's in one list
-                idxs = [img.target_star_idx]
-                idxs.extend(img.reference_star_idxs)
-
-                stars = []
-                for idx in idxs:
-                    # Need magnitude for diff mag
-                    star = img.measure_magnitude_at_idx(
-                        idx=idx,
-                        aperture_radius=img.APERTURE_RADIUS_DEFAULT,
-                        annulus_inner=img.ANNULUS_INNER_DEFAULT,
-                        annulus_outer=img.ANNULUS_OUTER_DEFAULT,
-                    )
-                    if star:
-                        stars.append(star)
-                    else:
-                        logging.error(
-                            f"Failed to measure star magnitude in image {img.filename}, index {idx}, skipping"
-                        )
-                        break
-                # Cannot continue without sufficient number of stars
-                if len(stars) != len(idxs):
-                    logging.error(
-                        f"Failed to measure sufficient stars in image {img.filename}, skipping image"
-                    )
-                    continue
-
-                result = self.calculate_differential_magnitude(
-                    target_star=stars[0], ref_stars=stars[1:]
-                )
-                results.append(
-                    {
-                        "filename": img.filename,
-                        "time": img.observation_time,
-                        "magnitude": result,
-                        "n_references": len(stars[1:]),
-                    }
-                )
-
-            self.generate_light_curve(results)
+        self.propagate_star_selection(current_image)
+        for image in self.image_manager.get_all_images():
+            self.process_single_image(image)
 
     def process_single_image(self, image: FITSImage):
         """Process one image for differential photometry"""
-        pass
+
+        for star in image.star_manager.get_all_stars():
+            image.measure_star_magnitude(star)
 
     @Slot(FITSImage)
     def propagate_star_selection(self, image: FITSImage):
         """Propagates star selection across all images"""
-        if not image.target_star_idx and not image.reference_star_idxs:
-            logging.error(f"No markers in image {image.filename} to propagate")
-            return  # No markers to propagate, no work to do
+        image_manager = self.image_manager
+        stars = image.star_manager.get_all_stars()
 
-        for img in self.fits_data.values():
-            with self.progress_handler("Propagating stars..."):
-                if img == image:
-                    # Don't propagate to self
-                    continue
+        with self.progress_handler("Propagating stars..."):
+            for img in image_manager.get_all_images():
+                if img != image:
+                    # Propagate to all other images, ignore target
 
-                if img.stars is None:
-                    img.find_stars()
+                    for star in stars:
+                        with self.progress_handler("Finding stars in image..."):
+                            star_data, _ = img.find_nearest_star(star.x, star.y)
 
-                # Clear existing selections before propagation
-                img.target_star_idx = None
-                img.reference_star_idxs = []
-
-                # Propagate target
-                if image.target_star_idx:
-                    star = image.get_star(image.target_star_idx)
-                    if star:
-                        _, t_s_idx = img.find_nearest_star(
-                            star.x, star.y, FITSImage.MAX_DISTANCE_DEFAULT
-                        )
-                        if t_s_idx:
-                            img.target_star_idx = int(t_s_idx)
-
-                # Propagate references
-                for idx in image.reference_star_idxs:
-                    star = image.get_star(idx)
-                    if star:
-                        _, ref_idx = img.find_nearest_star(
-                            star.x, star.y, FITSImage.MAX_DISTANCE_DEFAULT
-                        )
-                        if ref_idx:
-                            img.reference_star_idxs.append(int(ref_idx))
+                        if star_data:
+                            measurement = StarMeasurement(
+                                x=star_data["xcentroid"],
+                                y=star_data["ycentroid"],
+                                time=img.observation_time,
+                                image=img.filename,
+                            )
+                            img.star_manager.add_star(measurement)
 
     def calculate_differential_magnitude(
-        self, target_star: SelectedStar, ref_stars: List[SelectedStar]
+        self, target_star: StarMeasurement, ref_stars: List[StarMeasurement]
     ):
         """Calculate differential magnitude on target image and stars"""
-        ref_mags = [ref.magnitude for ref in ref_stars]
+        ref_mags = [ref.mag for ref in ref_stars]
         ref_mags = np.asarray(ref_mags)
 
         # - ref_mags + target_mag == target_mag - ref_mags
-        return np.mean((-1 * ref_mags) + target_star.magnitude)
+        return np.mean((-1 * ref_mags) + target_star.mag)
 
     def generate_light_curve(self, results):
         """Create light curve from data"""

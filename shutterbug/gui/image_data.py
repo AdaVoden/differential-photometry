@@ -1,34 +1,18 @@
-from astropy import stats
-
-from photutils.detection import DAOStarFinder
-from photutils.aperture import CircularAperture, CircularAnnulus, aperture_photometry
-
-from pydantic import BaseModel
-
-import numpy as np
-
 from pathlib import Path
 
-import logging
-
-from typing import List
-
-
-class SelectedStar(BaseModel):
-    """Only for stars the user as explicitly selected"""
-
-    index: int
-    x: float
-    y: float
-    fwhm: float | None = None
-    flux: float | None = None
-    magnitude: float | None = None
-    mag_error: float | None = None
-    is_target: bool = False
-    is_reference: bool = False
+import numpy as np
+from astropy import stats
+from photutils.aperture import CircularAnnulus, CircularAperture, aperture_photometry
+from photutils.detection import DAOStarFinder
+from PySide6.QtCore import QObject, Signal
+from .stars import StarMeasurement, MeasurementManager
 
 
-class FITSImage:
+class FITSImage(QObject):
+    """FITS image data and display class"""
+
+    brightness_changed = Signal(int)
+    contrast_changed = Signal(int)
 
     # Photometry defaults
     APERTURE_RADIUS_DEFAULT = 10  # pixels
@@ -44,18 +28,22 @@ class FITSImage:
 
     # Display defaults
     BRIGHTNESS_OFFSET = 0
-    CONTRAST_FACTOR = 1.0
+    CONTRAST_FACTOR = 100
 
-    def __init__(self, filepath: str, data, obs_time: str) -> None:
+    def __init__(self, filepath: Path, data, obs_time: str) -> None:
+        super().__init__()
         # File data
-        self.filepath: Path = Path(filepath)
+        self.filepath: Path = filepath
         self.filename: str = self.filepath.name
         self.observation_time: float = float(obs_time)
         self.original_data = data
 
+        # Star manager per image
+        self.star_manager = MeasurementManager()
+
         # Image display settings
         self.brightness_offset: int = self.BRIGHTNESS_OFFSET
-        self.contrast_factor: float = self.CONTRAST_FACTOR
+        self.contrast_factor: int = self.CONTRAST_FACTOR
 
         # photometry settings
         self.zero_point: float = self.ZERO_POINT_DEFAULT
@@ -66,9 +54,6 @@ class FITSImage:
         # Star variables, computed
         self.background: float | None = None
         self.stars = None  # Detected stars
-        self.target_star_idx: int | None = None  # Index into the stars table
-        self.reference_star_idxs: List[int] = []
-        self._background_subtracted = None
 
     def compute_background(self):
         """Calculate background of image using sigma-clipped statistics"""
@@ -81,12 +66,11 @@ class FITSImage:
 
     def get_background_subtracted(self):
         """Get background-subtracted data, creates if unavailable"""
-        if self._background_subtracted is None:
-            if self.background is None:
-                self.compute_background()
+        if self.background is None:
+            self.compute_background()
             # Simply subtract background from original data
-            self._background_subtracted = self.original_data - self.background
-        return self._background_subtracted
+        background_subtracted = self.original_data - self.background
+        return background_subtracted
 
     def find_stars(self):
         """Detect stars using DAOStarFinder"""
@@ -140,7 +124,7 @@ class FITSImage:
 
         # apply contrast and brightness to 0-1 range
         # Contrast: multiply (1.0 = no change)
-        data = data * self.contrast_factor
+        data = data * (self.contrast_factor / 100)  # Normalize to ~1
 
         # Brightness: add/subtract (-1 to 1 range)
         data = data + (self.brightness_offset / 100.0)
@@ -151,44 +135,13 @@ class FITSImage:
 
         return data
 
-    def get_star(self, idx):
-        if self.stars is None:
-            return None
-        star = self.stars[idx]
-
-        return SelectedStar(
-            index=idx,
-            x=star["xcentroid"],
-            y=star["ycentroid"],
-            flux=star["flux"],
-            magnitude=None,
-        )
-
     def measure_star_magnitude(
         self,
+        star: StarMeasurement,
         aperture_radius: int = APERTURE_RADIUS_DEFAULT,
         annulus_inner: int = ANNULUS_INNER_DEFAULT,
         annulus_outer: int = ANNULUS_OUTER_DEFAULT,
     ):
-        """Measure the instrumental magnitude of a star"""
-        if self.target_star_idx is None:
-            return
-
-        return self.measure_magnitude_at_idx(
-            self.target_star_idx, aperture_radius, annulus_inner, annulus_outer
-        )
-
-    def measure_magnitude_at_idx(
-        self,
-        idx: int,
-        aperture_radius: int = APERTURE_RADIUS_DEFAULT,
-        annulus_inner: int = ANNULUS_INNER_DEFAULT,
-        annulus_outer: int = ANNULUS_OUTER_DEFAULT,
-    ):
-        star = self.get_star(idx)
-        if star is None:
-            return
-
         # Define apertures
         position = [(star.x, star.y)]
         aperture = CircularAperture(position, r=aperture_radius)
@@ -206,25 +159,31 @@ class FITSImage:
         # Convert to magnitude (25 is an arbitrary zero_point)
         magnitude = -2.5 * np.log10(star_flux.value[0]) + self.zero_point
 
-        star.magnitude = magnitude
+        star.mag = magnitude
         star.flux = star_flux.value[0]
 
         return star
 
-    def select_star_at_position(self, x: float, y: float):
-        """From specified coordinates, find star nearest to click"""
+    @property
+    def brightness(self):
+        """Gets image's display brightness"""
+        return self.brightness_offset
 
-        if self.stars is None:
-            return None, None
+    @brightness.setter
+    def brightness(self, value: int):
+        """Sets image's display brightness"""
+        if self.brightness_offset != value:
+            self.brightness_offset = value
+            self.brightness_changed.emit(value)
 
-        nearest_star, idx = self.find_nearest_star(x, y)
+    @property
+    def contrast(self):
+        """Gets image's display contrast"""
+        return self.contrast_factor
 
-        if nearest_star and idx:
-            star_x = nearest_star["xcentroid"]
-            star_y = nearest_star["ycentroid"]
-            logging.info(f"Selected star at ({star_x:.1f}, {star_y:.1f})")
-            return self.get_star(idx), idx
-
-        else:
-            logging.info(f"No star found near ({x:.1f}, {y:.1f})")
-            return None, None
+    @contrast.setter
+    def contrast(self, value: int):
+        """Sets image's display contrast"""
+        if self.contrast_factor != value:
+            self.contrast_factor = value
+            self.contrast_changed.emit(value)
