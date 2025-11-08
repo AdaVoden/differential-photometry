@@ -8,8 +8,8 @@ from .star import StarMeasurement
 from .star_catalog import StarCatalog
 
 
-class StarManager(QObject):
-    """Manager for an image's stars"""
+class MeasurementManager(QObject):
+    """Manager for an image's star measurements"""
 
     star_added = Signal(StarMeasurement)
     target_star_changed = Signal(StarMeasurement)

@@ -5,7 +5,7 @@ from astropy import stats
 from photutils.aperture import CircularAnnulus, CircularAperture, aperture_photometry
 from photutils.detection import DAOStarFinder
 from PySide6.QtCore import QObject, Signal
-from .stars import StarMeasurement, StarManager
+from .stars import StarMeasurement, MeasurementManager
 
 
 class FITSImage(QObject):
@@ -39,7 +39,7 @@ class FITSImage(QObject):
         self.original_data = data
 
         # Star manager per image
-        self.star_manager = StarManager()
+        self.star_manager = MeasurementManager()
 
         # Image display settings
         self.brightness_offset: int = self.BRIGHTNESS_OFFSET

@@ -174,15 +174,6 @@ class MainWindow(QMainWindow):
         self.sidebar.outliner.set_state(state["outliner"])
         self.sidebar.settings.set_state(state["settings"])
 
-    @Slot()
-    def find_stars_in_image(self):
-        current_image = self.image_manager.active_image
-        if current_image is None:
-            return
-
-        with self.progress_handler("Finding stars..."):
-            current_image.find_stars()
-
     def is_near(
         self,
         x1: float,
