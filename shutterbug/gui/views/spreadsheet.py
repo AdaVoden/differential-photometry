@@ -1,10 +1,11 @@
-from PySide6.QtWidgets import QLabel, QVBoxLayout, QWidget, QTableView, QHeaderView
+from PySide6.QtWidgets import QVBoxLayout, QWidget, QTableView, QHeaderView
 from PySide6.QtGui import QStandardItem, QStandardItemModel
-from PySide6.QtCore import Slot, Signal
+from PySide6.QtCore import QModelIndex, Slot
 
 from shutterbug.gui.image_data import FITSImage
 from shutterbug.gui.image_manager import ImageManager
 from shutterbug.gui.stars.star import StarMeasurement
+from shutterbug.gui.stars.star_catalog import StarCatalog
 
 
 class SpreadsheetViewer(QWidget):
@@ -15,8 +16,9 @@ class SpreadsheetViewer(QWidget):
         # Default variables
         self.image_manager = ImageManager()
         self.current_image = self.image_manager.active_image
+        self.catalog = StarCatalog()
 
-        self.header_labels = ["X", "Y", "Flux", "Flux Err", "Mag", "Mag Err"]
+        self.header_labels = ["ID", "X", "Y", "Flux", "Flux Err", "Mag", "Mag Err"]
 
         # Layout without styling
         layout = QVBoxLayout()
@@ -45,27 +47,52 @@ class SpreadsheetViewer(QWidget):
         """Handles the image changing by populating new data and connecting signals"""
         if self.current_image:
             star_manager = self.current_image.star_manager
-            star_manager.star_added.disconnect(self._on_star_added)
-            star_manager.star_removed.disconnect(self._on_star_removed)
+            star_manager.measurement_added.disconnect(self._on_star_added)
+            star_manager.measurement_removed.disconnect(self._on_star_removed)
+            star_manager.measurement_changed.disconnect(self._on_star_changed)
 
         self.current_image = image
         if image:
             star_manager = image.star_manager
-            star_manager.star_added.connect(self._on_star_added)
-            star_manager.star_removed.connect(self._on_star_removed)
+            star_manager.measurement_added.connect(self._on_star_added)
+            star_manager.measurement_removed.connect(self._on_star_removed)
+            star_manager.measurement_changed.connect(self._on_star_changed)
 
             self._load_all_stars()
 
     @Slot(StarMeasurement)
     def _on_star_added(self, star: StarMeasurement):
         """Handles new star being added to Star Manager"""
-        row = self._data_to_row(star)
-        self.model.appendRow(row)
+        star_id = self.catalog.get_by_measurement(star)
+        if star_id:
+            row = self._data_to_row(star, star_id.id)
+            self.model.appendRow(row)
 
     @Slot(StarMeasurement)
-    def _on_star_removed(self):
+    def _on_star_removed(self, star: StarMeasurement):
         """Handles star being removed from Star Manager"""
-        pass
+        star_id = self.catalog.get_by_measurement(star)
+        if star_id:
+            idx = self._idx_from_id(star_id.id)
+            if idx:
+                self.model.removeRow(idx.row())
+
+    @Slot(StarMeasurement)
+    def _on_star_changed(self, star: StarMeasurement):
+        """Handles star being changed"""
+        star_id = self.catalog.get_by_measurement(star)
+        if star_id:
+            idx = self._idx_from_id(star_id.id)
+            if idx:
+                row = idx.row()
+                self.model.setItem(row, 3, QStandardItem(self._float_to_str(star.flux)))
+                self.model.setItem(
+                    row, 4, QStandardItem(self._float_to_str(star.flux_error))
+                )
+                self.model.setItem(row, 5, QStandardItem(self._float_to_str(star.mag)))
+                self.model.setItem(
+                    row, 6, QStandardItem(self._float_to_str(star.mag_error))
+                )
 
     def _load_all_stars(self):
         """Loads all stars from the Star Manager into table"""
@@ -73,27 +100,41 @@ class SpreadsheetViewer(QWidget):
         if not self.current_image:
             return  # No work to do
 
+        rows = []
         for star in self.current_image.star_manager.get_all_stars():
-            row = self._data_to_row(star)
-            self.model.appendRow(row)
+
+            star_id = self.catalog.get_by_measurement(star)
+            if star_id:
+                row = self._data_to_row(star, star_id.id)
+                rows.append(row)
+        self.model.appendRow(rows)
+
+    def _idx_from_id(self, id: str) -> QModelIndex | None:
+        """Finds index associated with id"""
+        row = self.model.findItems(id)
+        if row:
+            idx = self.model.indexFromItem(row[0])
+            return idx
+        return None
 
     def _clear_all(self):
         """Clears all items from model and view"""
         self.model.clear()
         self.model.setHorizontalHeaderLabels(self.header_labels)
 
-    def _data_to_row(self, star: StarMeasurement):
+    def _data_to_row(self, star: StarMeasurement, star_id: str):
         """Converts a star object to a model row"""
         row = [
-            QStandardItem(self._item_to_str(star.x)),
-            QStandardItem(self._item_to_str(star.y)),
-            QStandardItem(self._item_to_str(star.flux)),
-            QStandardItem(self._item_to_str(star.flux_error)),
-            QStandardItem(self._item_to_str(star.mag)),
-            QStandardItem(self._item_to_str(star.mag_error)),
+            QStandardItem(star_id),
+            QStandardItem(self._float_to_str(star.x)),
+            QStandardItem(self._float_to_str(star.y)),
+            QStandardItem(self._float_to_str(star.flux)),
+            QStandardItem(self._float_to_str(star.flux_error)),
+            QStandardItem(self._float_to_str(star.mag)),
+            QStandardItem(self._float_to_str(star.mag_error)),
         ]
         return row
 
-    def _item_to_str(self, item: float | None):
+    def _float_to_str(self, item: float | None):
         """Converts a float to a string"""
         return "" if item is None else f"{item:.2f}"

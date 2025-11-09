@@ -11,9 +11,9 @@ from .star_catalog import StarCatalog
 class MeasurementManager(QObject):
     """Manager for an image's star measurements"""
 
-    star_added = Signal(StarMeasurement)
-    target_star_changed = Signal(StarMeasurement)
-    star_removed = Signal(StarMeasurement)
+    measurement_added = Signal(StarMeasurement)
+    measurement_changed = Signal(StarMeasurement)
+    measurement_removed = Signal(StarMeasurement)
 
     def __init__(self):
         super().__init__()
@@ -30,7 +30,9 @@ class MeasurementManager(QObject):
         self.stars[coords] = star
         self.star_coords.append((star.x, star.y))
         self._dirty = True
-        self.star_added.emit(star)
+        self.measurement_added.emit(star)
+        # If the star changes, alert everything
+        star.updated.connect(self.measurement_changed)
 
     def remove_star(self, star: StarMeasurement):
         """Remove star measurement from manager"""
@@ -38,7 +40,8 @@ class MeasurementManager(QObject):
         self.star_coords.remove((star.x, star.y))
         self.stars.pop(coords)
         self._dirty = True
-        self.star_removed.emit(star)
+        self.measurement_removed.emit(star)
+        star.updated.disconnect(self.measurement_changed)
 
     def _ensure_tree(self):
         """Create or rebuild the KDTree for spacial detection"""

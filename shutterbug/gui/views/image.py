@@ -96,8 +96,10 @@ class ImageViewer(QGraphicsView):
         if self.current_image:
             self.current_image.brightness_changed.disconnect(self.update_display)
             self.current_image.contrast_changed.disconnect(self.update_display)
-            self.current_image.star_manager.star_added.disconnect(self.add_star_marker)
-            self.current_image.star_manager.star_removed.disconnect(
+            self.current_image.star_manager.measurement_added.disconnect(
+                self.add_star_marker
+            )
+            self.current_image.star_manager.measurement_removed.disconnect(
                 self.remove_star_marker
             )
 
@@ -105,8 +107,10 @@ class ImageViewer(QGraphicsView):
         if image:
             image.brightness_changed.connect(self.update_display)
             image.contrast_changed.connect(self.update_display)
-            self.current_image.star_manager.star_added.connect(self.add_star_marker)
-            self.current_image.star_manager.star_removed.connect(
+            self.current_image.star_manager.measurement_added.connect(
+                self.add_star_marker
+            )
+            self.current_image.star_manager.measurement_removed.connect(
                 self.remove_star_marker
             )
 
