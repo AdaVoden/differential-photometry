@@ -1,5 +1,4 @@
-- [ ] Propagate error with magnitude
-- [ ] Calculate FWHM + sigma
+- [x] Propagate error with magnitude
 - [ ] Add icons for tabs
 - [x] Undo/Redo
 - [ ] Unbreak Save project/load project
