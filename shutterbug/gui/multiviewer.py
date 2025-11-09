@@ -8,7 +8,7 @@ from PySide6.QtWidgets import (
 from PySide6.QtGui import QUndoStack
 from PySide6.QtCore import Signal, Slot
 
-from .viewer import Viewer
+from .views import ImageViewer, GraphViewer, SpreadsheetViewer
 
 
 class MultiViewer(QWidget):
@@ -31,9 +31,9 @@ class MultiViewer(QWidget):
         top_bar.setObjectName("topbar")
 
         # Stacked views
-        self.image_viewer = Viewer(undo_stack)
-        self.graph_viewer = QWidget()  # Placeholder
-        self.table_viewer = QWidget()
+        self.image_viewer = ImageViewer(undo_stack)
+        self.graph_viewer = GraphViewer()  # Placeholder
+        self.table_viewer = SpreadsheetViewer()
 
         self.stack = QStackedWidget()
         self.stack.addWidget(self.image_viewer)

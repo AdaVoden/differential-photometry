@@ -22,13 +22,13 @@ from PySide6.QtGui import (
 )
 from PySide6.QtWidgets import QGraphicsScene, QGraphicsView, QMenu
 
-from .image_data import FITSImage
-from .image_manager import ImageManager
-from .stars import StarMeasurement
-from .commands import DeselectStarCommand, SelectStarCommand
+from shutterbug.gui.image_data import FITSImage
+from shutterbug.gui.image_manager import ImageManager
+from shutterbug.gui.stars import StarMeasurement
+from shutterbug.gui.commands import DeselectStarCommand, SelectStarCommand
 
 
-class Viewer(QGraphicsView):
+class ImageViewer(QGraphicsView):
 
     photometry_requested = Signal()
     propagation_requested = Signal(FITSImage)
