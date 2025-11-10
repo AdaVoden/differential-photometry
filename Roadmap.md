@@ -8,7 +8,7 @@
 - [x] Load multiple FITS images
 - [x] Display FITS images in Outliner
 - [x] Adjust image brightness/contrast
-- [x] Save/load project state
+- [ ] Save/load project state
     - [x] Display selected image on load
     - [x] Load project settings
     - [x] Load images
@@ -27,11 +27,15 @@
 - [x] Batch processing multiple images
 - [x] Generate light curve for selected star
 - [x] Export light curve graph
+- [ ] Colour blind colour schemes
 - [ ] Plate solving
 - [ ] Find image zero point
 - [ ] AAVSO export format
 - [ ] Period analysis tools
 - [ ] Polish UX
-    - [x] Keep same view one image change
+    - [x] Keep same view on image change
     - [x] Click to remove stars
+    - [x] Spreadsheet to view data
+    - [ ] Graph viewer to view timeseries calculations
+    - [ ]
 
