@@ -1,3 +1,4 @@
+import logging
 from PySide6.QtWidgets import (
     QWidget,
     QVBoxLayout,
@@ -54,6 +55,8 @@ class MultiViewer(QWidget):
         self.mode_selector.currentIndexChanged.connect(self.change_mode)
         self.image_viewer.propagation_requested.connect(self.propagation_requested)
         self.image_viewer.batch_requested.connect(self.batch_requested)
+
+        logging.debug("Multiviewer intialized")
 
     @Slot(int)
     def change_mode(self, index: int):

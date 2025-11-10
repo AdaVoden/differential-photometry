@@ -23,11 +23,9 @@ class SelectStarCommand(QUndoCommand):
 
     def redo(self):
         self.star_manager.add_star(self.measurement)
-        self.star_manager.catalog.register_measurement(self.measurement)
 
     def undo(self):
         self.star_manager.remove_star(self.measurement)
-        self.star_manager.catalog.unregister_measurement(self.measurement)
 
 
 class DeselectStarCommand(QUndoCommand):
@@ -48,8 +46,6 @@ class DeselectStarCommand(QUndoCommand):
 
     def redo(self):
         self.star_manager.remove_star(self.measurement)
-        self.star_manager.catalog.unregister_measurement(self.measurement)
 
     def undo(self):
         self.star_manager.add_star(self.measurement)
-        self.star_manager.catalog.register_measurement(self.measurement)

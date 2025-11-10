@@ -30,7 +30,6 @@ from shutterbug.gui.commands import DeselectStarCommand, SelectStarCommand
 
 class ImageViewer(QGraphicsView):
 
-    photometry_requested = Signal()
     propagation_requested = Signal(FITSImage)
     batch_requested = Signal()
 
@@ -89,7 +88,7 @@ class ImageViewer(QGraphicsView):
         # Set up signals
         self.image_manager.active_image_changed.connect(self._on_image_changed)
 
-        logging.debug("Viewer initialized")
+        logging.debug("Image Viewer initialized")
 
     def _on_image_changed(self, image: FITSImage):
         """Handles image manager active image changing"""
@@ -178,7 +177,7 @@ class ImageViewer(QGraphicsView):
             super().mousePressEvent(fake_event)
         else:
             # Normal left click
-            self.on_viewer_clicked(event)
+            self._on_viewer_clicked(event)
             super().mousePressEvent(event)
 
     def mouseReleaseEvent(self, event: QMouseEvent) -> None:
@@ -197,7 +196,7 @@ class ImageViewer(QGraphicsView):
         find_stars_action.triggered.connect(self.find_stars_in_image)
 
         calc_phot_action = menu.addAction("Calculate magnitude for selected star")
-        calc_phot_action.triggered.connect(self.photometry_requested)
+        calc_phot_action.triggered.connect(self._on_photometry_requested)
 
         propagate_action = menu.addAction("Propagate star selection")
         propagate_action.triggered.connect(self.on_propagate_requested)
@@ -209,7 +208,8 @@ class ImageViewer(QGraphicsView):
 
         super().contextMenuEvent(event)
 
-    def on_viewer_clicked(self, event: QMouseEvent):
+    @Slot(QMouseEvent)
+    def _on_viewer_clicked(self, event: QMouseEvent):
         """Handler for a click in the viewer"""
         current_image = self.image_manager.active_image
         if current_image is None:
@@ -226,6 +226,19 @@ class ImageViewer(QGraphicsView):
             self.select_star(event.pos())
             return
 
+    @Slot()
+    def _on_photometry_requested(self):
+        """Handles photometry being requested on stars"""
+        if self.current_image is None:
+            return  # No work to do
+
+        measurement_manager = self.current_image.star_manager
+
+        stars = measurement_manager.get_all_stars()
+        for star in stars:
+            self.current_image.measure_star_magnitude(star)
+
+    @Slot()
     def find_stars_in_image(self):
         if self.current_image is None:
             return  # No work to do
@@ -239,7 +252,7 @@ class ImageViewer(QGraphicsView):
             # No work to do
             return None
 
-        x, y = self.convert_to_image_coordinates(coordinates)
+        x, y = self._convert_to_image_coordinates(coordinates)
 
         star, _ = current_image.find_nearest_star(x, y)
 
@@ -286,7 +299,7 @@ class ImageViewer(QGraphicsView):
 
         self.propagation_requested.emit(self.current_image)
 
-    def convert_to_image_coordinates(self, coordinate: QPoint) -> Tuple[float, float]:
+    def _convert_to_image_coordinates(self, coordinate: QPoint) -> Tuple[float, float]:
         """Converts coordinates of click to coordinates of active image"""
         # Step 1, convert to scene coordinates
         scene_pos = self.mapToScene(coordinate)
@@ -331,17 +344,17 @@ class ImageViewer(QGraphicsView):
             marker = self.markers.pop((star.x, star.y))
             self.scene().removeItem(marker)
 
-    def clear_markers(self):
+    def _clear_markers(self):
         """Remove all star markers"""
         for x, y in self.markers:
             self.scene().removeItem(self.markers[(x, y)])
 
         self.markers = {}
 
-    def display_image(self, image: FITSImage):
+    def _display_image(self, image: FITSImage):
         """Display given FITS data array"""
         logging.debug(f"Image display called on image: {image.filename}")
-        self.clear_markers()
+        self._clear_markers()
 
         old_center = self.mapToScene(self.viewport().rect().center())
         old_zoom = self._zoom_level
@@ -368,15 +381,15 @@ class ImageViewer(QGraphicsView):
         self.scale(old_zoom, old_zoom)
         self.centerOn(old_center)
 
-        self.display_markers_for_image()
+        self._display_markers_for_image()
 
-    def clear_image(self):
+    def _clear_image(self):
         """Clear current image from view"""
         self.current_image = None
-        self.clear_markers()
+        self._clear_markers()
         self.pixmap_item.setPixmap(QPixmap())
 
-    def display_markers_for_image(self):
+    def _display_markers_for_image(self):
         """Restore markers from image state"""
         # Add markers from image
         if self.current_image is None:
@@ -392,4 +405,4 @@ class ImageViewer(QGraphicsView):
             self.pixmap_item.setPixmap(QPixmap())
             return
 
-        self.display_image(self.current_image)
+        self._display_image(self.current_image)

@@ -1,3 +1,4 @@
+import logging
 from PySide6.QtWidgets import QVBoxLayout, QWidget, QTableView, QHeaderView
 from PySide6.QtGui import QStandardItem, QStandardItemModel
 from PySide6.QtCore import QModelIndex, Slot
@@ -42,6 +43,8 @@ class SpreadsheetViewer(QWidget):
         # Connections
         self.image_manager.active_image_changed.connect(self._on_image_change)
 
+        logging.debug("Spreadsheet viewer initialized")
+
     @Slot(FITSImage)
     def _on_image_change(self, image: FITSImage):
         """Handles the image changing by populating new data and connecting signals"""
@@ -53,6 +56,7 @@ class SpreadsheetViewer(QWidget):
 
         self.current_image = image
         if image:
+            logging.debug(f"Spreadsheet changing image to: {image.filename}")
             star_manager = image.star_manager
             star_manager.measurement_added.connect(self._on_star_added)
             star_manager.measurement_removed.connect(self._on_star_removed)
@@ -64,6 +68,7 @@ class SpreadsheetViewer(QWidget):
     def _on_star_added(self, star: StarMeasurement):
         """Handles new star being added to Star Manager"""
         star_id = self.catalog.get_by_measurement(star)
+        logging.debug(f"Spreadsheet adding star id: {star_id}")
         if star_id:
             row = self._data_to_row(star, star_id.id)
             self.model.appendRow(row)
@@ -77,7 +82,7 @@ class SpreadsheetViewer(QWidget):
             if idx:
                 self.model.removeRow(idx.row())
 
-    @Slot(StarMeasurement)
+    @Slot(object)
     def _on_star_changed(self, star: StarMeasurement):
         """Handles star being changed"""
         star_id = self.catalog.get_by_measurement(star)

@@ -29,6 +29,7 @@ class StarCatalog:
         self._coords.append((x, y))
         self._ids.append(star_identity.id)
         self._dirty = True
+        logging.debug(f"Added identity: {star_identity}")
 
     def _remove_star(self, star_identity: StarIdentity, x: float, y: float):
         """Removes stars from the catalog"""
@@ -36,6 +37,7 @@ class StarCatalog:
         self._coords.remove((x, y))
         self._ids.remove(star_identity.id)
         self._dirty = True
+        logging.debug(f"Removed identity: {star_identity}")
 
     def _ensure_tree(self):
         """Rebuilds the KDTree for spacial coordinates"""
@@ -45,7 +47,7 @@ class StarCatalog:
                 return
             # Generate new tree!
             logging.debug(
-                f"StarManager rebuilt KDTree with {len(self._coords)} coordinates"
+                f"StarCatalog rebuilt KDTree with {len(self._coords)} coordinates"
             )
             self._kdtree = KDTree(self._coords)
         self._dirty = False
@@ -70,7 +72,8 @@ class StarCatalog:
         if not self._ids:
             # No other stars available
             return 1
-        last_id = self._ids[-1]
+        last_id_str = self._ids[-1].split("_")[1]
+        last_id = int(last_id_str)
         return last_id + 1
 
     def register_measurement(self, measurement: StarMeasurement) -> StarIdentity:
@@ -79,7 +82,7 @@ class StarCatalog:
         if match_id:
             star = self.stars[match_id]
         else:
-            star_id = f"star_{self._new_id}"
+            star_id = f"Star_{self._new_id()}"
             star = StarIdentity(id=star_id)
             self._add_star(star, measurement.x, measurement.y)
         star.measurements[measurement.image] = measurement
