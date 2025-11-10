@@ -1,5 +1,4 @@
-- [ ] Propagate error with magnitude
-- [ ] Calculate FWHM + sigma
+- [x] Propagate error with magnitude
 - [ ] Add icons for tabs
 - [x] Undo/Redo
 - [ ] Unbreak Save project/load project
@@ -11,3 +10,6 @@
 - [ ] Reduce brightness/contrast processing time
 - [ ] Graph view
   - [ ] Select graphs of different stars
+- [x] Spreadsheet view
+- [ ] Only search for stars in a small region around click
+- [ ] Select star in spreadsheet view to select star in image

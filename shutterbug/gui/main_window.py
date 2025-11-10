@@ -18,7 +18,7 @@ from .image_manager import ImageManager
 from .progress_bar_handler import ProgressHandler
 from .project import ShutterbugProject
 from .sidebar import Sidebar
-from .viewer import Viewer
+from .multiviewer import MultiViewer
 from .stars import StarMeasurement
 
 from .commands import LoadImagesCommand
@@ -47,7 +47,7 @@ class MainWindow(QMainWindow):
 
         # Create sidebar and viewer
         self.sidebar = Sidebar(self._undo_stack)
-        self.viewer = Viewer(self._undo_stack)
+        self.viewer = MultiViewer(self._undo_stack)
 
         # Set up central widget with horizontal layout
         central = QWidget()
