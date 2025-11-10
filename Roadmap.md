@@ -37,5 +37,4 @@
     - [x] Click to remove stars
     - [x] Spreadsheet to view data
     - [ ] Graph viewer to view timeseries calculations
-    - [ ]
 

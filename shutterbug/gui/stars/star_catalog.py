@@ -29,7 +29,7 @@ class StarCatalog:
         self._coords.append((x, y))
         self._ids.append(star_identity.id)
         self._dirty = True
-        logging.debug(f"Added identity: {star_identity}")
+        logging.debug(f"Added identity: {star_identity.id}")
 
     def _remove_star(self, star_identity: StarIdentity, x: float, y: float):
         """Removes stars from the catalog"""
@@ -37,7 +37,7 @@ class StarCatalog:
         self._coords.remove((x, y))
         self._ids.remove(star_identity.id)
         self._dirty = True
-        logging.debug(f"Removed identity: {star_identity}")
+        logging.debug(f"Removed identity: {star_identity.id}")
 
     def _ensure_tree(self):
         """Rebuilds the KDTree for spacial coordinates"""

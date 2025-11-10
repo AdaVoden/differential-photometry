@@ -68,8 +68,8 @@ class SpreadsheetViewer(QWidget):
     def _on_star_added(self, star: StarMeasurement):
         """Handles new star being added to Star Manager"""
         star_id = self.catalog.get_by_measurement(star)
-        logging.debug(f"Spreadsheet adding star id: {star_id}")
         if star_id:
+            logging.debug(f"Spreadsheet adding star id: {star_id.id}")
             row = self._data_to_row(star, star_id.id)
             self.model.appendRow(row)
 
@@ -78,6 +78,7 @@ class SpreadsheetViewer(QWidget):
         """Handles star being removed from Star Manager"""
         star_id = self.catalog.get_by_measurement(star)
         if star_id:
+            logging.debug(f"Spreadsheet removing star id: {star_id.id}")
             idx = self._idx_from_id(star_id.id)
             if idx:
                 self.model.removeRow(idx.row())
