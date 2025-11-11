@@ -10,7 +10,7 @@ from pathlib import Path
 
 
 def load_stylesheet():
-    qss_dir = Path(__file__).parent / "qss"
+    qss_dir = Path(__file__).parent.parent / "resources" / "qss"
 
     stylesheets = [qss_dir / "base.qss", qss_dir / "controls.qss"]
 

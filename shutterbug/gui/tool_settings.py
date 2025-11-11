@@ -1,8 +1,8 @@
 import logging
 
 from shutterbug.gui.controls.labeled_slider import LabeledSlider
-from shutterbug.gui.image_manager import ImageManager
-from shutterbug.gui.image_data import FITSImage
+from shutterbug.core.managers import ImageManager
+from shutterbug.core.models import FITSImage
 from shutterbug.gui.commands.image_commands import (
     SetBrightnessCommand,
     SetContrastCommand,

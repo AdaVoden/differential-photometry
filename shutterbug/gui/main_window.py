@@ -13,16 +13,14 @@ from PySide6.QtWidgets import (
     QProgressBar,
     QWidget,
 )
-from .image_data import FITSImage
-from .image_manager import ImageManager
-from .progress_bar_handler import ProgressHandler
+from shutterbug.core.models import FITSImage, StarMeasurement
+from shutterbug.core.managers import ImageManager, StarCatalog
+from shutterbug.core.progress_bar_handler import ProgressHandler
 from .project import ShutterbugProject
 from .sidebar import Sidebar
-from .multiviewer import MultiViewer
-from .stars import StarMeasurement
+from .views import MultiViewer
 
 from .commands import LoadImagesCommand
-from .stars import StarCatalog
 
 
 class MainWindow(QMainWindow):

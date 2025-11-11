@@ -22,9 +22,8 @@ from PySide6.QtGui import (
 )
 from PySide6.QtWidgets import QGraphicsScene, QGraphicsView, QMenu
 
-from shutterbug.gui.image_data import FITSImage
-from shutterbug.gui.image_manager import ImageManager
-from shutterbug.gui.stars import StarMeasurement
+from shutterbug.core.models import FITSImage, StarMeasurement
+from shutterbug.core.managers import ImageManager
 from shutterbug.gui.commands import DeselectStarCommand, SelectStarCommand
 
 

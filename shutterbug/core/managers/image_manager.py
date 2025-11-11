@@ -1,6 +1,6 @@
 from PySide6.QtCore import Signal, QObject
 
-from shutterbug.gui.image_data import FITSImage
+from shutterbug.core.models import FITSImage
 
 from typing import Dict, List
 

@@ -3,10 +3,8 @@ from PySide6.QtWidgets import QVBoxLayout, QWidget, QTableView, QHeaderView
 from PySide6.QtGui import QStandardItem, QStandardItemModel
 from PySide6.QtCore import QModelIndex, Slot
 
-from shutterbug.gui.image_data import FITSImage
-from shutterbug.gui.image_manager import ImageManager
-from shutterbug.gui.stars.star import StarMeasurement
-from shutterbug.gui.stars.star_catalog import StarCatalog
+from shutterbug.core.models import FITSImage, StarMeasurement
+from shutterbug.core.managers import ImageManager, StarCatalog
 
 
 class SpreadsheetViewer(QWidget):

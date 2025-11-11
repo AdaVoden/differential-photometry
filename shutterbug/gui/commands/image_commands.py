@@ -1,6 +1,6 @@
 from PySide6.QtGui import QUndoCommand
 
-from shutterbug.gui.image_data import FITSImage
+from shutterbug.core.models import FITSImage
 
 
 class SetBrightnessCommand(QUndoCommand):

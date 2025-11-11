@@ -1,8 +1,8 @@
 import logging
 
-from shutterbug.gui.image_manager import ImageManager
-from shutterbug.gui.image_data import FITSImage
-from shutterbug.gui.commands.file_commands import (
+from shutterbug.core.managers import ImageManager
+from shutterbug.core.models import FITSImage
+from .commands.file_commands import (
     RemoveImagesCommand,
     SelectFileCommand,
 )

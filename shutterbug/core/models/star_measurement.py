@@ -1,0 +1,30 @@
+from typing import Dict, Optional
+
+from .base_observable import ObservableQObject
+
+
+class StarMeasurement(ObservableQObject):
+    """Measurement of a star within an image"""
+
+    def __init__(
+        self,
+        x: float,
+        y: float,
+        time: float,
+        image: str,
+        flux: Optional[float] = None,
+        flux_error: Optional[float] = None,
+        mag: Optional[float] = None,
+        mag_error: Optional[float] = None,
+    ):
+        super().__init__()
+        # Intrinsic
+        self.x = x
+        self.y = y
+        self.time = time
+        self.image = image
+        # Computed later
+        self.flux = self._define_field("flux", flux)
+        self.flux_error = self._define_field("flux_error", flux_error)
+        self.mag = self._define_field("mag", mag)
+        self.mag_error = self._define_field("mag_error", mag_error)

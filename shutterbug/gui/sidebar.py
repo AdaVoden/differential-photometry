@@ -5,7 +5,6 @@ from PySide6.QtGui import QUndoStack
 
 from shutterbug.gui.outliner import Outliner
 from shutterbug.gui.tool_settings import Settings
-from shutterbug.gui.image_manager import ImageManager
 
 
 class Sidebar(QWidget):

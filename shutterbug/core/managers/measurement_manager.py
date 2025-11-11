@@ -4,8 +4,8 @@ from typing import List
 from PySide6.QtCore import QObject, Signal
 from scipy.spatial import KDTree
 
-from .star import StarMeasurement
-from .star_catalog import StarCatalog
+from shutterbug.core.models import StarMeasurement
+from shutterbug.core.managers import StarCatalog
 
 
 class MeasurementManager(QObject):
