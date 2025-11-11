@@ -3,10 +3,9 @@ from PySide6.QtWidgets import QVBoxLayout, QWidget, QTableView, QHeaderView
 from PySide6.QtGui import QStandardItem, QStandardItemModel
 from PySide6.QtCore import QModelIndex, Slot
 
-from shutterbug.gui.image_data import FITSImage
-from shutterbug.gui.image_manager import ImageManager
-from shutterbug.gui.stars.star import StarMeasurement
-from shutterbug.gui.stars.star_catalog import StarCatalog
+from shutterbug.core.managers.measurement_manager import MeasurementManager
+from shutterbug.core.models import FITSModel, StarMeasurement
+from shutterbug.core.managers import ImageManager, StarCatalog
 
 
 class SpreadsheetViewer(QWidget):
@@ -16,6 +15,7 @@ class SpreadsheetViewer(QWidget):
         super().__init__()
         # Default variables
         self.image_manager = ImageManager()
+        self.measure_manager = MeasurementManager()
         self.current_image = self.image_manager.active_image
         self.catalog = StarCatalog()
 
@@ -45,22 +45,22 @@ class SpreadsheetViewer(QWidget):
 
         logging.debug("Spreadsheet viewer initialized")
 
-    @Slot(FITSImage)
-    def _on_image_change(self, image: FITSImage):
+    @Slot(FITSModel)
+    def _on_image_change(self, image: FITSModel):
         """Handles the image changing by populating new data and connecting signals"""
+
+        measure_manager = self.measure_manager
         if self.current_image:
-            star_manager = self.current_image.star_manager
-            star_manager.measurement_added.disconnect(self._on_star_added)
-            star_manager.measurement_removed.disconnect(self._on_star_removed)
-            star_manager.measurement_changed.disconnect(self._on_star_changed)
+            measure_manager.measurement_added.disconnect(self._on_star_added)
+            measure_manager.measurement_removed.disconnect(self._on_star_removed)
+            measure_manager.measurement_changed.disconnect(self._on_star_changed)
 
         self.current_image = image
         if image:
             logging.debug(f"Spreadsheet changing image to: {image.filename}")
-            star_manager = image.star_manager
-            star_manager.measurement_added.connect(self._on_star_added)
-            star_manager.measurement_removed.connect(self._on_star_removed)
-            star_manager.measurement_changed.connect(self._on_star_changed)
+            measure_manager.measurement_added.connect(self._on_star_added)
+            measure_manager.measurement_removed.connect(self._on_star_removed)
+            measure_manager.measurement_changed.connect(self._on_star_changed)
 
             self._load_all_stars()
 
@@ -105,9 +105,9 @@ class SpreadsheetViewer(QWidget):
         self._clear_all()
         if not self.current_image:
             return  # No work to do
-
+        image_name = self.current_image.filename
         rows = []
-        for star in self.current_image.star_manager.get_all_stars():
+        for star in self.measure_manager.get_all_measurements(image_name):
 
             star_id = self.catalog.get_by_measurement(star)
             if star_id:

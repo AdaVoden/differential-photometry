@@ -2,8 +2,6 @@ from PySide6.QtWidgets import QWidget, QHBoxLayout, QLineEdit, QPushButton
 from PySide6.QtCore import Qt, Signal, QPoint, Slot
 from PySide6.QtGui import QIntValidator, QCursor, QMouseEvent
 
-import logging
-
 
 class ScrubbySlider(QWidget):
     """A blender-like value box with drag-changing"""

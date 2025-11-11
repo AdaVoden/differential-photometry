@@ -1,7 +1,7 @@
 from PySide6.QtGui import QUndoCommand
 
-from shutterbug.gui.image_data import FITSImage
-from shutterbug.gui.image_manager import ImageManager
+from shutterbug.core.models import FITSModel
+from shutterbug.core.managers import ImageManager
 
 from astropy.io import fits
 
@@ -26,12 +26,12 @@ class LoadImagesCommand(QUndoCommand):
 
     def redo(self) -> None:
         logging.debug(
-            f"Load images command activated for {len(self.image_paths)} images"
+            f"COMMAND: Load images command activated for {len(self.image_paths)} images"
         )
         load_images(self.image_paths, self.image_manager)
 
     def undo(self) -> None:
-        logging.debug(f"Undoing image load of {len(self.image_paths)} images")
+        logging.debug(f"COMMAND: Undoing image load of {len(self.image_paths)} images")
         remove_images(self.image_paths, self.image_manager)
 
 
@@ -50,14 +50,16 @@ class RemoveImagesCommand(QUndoCommand):
         self.image_paths = image_paths
 
     def redo(self) -> None:
-        logging.debug(f"Removing {len(self.image_paths)} images from project")
+        logging.debug(f"COMMAND: Removing {len(self.image_paths)} images from project")
         remove_images(
             self.image_paths,
             self.image_manager,
         )
 
     def undo(self) -> None:
-        logging.debug(f"Undoing removal of {len(self.image_paths)} images from project")
+        logging.debug(
+            f"COMMAND: Undoing removal of {len(self.image_paths)} images from project"
+        )
         load_images(
             self.image_paths,
             self.image_manager,
@@ -67,7 +69,7 @@ class RemoveImagesCommand(QUndoCommand):
 class SelectFileCommand(QUndoCommand):
     """Selects file in outliner and viewer"""
 
-    def __init__(self, selected_image: FITSImage | None, image_manager: ImageManager):
+    def __init__(self, selected_image: FITSModel | None, image_manager: ImageManager):
         super().__init__("Select File")
         self.selected_image = selected_image
         self.old_image = image_manager.active_image
@@ -88,7 +90,7 @@ def load_fits_image(filepath: Path):
     with fits.open(filepath, uint=True) as hdul:
         data = hdul[0].data  # type: ignore
         obs_time = hdul[0].header["JD"]  # type: ignore
-        image = FITSImage(filepath, data, obs_time)
+        image = FITSModel(filepath, data, obs_time)
         # Assuming image data is in the primary HDU
         return image
 

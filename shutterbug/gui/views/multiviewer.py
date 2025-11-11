@@ -9,7 +9,7 @@ from PySide6.QtWidgets import (
 from PySide6.QtGui import QUndoStack
 from PySide6.QtCore import Signal, Slot
 
-from .views import ImageViewer, GraphViewer, SpreadsheetViewer
+from shutterbug.gui.views import ImageViewer, GraphViewer, SpreadsheetViewer
 
 
 class MultiViewer(QWidget):

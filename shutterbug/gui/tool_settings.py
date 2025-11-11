@@ -1,8 +1,8 @@
 import logging
 
 from shutterbug.gui.controls.labeled_slider import LabeledSlider
-from shutterbug.gui.image_manager import ImageManager
-from shutterbug.gui.image_data import FITSImage
+from shutterbug.core.managers import ImageManager
+from shutterbug.core.models import FITSModel
 from shutterbug.gui.commands.image_commands import (
     SetBrightnessCommand,
     SetContrastCommand,
@@ -102,20 +102,20 @@ class ImagePropertiesPanel(QWidget):
 
         logging.debug("Image properties panel initialized")
 
-    @Slot(FITSImage)
-    def _on_image_changed(self, image: FITSImage):
+    @Slot(FITSModel)
+    def _on_image_changed(self, image: FITSModel):
         """Handles image changing in image manager"""
         if self.current_image:
             # There's a current image remove all previous subscriptions
-            self.current_image.brightness_changed.disconnect(self.set_brightness)
-            self.current_image.contrast_changed.disconnect(self.set_contrast)
+            self.current_image.updated.disconnect(self.set_brightness)
+            self.current_image.updated.disconnect(self.set_contrast)
 
         self.current_image = image
 
         if image:
             # Add new subscriptions and set the slider values
-            image.brightness_changed.connect(self.set_brightness)
-            image.contrast_changed.connect(self.set_contrast)
+            image.updated.connect(self.set_brightness)
+            image.updated.connect(self.set_contrast)
             self.set_brightness(image.brightness)
             self.set_contrast(image.contrast)
 

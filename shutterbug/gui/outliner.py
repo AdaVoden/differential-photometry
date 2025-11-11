@@ -1,8 +1,8 @@
 import logging
 
-from shutterbug.gui.image_manager import ImageManager
-from shutterbug.gui.image_data import FITSImage
-from shutterbug.gui.commands.file_commands import (
+from shutterbug.core.managers import ImageManager
+from shutterbug.core.models import FITSModel
+from .commands.file_commands import (
     RemoveImagesCommand,
     SelectFileCommand,
 )
@@ -54,22 +54,22 @@ class Outliner(QWidget):
 
         logging.debug("Outliner initialized")
 
-    @Slot(FITSImage)
-    def _on_active_image_changed(self, image: FITSImage | None):
+    @Slot(FITSModel)
+    def _on_active_image_changed(self, image: FITSModel | None):
         """Handles active image being changed"""
         if image:
             self.select_item(image.filename)
 
-    @Slot(FITSImage)
-    def _on_images_removed(self, images: List[FITSImage]):
+    @Slot(FITSModel)
+    def _on_images_removed(self, images: List[FITSModel]):
         """Handles images being removed from manager"""
         for image in images:
             item = self.get_item(image.filename)
             if item:
                 self.remove_item(item)
 
-    @Slot(FITSImage)
-    def _on_images_added(self, images: List[FITSImage]):
+    @Slot(FITSModel)
+    def _on_images_added(self, images: List[FITSModel]):
         """Handles images being added to manager"""
         for image in images:
             self.add_item(image.filename)
