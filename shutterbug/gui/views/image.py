@@ -22,14 +22,16 @@ from PySide6.QtGui import (
 )
 from PySide6.QtWidgets import QGraphicsScene, QGraphicsView, QMenu
 
-from shutterbug.core.models import FITSImage, StarMeasurement
+from shutterbug.core.models import FITSModel, StarMeasurement
 from shutterbug.core.managers import ImageManager
 from shutterbug.gui.commands import DeselectStarCommand, SelectStarCommand
+
+import numpy as np
 
 
 class ImageViewer(QGraphicsView):
 
-    propagation_requested = Signal(FITSImage)
+    propagation_requested = Signal(FITSModel)
     batch_requested = Signal()
 
     # Zoom defaults
@@ -89,7 +91,7 @@ class ImageViewer(QGraphicsView):
 
         logging.debug("Image Viewer initialized")
 
-    def _on_image_changed(self, image: FITSImage):
+    def _on_image_changed(self, image: FITSModel):
         """Handles image manager active image changing"""
         if self.current_image:
             self.current_image.brightness_changed.disconnect(self.update_display)
@@ -350,7 +352,7 @@ class ImageViewer(QGraphicsView):
 
         self.markers = {}
 
-    def _display_image(self, image: FITSImage):
+    def _display_image(self, image: FITSModel):
         """Display given FITS data array"""
         logging.debug(f"Image display called on image: {image.filename}")
         self._clear_markers()
@@ -405,3 +407,29 @@ class ImageViewer(QGraphicsView):
             return
 
         self._display_image(self.current_image)
+
+    def get_normalized_data(self):
+        """Normalize the FITS data to 0-255 for display"""
+
+        # Handle NaNs and Infs
+        data = np.nan_to_num(self.original_data, nan=0.0, posinf=0.0, neginf=0.0)
+
+        # Simple fixed percentile stretch
+        vmin, vmax = np.percentile(data, [1, 99])
+
+        # Clip and normalize to 0-1 first
+        data = np.clip(data, vmin, vmax)
+        data = (data - vmin) / (vmax - vmin + 1e-10)  # Avoid divide by zero
+
+        # apply contrast and brightness to 0-1 range
+        # Contrast: multiply (1.0 = no change)
+        data = data * (self.contrast_factor / 100)  # Normalize to ~1
+
+        # Brightness: add/subtract (-1 to 1 range)
+        data = data + (self.brightness_offset / 100.0)
+
+        # Clip to 0-1 and convert to 0-255
+        data = np.clip(data, 0, 1)
+        data = (data * 255).astype(np.uint8)
+
+        return data

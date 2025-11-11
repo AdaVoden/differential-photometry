@@ -3,7 +3,7 @@ from PySide6.QtWidgets import QVBoxLayout, QWidget, QTableView, QHeaderView
 from PySide6.QtGui import QStandardItem, QStandardItemModel
 from PySide6.QtCore import QModelIndex, Slot
 
-from shutterbug.core.models import FITSImage, StarMeasurement
+from shutterbug.core.models import FITSModel, StarMeasurement
 from shutterbug.core.managers import ImageManager, StarCatalog
 
 
@@ -43,8 +43,8 @@ class SpreadsheetViewer(QWidget):
 
         logging.debug("Spreadsheet viewer initialized")
 
-    @Slot(FITSImage)
-    def _on_image_change(self, image: FITSImage):
+    @Slot(FITSModel)
+    def _on_image_change(self, image: FITSModel):
         """Handles the image changing by populating new data and connecting signals"""
         if self.current_image:
             star_manager = self.current_image.star_manager

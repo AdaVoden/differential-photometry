@@ -1,11 +1,11 @@
 from PySide6.QtGui import QUndoCommand
 
-from shutterbug.core.models import FITSImage
+from shutterbug.core.models import FITSModel
 
 
 class SetBrightnessCommand(QUndoCommand):
 
-    def __init__(self, new_value: int, image: FITSImage):
+    def __init__(self, new_value: int, image: FITSModel):
         super().__init__("Set Brightness")
         self.new_value = new_value
         self.image = image
@@ -20,7 +20,7 @@ class SetBrightnessCommand(QUndoCommand):
 
 
 class SetContrastCommand(QUndoCommand):
-    def __init__(self, new_value: int, image: FITSImage):
+    def __init__(self, new_value: int, image: FITSModel):
         super().__init__("Set Contrast")
         self.new_value = new_value
         self.image = image

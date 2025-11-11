@@ -9,6 +9,7 @@ class ObservableQObject(QObject):
     updated = Signal(object)
 
     def _define_field(self, name, default):
+        """Creates setter and getter for field, emitting a changed signal on update"""
         private_name = f"_{name}"
         setattr(self, private_name, default)
 
@@ -21,3 +22,4 @@ class ObservableQObject(QObject):
                 self.updated.emit(self)
 
         setattr(self.__class__, name, property(getter, setter))
+        return default

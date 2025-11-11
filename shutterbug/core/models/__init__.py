@@ -2,6 +2,13 @@
 from .star_measurement import StarMeasurement
 from .star_identity import StarIdentity
 from .base_observable import ObservableQObject
-from .image_data import FITSImage
+from .fits_model import FITSModel
+from .measurement_model import MeasurementMetadataModel
 
-__all__ = ["StarMeasurement", "StarIdentity", "ObservableQObject", "FITSImage"]
+__all__ = [
+    "StarMeasurement",
+    "StarIdentity",
+    "ObservableQObject",
+    "FITSModel",
+    "MeasurementMetadataModel",
+]

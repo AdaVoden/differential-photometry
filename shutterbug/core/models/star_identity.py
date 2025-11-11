@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 
+from typing import Dict, Optional
+
 from .base_observable import ObservableQObject
 from .star_measurement import StarMeasurement
-
-from typing import Dict, Optional
 
 
 class StarIdentity(ObservableQObject):

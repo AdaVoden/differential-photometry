@@ -1,6 +1,6 @@
 from PySide6.QtGui import QUndoCommand
 
-from shutterbug.core.models import FITSImage
+from shutterbug.core.models import FITSModel
 from shutterbug.core.managers import ImageManager
 
 from astropy.io import fits
@@ -67,17 +67,17 @@ class RemoveImagesCommand(QUndoCommand):
 class SelectFileCommand(QUndoCommand):
     """Selects file in outliner and viewer"""
 
-    def __init__(self, selected_image: FITSImage | None, image_manager: ImageManager):
+    def __init__(self, selected_image: FITSModel | None, image_manager: ImageManager):
         super().__init__("Select File")
         self.selected_image = selected_image
         self.old_image = image_manager.active_image
         self.image_manager = image_manager
 
     def redo(self) -> None:
-        self.image_manager.set_active_image(self.selected_image)
+        self.image_manager._set_active_image(self.selected_image)
 
     def undo(self) -> None:
-        self.image_manager.set_active_image(self.old_image)
+        self.image_manager._set_active_image(self.old_image)
 
 
 def load_fits_image(filepath: Path):
@@ -88,7 +88,7 @@ def load_fits_image(filepath: Path):
     with fits.open(filepath, uint=True) as hdul:
         data = hdul[0].data  # type: ignore
         obs_time = hdul[0].header["JD"]  # type: ignore
-        image = FITSImage(filepath, data, obs_time)
+        image = FITSModel(filepath, data, obs_time)
         # Assuming image data is in the primary HDU
         return image
 

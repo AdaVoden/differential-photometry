@@ -1,12 +1,12 @@
 from PySide6.QtGui import QUndoCommand
 
-from shutterbug.core.models import FITSImage, StarMeasurement
+from shutterbug.core.models import FITSModel, StarMeasurement
 
 
 class SelectStarCommand(QUndoCommand):
     """Command to select a star"""
 
-    def __init__(self, star, image: FITSImage):
+    def __init__(self, star, image: FITSModel):
         super().__init__()
         self.star = star
         self.image = image
@@ -29,7 +29,7 @@ class SelectStarCommand(QUndoCommand):
 class DeselectStarCommand(QUndoCommand):
     """Command to deselect a star"""
 
-    def __init__(self, star, image: FITSImage):
+    def __init__(self, star, image: FITSModel):
         super().__init__()
         self.star = star
         self.image = image

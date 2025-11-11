@@ -13,7 +13,7 @@ from PySide6.QtWidgets import (
     QProgressBar,
     QWidget,
 )
-from shutterbug.core.models import FITSImage, StarMeasurement
+from shutterbug.core.models import FITSModel, StarMeasurement
 from shutterbug.core.managers import ImageManager, StarCatalog
 from shutterbug.core.progress_bar_handler import ProgressHandler
 from .project import ShutterbugProject
@@ -194,14 +194,14 @@ class MainWindow(QMainWindow):
         for image in self.image_manager.get_all_images():
             self.process_single_image(image)
 
-    def process_single_image(self, image: FITSImage):
+    def process_single_image(self, image: FITSModel):
         """Process one image for differential photometry"""
 
         for star in image.star_manager.get_all_stars():
             image.measure_star_magnitude(star)
 
-    @Slot(FITSImage)
-    def propagate_star_selection(self, image: FITSImage):
+    @Slot(FITSModel)
+    def propagate_star_selection(self, image: FITSModel):
         """Propagates star selection across all images"""
         image_manager = self.image_manager
         stars = image.star_manager.get_all_stars()
