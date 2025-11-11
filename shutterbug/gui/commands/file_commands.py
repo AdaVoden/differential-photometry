@@ -26,12 +26,12 @@ class LoadImagesCommand(QUndoCommand):
 
     def redo(self) -> None:
         logging.debug(
-            f"Load images command activated for {len(self.image_paths)} images"
+            f"COMMAND: Load images command activated for {len(self.image_paths)} images"
         )
         load_images(self.image_paths, self.image_manager)
 
     def undo(self) -> None:
-        logging.debug(f"Undoing image load of {len(self.image_paths)} images")
+        logging.debug(f"COMMAND: Undoing image load of {len(self.image_paths)} images")
         remove_images(self.image_paths, self.image_manager)
 
 
@@ -50,14 +50,16 @@ class RemoveImagesCommand(QUndoCommand):
         self.image_paths = image_paths
 
     def redo(self) -> None:
-        logging.debug(f"Removing {len(self.image_paths)} images from project")
+        logging.debug(f"COMMAND: Removing {len(self.image_paths)} images from project")
         remove_images(
             self.image_paths,
             self.image_manager,
         )
 
     def undo(self) -> None:
-        logging.debug(f"Undoing removal of {len(self.image_paths)} images from project")
+        logging.debug(
+            f"COMMAND: Undoing removal of {len(self.image_paths)} images from project"
+        )
         load_images(
             self.image_paths,
             self.image_manager,
@@ -74,10 +76,10 @@ class SelectFileCommand(QUndoCommand):
         self.image_manager = image_manager
 
     def redo(self) -> None:
-        self.image_manager._set_active_image(self.selected_image)
+        self.image_manager.set_active_image(self.selected_image)
 
     def undo(self) -> None:
-        self.image_manager._set_active_image(self.old_image)
+        self.image_manager.set_active_image(self.old_image)
 
 
 def load_fits_image(filepath: Path):

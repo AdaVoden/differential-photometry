@@ -19,10 +19,10 @@ class FITSModel(ObservableQObject):
         self.data = data
 
         # Image display settings
-        self.brightness_offset: int = self._define_field(
+        self.brightness: int = self._define_field(
             "brightness", self.BRIGHTNESS_OFFSET_DEFAULT
         )
-        self.contrast_factor: int = self._define_field(
+        self.contrast: int = self._define_field(
             "contrast", self.CONTRAST_FACTOR_DEFAULT
         )
 

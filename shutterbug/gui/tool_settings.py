@@ -107,15 +107,15 @@ class ImagePropertiesPanel(QWidget):
         """Handles image changing in image manager"""
         if self.current_image:
             # There's a current image remove all previous subscriptions
-            self.current_image.brightness_changed.disconnect(self.set_brightness)
-            self.current_image.contrast_changed.disconnect(self.set_contrast)
+            self.current_image.updated.disconnect(self.set_brightness)
+            self.current_image.updated.disconnect(self.set_contrast)
 
         self.current_image = image
 
         if image:
             # Add new subscriptions and set the slider values
-            image.brightness_changed.connect(self.set_brightness)
-            image.contrast_changed.connect(self.set_contrast)
+            image.updated.connect(self.set_brightness)
+            image.updated.connect(self.set_contrast)
             self.set_brightness(image.brightness)
             self.set_contrast(image.contrast)
 

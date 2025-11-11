@@ -93,14 +93,18 @@ class ImageManager(QObject):
     def find_nearest_star(
         self, x: float, y: float, max_distance: int = MAX_DISTANCE_DEFAULT
     ):
-        if self.stars is None:
-            self._find_stars()
+        image = self.active_image
+        if image is None:
+            return None  # No work to do!
 
-        if self.stars is None:
+        if image.stars is None:
+            self.find_stars()
+
+        if image.stars is None:
             # No stars found
-            return None, None
+            return None
 
-        stars = self.stars
+        stars = image.stars
 
         # Calculate distance to all stars
         distances = np.sqrt(
@@ -110,9 +114,9 @@ class ImageManager(QObject):
         min_idx = np.argmin(distances)
 
         if distances[min_idx] <= max_distance:
-            return stars[min_idx], min_idx
+            return stars[min_idx]
 
-        return None, None
+        return None
 
     def _compute_background(self):
         """Calculate background of image using sigma-clipped statistics"""
@@ -137,8 +141,11 @@ class ImageManager(QObject):
         background_subtracted = image.data - image.background
         return background_subtracted
 
-    def _find_stars(self):
+    def find_stars(self):
         """Detect stars using DAOStarFinder"""
+        image = self.active_image
+        if image is None:
+            return
 
         bg_subtracted = self.get_background_subtracted()
         if bg_subtracted is None:
@@ -148,6 +155,6 @@ class ImageManager(QObject):
         _, _, std = stats.sigma_clipped_stats(bg_subtracted, sigma=self.sigma)
 
         daofind = DAOStarFinder(fwhm=self.fwhm, threshold=self.threshold * std)
-        self.stars = daofind(bg_subtracted)
+        image.stars = daofind(bg_subtracted)
 
-        return self.stars
+        return image.stars

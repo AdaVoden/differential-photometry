@@ -13,14 +13,16 @@ from PySide6.QtWidgets import (
     QProgressBar,
     QWidget,
 )
-from shutterbug.core.models import FITSModel, StarMeasurement
 from shutterbug.core.managers import ImageManager, StarCatalog
+from shutterbug.core.managers.measurement_manager import MeasurementManager
+from shutterbug.core.models import FITSModel, StarMeasurement
 from shutterbug.core.progress_bar_handler import ProgressHandler
+from shutterbug.core.utility.photometry import measure_star_magnitude
+
+from .commands import LoadImagesCommand
 from .project import ShutterbugProject
 from .sidebar import Sidebar
 from .views import MultiViewer
-
-from .commands import LoadImagesCommand
 
 
 class MainWindow(QMainWindow):
@@ -34,8 +36,10 @@ class MainWindow(QMainWindow):
         self.setWindowTitle("Shutterbug")
         self.setGeometry(100, 100, 1200, 800)
 
+        # Instantiate singletons
         self.image_manager = ImageManager()
         self.star_catalog = StarCatalog()
+        self.measure_manager = MeasurementManager()
 
         # Set up undo stack
         self._undo_stack = QUndoStack()
@@ -197,14 +201,14 @@ class MainWindow(QMainWindow):
     def process_single_image(self, image: FITSModel):
         """Process one image for differential photometry"""
 
-        for star in image.star_manager.get_all_stars():
-            image.measure_star_magnitude(star)
+        for star in self.measure_manager.get_all_measurements(image.filename):
+            measure_star_magnitude(star, data=image.data)
 
     @Slot(FITSModel)
     def propagate_star_selection(self, image: FITSModel):
         """Propagates star selection across all images"""
         image_manager = self.image_manager
-        stars = image.star_manager.get_all_stars()
+        stars = self.measure_manager.get_all_measurements(image.filename)
 
         with self.progress_handler("Propagating stars..."):
             for img in image_manager.get_all_images():
@@ -213,7 +217,9 @@ class MainWindow(QMainWindow):
 
                     for star in stars:
                         with self.progress_handler("Finding stars in image..."):
-                            star_data, _ = img.find_nearest_star(star.x, star.y)
+                            star_data, _ = image_manager.find_nearest_star(
+                                star.x, star.y
+                            )
 
                         if star_data:
                             measurement = StarMeasurement(
@@ -222,7 +228,7 @@ class MainWindow(QMainWindow):
                                 time=img.observation_time,
                                 image=img.filename,
                             )
-                            img.star_manager.add_star(measurement)
+                            self.measure_manager.add_measurement(measurement)
 
     def calculate_differential_magnitude(
         self, target_star: StarMeasurement, ref_stars: List[StarMeasurement]

@@ -22,8 +22,10 @@ from PySide6.QtGui import (
 )
 from PySide6.QtWidgets import QGraphicsScene, QGraphicsView, QMenu
 
+from shutterbug.core.managers.measurement_manager import MeasurementManager
 from shutterbug.core.models import FITSModel, StarMeasurement
 from shutterbug.core.managers import ImageManager
+from shutterbug.core.utility.photometry import measure_star_magnitude
 from shutterbug.gui.commands import DeselectStarCommand, SelectStarCommand
 
 import numpy as np
@@ -50,6 +52,7 @@ class ImageViewer(QGraphicsView):
 
         self._undo_stack = undo_stack
         self.image_manager = ImageManager()
+        self.measure_manager = MeasurementManager()
 
         self.current_image = self.image_manager.active_image
         self.markers = {}  # (x, y) -> marker
@@ -93,26 +96,19 @@ class ImageViewer(QGraphicsView):
 
     def _on_image_changed(self, image: FITSModel):
         """Handles image manager active image changing"""
+        measure_manager = self.measure_manager
         if self.current_image:
-            self.current_image.brightness_changed.disconnect(self.update_display)
-            self.current_image.contrast_changed.disconnect(self.update_display)
-            self.current_image.star_manager.measurement_added.disconnect(
-                self.add_star_marker
-            )
-            self.current_image.star_manager.measurement_removed.disconnect(
-                self.remove_star_marker
-            )
+            self.current_image.updated.disconnect(self.update_display)
+            self.current_image.updated.disconnect(self.update_display)
+            measure_manager.measurement_added.disconnect(self.add_star_marker)
+            measure_manager.measurement_removed.disconnect(self.remove_star_marker)
 
         self.current_image = image
         if image:
-            image.brightness_changed.connect(self.update_display)
-            image.contrast_changed.connect(self.update_display)
-            self.current_image.star_manager.measurement_added.connect(
-                self.add_star_marker
-            )
-            self.current_image.star_manager.measurement_removed.connect(
-                self.remove_star_marker
-            )
+            image.updated.connect(self.update_display)
+            image.updated.connect(self.update_display)
+            measure_manager.measurement_added.connect(self.add_star_marker)
+            measure_manager.measurement_removed.connect(self.remove_star_marker)
 
         self.update_display()
 
@@ -233,65 +229,75 @@ class ImageViewer(QGraphicsView):
         if self.current_image is None:
             return  # No work to do
 
-        measurement_manager = self.current_image.star_manager
+        measurement_manager = self.measure_manager
+        image_name = self.current_image.filename
 
-        stars = measurement_manager.get_all_stars()
+        stars = measurement_manager.get_all_measurements(image_name)
         for star in stars:
-            self.current_image.measure_star_magnitude(star)
+            measure_star_magnitude(star, data=self.current_image.data)
 
     @Slot()
     def find_stars_in_image(self):
         if self.current_image is None:
             return  # No work to do
 
-        self.current_image.find_stars()
+        self.image_manager.find_stars()
 
     def get_star(self, coordinates: QPoint):
         """Gets star, if any, under point"""
-        current_image = self.image_manager.active_image
-        if current_image is None:
+        image = self.image_manager.active_image
+        if image is None:
             # No work to do
             return None
 
         x, y = self._convert_to_image_coordinates(coordinates)
 
-        star, _ = current_image.find_nearest_star(x, y)
+        star = self.image_manager.find_nearest_star(x, y)
 
         return star
 
+    def get_measurement(self, coordinates: QPoint):
+        """Gets already registered measurement at point, if any"""
+        measure_manager = self.measure_manager
+        image = self.current_image
+        if image is None:
+            return None  # No work to do
+
+        x, y = self._convert_to_image_coordinates(coordinates)
+
+        measurement = measure_manager.find_nearest(image.filename, x, y)
+
+        return measurement
+
     def select_star(self, coordinates: QPoint):
         """Creates the select star command and pushes command to the stack"""
-        current_image = self.image_manager.active_image
+        logging.debug(
+            f"Attempting to select star at {coordinates.x()}/{coordinates.y()}"
+        )
         star = self.get_star(coordinates)
+        current_image = self.image_manager.active_image
 
         if star is None or current_image is None:
+            logging.debug("No star found or current image is not set")
             return  # No work to do
-
-        nearest = self.current_image.star_manager.find_nearest(
-            star["xcentroid"], star["ycentroid"]
-        )
-
-        if nearest is not None:
-            return
+        logging.debug("Star found, creating command")
 
         self._undo_stack.push(SelectStarCommand(star, current_image))
 
     def deselect_star(self, coordinates: QPoint):
         """Creates the deselect star command and pushes command to the stack"""
-        current_image = self.image_manager.active_image
-        star = self.get_star(coordinates)
-
-        if star is None or current_image is None:
-            return  # No work to do
-
-        nearest = self.current_image.star_manager.find_nearest(
-            star["xcentroid"], star["ycentroid"]
+        logging.debug(
+            f"Attempting to deselect star at {coordinates.x()}/{coordinates.y()}"
         )
+        current_image = self.image_manager.active_image
+        measurement = self.get_measurement(coordinates)
 
-        if nearest is None:
-            return
+        if measurement is None or current_image is None:
+            logging.debug("No star found or current image is not set")
+            return  # No work to do
+        logging.debug("Star found, creating command")
 
-        self._undo_stack.push(DeselectStarCommand(star, current_image))
+        self._undo_stack.push(DeselectStarCommand(measurement))
 
     @Slot()
     def on_propagate_requested(self):
@@ -364,7 +370,9 @@ class ImageViewer(QGraphicsView):
         self.current_image = image
 
         # Get normalized information
-        display_data = image.get_normalized_data()
+        display_data = self.get_normalized_data()
+        if display_data is None:
+            return  # No work to do!
 
         # Convert to QImage
         height, width = display_data.shape
@@ -395,8 +403,9 @@ class ImageViewer(QGraphicsView):
         # Add markers from image
         if self.current_image is None:
             return
+        image_name = self.current_image.filename
 
-        stars = self.current_image.star_manager.get_all_stars()
+        stars = self.measure_manager.get_all_measurements(image_name)
         for star in stars:
             self.add_star_marker(star, colour="cyan")
 
@@ -410,9 +419,14 @@ class ImageViewer(QGraphicsView):
 
     def get_normalized_data(self):
         """Normalize the FITS data to 0-255 for display"""
+        if self.current_image is None:
+            return  # No image = no data
 
+        data = self.current_image.data
+        brightness_offset = self.current_image.brightness
+        contrast_factor = self.current_image.contrast
         # Handle NaNs and Infs
-        data = np.nan_to_num(self.original_data, nan=0.0, posinf=0.0, neginf=0.0)
+        data = np.nan_to_num(data, nan=0.0, posinf=0.0, neginf=0.0)
 
         # Simple fixed percentile stretch
         vmin, vmax = np.percentile(data, [1, 99])
@@ -423,10 +437,10 @@ class ImageViewer(QGraphicsView):
 
         # apply contrast and brightness to 0-1 range
         # Contrast: multiply (1.0 = no change)
-        data = data * (self.contrast_factor / 100)  # Normalize to ~1
+        data = data * (contrast_factor / 100)  # Normalize to ~1
 
         # Brightness: add/subtract (-1 to 1 range)
-        data = data + (self.brightness_offset / 100.0)
+        data = data + (brightness_offset / 100.0)
 
         # Clip to 0-1 and convert to 0-255
         data = np.clip(data, 0, 1)

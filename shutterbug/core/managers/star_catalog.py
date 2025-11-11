@@ -1,7 +1,6 @@
 import logging
 
 from scipy.spatial import KDTree
-
 from shutterbug.core.models import StarIdentity, StarMeasurement
 
 
