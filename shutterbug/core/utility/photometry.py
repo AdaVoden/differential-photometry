@@ -5,7 +5,7 @@ from shutterbug.core.models import StarMeasurement
 from astropy.stats.sigma_clipping import sigma_clipped_stats
 
 from photutils.aperture import CircularAnnulus, CircularAperture, aperture_photometry
-from typing import Tuple
+from typing import Tuple, List
 
 import numpy as np
 
@@ -106,3 +106,28 @@ def _calculate_magnitude_with_error(
     magnitude = -2.5 * np.log10(flux) + zero_point
     mag_error = (2.5 / np.log(10)) * (flux_err / flux)
     return magnitude, mag_error
+
+
+def calculate_differential_magnitude(
+    target_star: StarMeasurement, ref_stars: List[StarMeasurement]
+):
+    # Make sure we're dealing with real data
+    if target_star.mag_error is None:
+        return target_star
+    if target_star.mag is None:
+        return target_star
+    if len(ref_stars) < 1:
+        return target_star
+    """Calculate differential magnitude on target image and stars"""
+    ref_mags = [ref.mag for ref in ref_stars]
+    ref_mags = np.asarray(ref_mags)
+    ref_err = [ref.mag_error for ref in ref_stars]
+    ref_err = np.asarray(ref_err)
+    # (-1) * (-ref_mags + target_mag) == target_mag - ref_mags
+    target_star.diff_mag = float(-1 * np.mean((-1 * ref_mags) + target_star.mag))
+
+    # Error calculation
+    ref_err_rms = np.sqrt(ref_err**2 + target_star.mag_error**2)
+    target_star.diff_err = float(np.sqrt(np.sum(ref_err_rms**2)) / len(ref_err_rms))
+
+    return target_star

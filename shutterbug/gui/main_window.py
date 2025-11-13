@@ -217,9 +217,7 @@ class MainWindow(QMainWindow):
 
                     for star in stars:
                         with self.progress_handler("Finding stars in image..."):
-                            star_data, _ = image_manager.find_nearest_star(
-                                star.x, star.y
-                            )
+                            star_data = image_manager.find_nearest_star(star.x, star.y)
 
                         if star_data:
                             measurement = StarMeasurement(
@@ -229,16 +227,6 @@ class MainWindow(QMainWindow):
                                 image=img.filename,
                             )
                             self.measure_manager.add_measurement(measurement)
-
-    def calculate_differential_magnitude(
-        self, target_star: StarMeasurement, ref_stars: List[StarMeasurement]
-    ):
-        """Calculate differential magnitude on target image and stars"""
-        ref_mags = [ref.mag for ref in ref_stars]
-        ref_mags = np.asarray(ref_mags)
-
-        # - ref_mags + target_mag == target_mag - ref_mags
-        return np.mean((-1 * ref_mags) + target_star.mag)
 
     def generate_light_curve(self, results):
         """Create light curve from data"""
