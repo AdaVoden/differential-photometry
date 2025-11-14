@@ -13,18 +13,24 @@ class StarCatalog(QObject):
     star_removed = Signal(StarIdentity)
     active_star_changed = Signal(StarIdentity)
 
+    def __init__(self):
+        if not hasattr(self, "_initialized"):
+            self._initialized = True
+
+            super().__init__()
+            self.stars = {}  # id -> StarIdentity
+            self.measurement_to_star = {}  # StarMeasurement -> StarIdentity
+            self.active_star = None  # selected star
+            self._kdtree = None
+            self._coords = []  # Reference coordinates
+            self._ids = []  # Matching star IDs
+            self._dirty = False
+
     def __new__(cls):
         if cls._instance is None:
             logging.debug("Creating Star Catalog singleton")
             cls._instance = super(StarCatalog, cls).__new__(cls)
             # initial variables
-            cls.stars = {}  # id -> StarIdentity
-            cls.measurement_to_star = {}  # StarMeasurement -> StarIdentity
-            cls.active_star = None  # selected star
-            cls._kdtree = None
-            cls._coords = []  # Reference coordinates
-            cls._ids = []  # Matching star IDs
-            cls._dirty = False
 
         return cls._instance
 

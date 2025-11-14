@@ -97,7 +97,9 @@ def load_fits_image(filepath: Path):
 
 def load_images(image_paths: List[Path], image_manager: ImageManager):
     """Batch loads FITS images from list of paths"""
-    image_manager.add_images([load_fits_image(f) for f in image_paths])
+    images = [load_fits_image(f) for f in image_paths]
+    for image in images:
+        image_manager.add_image(image)
 
 
 def remove_images(image_names: List[Path], image_manager: ImageManager):
@@ -108,5 +110,4 @@ def remove_images(image_names: List[Path], image_manager: ImageManager):
         image = image_manager.get_image(name)
         if image:
             images.append(image)
-    if images:
-        image_manager.remove_images(images)
+            image_manager.remove_image(image)

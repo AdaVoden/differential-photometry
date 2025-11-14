@@ -13,9 +13,9 @@ class ImageManager(QObject):
 
     _instance = None
 
-    images_added = Signal(list)
+    image_added = Signal(FITSModel)
     active_image_changed = Signal(FITSModel)
-    images_removed = Signal(list)
+    image_removed = Signal(FITSModel)
 
     # Star Finding defaults
     MAX_DISTANCE_DEFAULT = 20  # pixels
@@ -46,18 +46,7 @@ class ImageManager(QObject):
     def add_image(self, image: FITSModel):
         """Add image to manager"""
         self.images[image.filename] = image
-        self.images_added.emit([image])
-        if self.active_image is None:
-            self.set_active_image(image)
-
-    def add_images(self, images: List[FITSModel]):
-        """Add multiple images to manager"""
-        for image in images:
-            self.images[image.filename] = image
-
-        if images:  # if handed empty list
-            self.images_added.emit(images)
-            self.set_active_image(images[0])
+        self.image_added.emit(image)
 
     def set_active_image(self, image: FITSModel | None):
         """Sets active image"""
@@ -69,16 +58,15 @@ class ImageManager(QObject):
             self.active_image = image
             self.active_image_changed.emit(image)
 
-    def remove_images(self, images: List[FITSModel]):
+    def remove_image(self, image: FITSModel):
         """Removes image from manager"""
-        for image in images:
-            if image.filename in self.images.keys():
-                self.images.pop(image.filename)
+        if image.filename in self.images.keys():
+            self.images.pop(image.filename)
 
-            if self.active_image == image:
-                self.active_image = None
-                self.active_image_changed.emit(self.active_image)
-        self.images_removed.emit(images)
+        if self.active_image == image:
+            self.active_image = None
+            self.active_image_changed.emit(self.active_image)
+        self.image_removed.emit(image)
 
     def get_image(self, image_name: str) -> FITSModel | None:
         """Returns image from manager"""

@@ -6,6 +6,7 @@ from .star_commands import (
     SelectStarCommand,
     DeselectStarCommand,
 )
+from .graph_commands import SelectGraphCommand, DeselectGraphCommand
 
 __all__ = [
     "LoadImagesCommand",
@@ -17,4 +18,6 @@ __all__ = [
     "RemoveMeasurementCommand",
     "SelectStarCommand",
     "DeselectStarCommand",
+    "SelectGraphCommand",
+    "DeselectGraphCommand",
 ]

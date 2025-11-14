@@ -1,3 +1,4 @@
+from PySide6.QtCore import Qt
 from PySide6.QtGui import QStandardItem, QStandardItemModel
 
 from shutterbug.core.models import FITSModel, GraphDataModel, StarIdentity
@@ -15,10 +16,14 @@ class OutlinerModel(QStandardItemModel):
         self.appendRow(self.stars_item)
 
     def add_image(self, fits_model: FITSModel):
-        pass
+        data = QStandardItem(fits_model.filename)
+        data.setData(fits_model, Qt.ItemDataRole.UserRole)
+        self.images_item.appendRow(data)
 
     def add_graph(self, graph_model: GraphDataModel):
         pass
 
     def add_star(self, star_model: StarIdentity):
-        pass
+        data = QStandardItem(star_model.id)
+        data.setData(star_model, Qt.ItemDataRole.UserRole)
+        self.stars_item.appendRow(data)

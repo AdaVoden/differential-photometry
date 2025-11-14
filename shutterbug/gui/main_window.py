@@ -1,7 +1,7 @@
 import logging
 
-from PySide6.QtCore import QCoreApplication, Slot
-from PySide6.QtGui import QStandardItem, QUndoStack
+from PySide6.QtCore import QCoreApplication, QItemSelection, Slot
+from PySide6.QtGui import QUndoStack
 from PySide6.QtWidgets import (
     QFileDialog,
     QHBoxLayout,
@@ -17,7 +17,11 @@ from shutterbug.core.models.graph_model import GraphDataModel
 from shutterbug.core.models.star_identity import StarIdentity
 from shutterbug.core.progress_bar_handler import ProgressHandler
 from shutterbug.core.utility.photometry import measure_star_magnitude
-from shutterbug.gui.commands import SelectFileCommand, SelectStarCommand
+from shutterbug.gui.commands import (
+    SelectFileCommand,
+    SelectGraphCommand,
+    SelectStarCommand,
+)
 
 from .commands import LoadImagesCommand
 from .project import ShutterbugProject
@@ -48,6 +52,7 @@ class MainWindow(QMainWindow):
         # Create sidebar and viewer
         self.sidebar = Sidebar(self._undo_stack)
         self.viewer = MultiViewer(self._undo_stack)
+        self.outliner_model = self.sidebar.outliner.model
 
         # Set up central widget with horizontal layout
         central = QWidget()
@@ -87,6 +92,9 @@ class MainWindow(QMainWindow):
 
         # Handle Outliner signals
         self.sidebar.selection_changed.connect(self._on_selection_changed)
+        self.image_manager.image_added.connect(self.outliner_model.add_image)
+        self.star_catalog.star_added.connect(self.outliner_model.add_star)
+
         logging.debug("Main window initialized")
 
     def setup_menu_bar(self):
@@ -122,8 +130,10 @@ class MainWindow(QMainWindow):
 
         logging.debug("Menu bar set up")
 
-    @Slot(QStandardItem, QStandardItem)
-    def _on_selection_changed(self, deselected: QStandardItem, selected: QStandardItem):
+    @Slot(QItemSelection, QItemSelection)
+    def _on_selection_changed(
+        self, deselected: QItemSelection, selected: QItemSelection
+    ):
         """Handles outliner changing selection"""
         # Unpack data
         deselected = deselected.data()
@@ -138,7 +148,7 @@ class MainWindow(QMainWindow):
                 )
             )
         elif isinstance(selected, GraphDataModel):
-            pass
+            stack.push(SelectGraphCommand(graph=selected))
         elif isinstance(selected, StarIdentity):
             stack.push(SelectStarCommand(identity=selected))
 
