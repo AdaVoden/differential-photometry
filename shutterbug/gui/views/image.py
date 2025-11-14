@@ -26,7 +26,7 @@ from shutterbug.core.managers.measurement_manager import MeasurementManager
 from shutterbug.core.models import FITSModel, StarMeasurement
 from shutterbug.core.managers import ImageManager
 from shutterbug.core.utility.photometry import measure_star_magnitude
-from shutterbug.gui.commands import DeselectStarCommand, SelectStarCommand
+from shutterbug.gui.commands import RemoveMeasurementCommand, AddMeasurementCommand
 
 import numpy as np
 
@@ -282,7 +282,7 @@ class ImageViewer(QGraphicsView):
             return  # No work to do
         logging.debug("Star found, creating command")
 
-        self._undo_stack.push(SelectStarCommand(star, current_image))
+        self._undo_stack.push(AddMeasurementCommand(star, current_image))
 
     def deselect_star(self, coordinates: QPoint):
         """Creates the deselect star command and pushes command to the stack"""
@@ -297,7 +297,7 @@ class ImageViewer(QGraphicsView):
             return  # No work to do
         logging.debug("Star found, creating command")
 
-        self._undo_stack.push(DeselectStarCommand(measurement))
+        self._undo_stack.push(RemoveMeasurementCommand(measurement))
 
     @Slot()
     def on_propagate_requested(self):

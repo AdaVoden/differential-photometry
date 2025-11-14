@@ -29,11 +29,11 @@ class GraphDataModel(ObservableQObject):
         self.ylim = ylim
         self.updated.emit(self)
 
-    def get_xs(self):
+    def get_ys(self):
         """Gets all x-values of graph"""
         return [m.diff_mag for m in self.measurements if m.diff_mag]
 
-    def get_ys(self):
+    def get_xs(self):
         """Gets all y-values of graph"""
         return [m.time for m in self.measurements]
 

@@ -1,10 +1,7 @@
 import logging
-from typing import List
 
-import matplotlib.pyplot as plt
-import numpy as np
 from PySide6.QtCore import QCoreApplication, Slot
-from PySide6.QtGui import QUndoStack
+from PySide6.QtGui import QStandardItem, QUndoStack
 from PySide6.QtWidgets import (
     QFileDialog,
     QHBoxLayout,
@@ -16,8 +13,11 @@ from PySide6.QtWidgets import (
 from shutterbug.core.managers import ImageManager, StarCatalog
 from shutterbug.core.managers.measurement_manager import MeasurementManager
 from shutterbug.core.models import FITSModel, StarMeasurement
+from shutterbug.core.models.graph_model import GraphDataModel
+from shutterbug.core.models.star_identity import StarIdentity
 from shutterbug.core.progress_bar_handler import ProgressHandler
 from shutterbug.core.utility.photometry import measure_star_magnitude
+from shutterbug.gui.commands import SelectFileCommand, SelectStarCommand
 
 from .commands import LoadImagesCommand
 from .project import ShutterbugProject
@@ -26,8 +26,6 @@ from .views import MultiViewer
 
 
 class MainWindow(QMainWindow):
-
-    NEARNESS_TOLERANCE_DEFAULT = 20  # pixels
 
     def __init__(self):
         super().__init__()
@@ -87,6 +85,8 @@ class MainWindow(QMainWindow):
         self.viewer.propagation_requested.connect(self.propagate_star_selection)
         self.viewer.batch_requested.connect(self.process_all_images)
 
+        # Handle Outliner signals
+        self.sidebar.selection_changed.connect(self._on_selection_changed)
         logging.debug("Main window initialized")
 
     def setup_menu_bar(self):
@@ -122,6 +122,26 @@ class MainWindow(QMainWindow):
 
         logging.debug("Menu bar set up")
 
+    @Slot(QStandardItem, QStandardItem)
+    def _on_selection_changed(self, deselected: QStandardItem, selected: QStandardItem):
+        """Handles outliner changing selection"""
+        # Unpack data
+        deselected = deselected.data()
+        selected = selected.data()
+        stack = self._undo_stack
+
+        # Should be a better way of handling this
+        if isinstance(selected, FITSModel):
+            stack.push(
+                SelectFileCommand(
+                    selected_image=selected,
+                )
+            )
+        elif isinstance(selected, GraphDataModel):
+            pass
+        elif isinstance(selected, StarIdentity):
+            stack.push(SelectStarCommand(identity=selected))
+
     @Slot()
     def on_redo(self):
         if self._undo_stack.canRedo():
@@ -148,6 +168,7 @@ class MainWindow(QMainWindow):
 
     @Slot()
     def save_project(self):
+        return
         filename, _ = QFileDialog.getSaveFileName(
             self, "Save Project", "", "Shutterbug Project (*.sbug)"
         )
@@ -156,6 +177,7 @@ class MainWindow(QMainWindow):
 
     @Slot()
     def load_project(self):
+        return
         filename, _ = QFileDialog.getOpenFileName(
             self, "Open Project", "", "Shutterbug Project (*.sbug)"
         )
@@ -165,26 +187,6 @@ class MainWindow(QMainWindow):
     @Slot()
     def exit(self):
         QCoreApplication.quit()
-
-    def get_state(self):
-        return {
-            "outliner": self.sidebar.outliner.get_state(),
-            "settings": self.sidebar.settings.get_state(),
-        }
-
-    def set_state(self, state):
-        self.sidebar.outliner.set_state(state["outliner"])
-        self.sidebar.settings.set_state(state["settings"])
-
-    def is_near(
-        self,
-        x1: float,
-        y1: float,
-        x2: float,
-        y2: float,
-        tolerance=NEARNESS_TOLERANCE_DEFAULT,
-    ):
-        return ((x1 - x2) ** 2 + (y1 - y2) ** 2) ** 0.5 <= tolerance
 
     @Slot()
     def process_all_images(self):
@@ -227,21 +229,3 @@ class MainWindow(QMainWindow):
                                 image=img.filename,
                             )
                             self.measure_manager.add_measurement(measurement)
-
-    def generate_light_curve(self, results):
-        """Create light curve from data"""
-
-        # sort by time, just in case
-        results = sorted(results, key=lambda x: x["time"])
-
-        times = [r["time"] for r in results]
-        mags = [r["magnitude"] for r in results]
-
-        plt.figure(figsize=(12, 6))
-        plt.scatter(x=times, y=mags, marker="o")
-        plt.xlabel("Time (JD)")
-        plt.ylabel("Differential Magnitude")
-        plt.title("Light Curve")
-        plt.gca().invert_yaxis()  # Magnitude increases downward
-        plt.grid(True, alpha=0.3)
-        plt.show()  # Probably need to pipe it somewhere.

@@ -69,11 +69,11 @@ class RemoveImagesCommand(QUndoCommand):
 class SelectFileCommand(QUndoCommand):
     """Selects file in outliner and viewer"""
 
-    def __init__(self, selected_image: FITSModel | None, image_manager: ImageManager):
+    def __init__(self, selected_image: FITSModel | None):
         super().__init__("Select File")
         self.selected_image = selected_image
-        self.old_image = image_manager.active_image
-        self.image_manager = image_manager
+        self.image_manager = ImageManager()
+        self.old_image = self.image_manager.active_image
 
     def redo(self) -> None:
         self.image_manager.set_active_image(self.selected_image)
