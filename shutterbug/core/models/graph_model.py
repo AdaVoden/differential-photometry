@@ -2,6 +2,7 @@ from typing import List, Optional
 
 from .base_observable import ObservableQObject
 from .star_measurement import StarMeasurement
+from uuid import uuid4
 
 
 class GraphDataModel(ObservableQObject):
@@ -16,6 +17,7 @@ class GraphDataModel(ObservableQObject):
         ylim: Optional[float] = None,
     ):
         super().__init__()
+        self.uid = uuid4().hex
         self.measurements = measurements
         self.title = self._define_field("title", title)
         self.x_label = self._define_field("x_label", x_label)

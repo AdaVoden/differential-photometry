@@ -30,10 +30,19 @@ class GraphManager(QObject):
         return cls._instance
 
     def add_graph(self, graph: GraphDataModel):
-        pass
+        self.graphs[graph.uid] = graph
+        self.graph_added.emit(graph)
 
     def remove_graph(self, graph: GraphDataModel):
-        pass
+        if graph,uid in self.graphs:
+            self.graphs.pop(graph.uid)
+            self.graph_removed.emit(graph)
 
-    def set_active_graph(self, graph: GraphDataModel):
-        pass
+    def set_active_graph(self, graph: GraphDataModel | None):
+        if self.active_graph != graph:
+            if graph is None:
+                logging.debug(f"Setting active graph to none")
+            else:
+                logging.debug(f"Setting active graph to {graph.uid}")
+            self.active_graph = graph
+            self.active_graph_changed.emit(graph)

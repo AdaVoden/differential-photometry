@@ -16,7 +16,7 @@ from PySide6.QtWidgets import (
     QProgressBar,
     QWidget,
 )
-from shutterbug.core.managers import ImageManager, StarCatalog
+from shutterbug.core.managers import ImageManager, StarCatalog, GraphManager
 from shutterbug.core.managers.measurement_manager import MeasurementManager
 from shutterbug.core.models import FITSModel, StarMeasurement
 from shutterbug.core.models.graph_model import GraphDataModel
@@ -48,6 +48,7 @@ class MainWindow(QMainWindow):
         self.image_manager = ImageManager()
         self.star_catalog = StarCatalog()
         self.measure_manager = MeasurementManager()
+        self.graph_manager = GraphManager()
 
         # Set up undo stack
         self._undo_stack = QUndoStack()
@@ -99,6 +100,7 @@ class MainWindow(QMainWindow):
         # Handle Outliner signals
         self.sidebar.selection_changed.connect(self._on_selection_changed)
         self.image_manager.image_added.connect(self.outliner_model.add_image)
+        self.graph_manager.graph_added.connect(self.outliner_model.add_graph)
         self.star_catalog.star_added.connect(self.outliner_model.add_star)
 
         logging.debug("Main window initialized")
