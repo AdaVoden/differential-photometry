@@ -34,7 +34,7 @@ class GraphManager(QObject):
         self.graph_added.emit(graph)
 
     def remove_graph(self, graph: GraphDataModel):
-        if graph,uid in self.graphs:
+        if graph.uid in self.graphs:
             self.graphs.pop(graph.uid)
             self.graph_removed.emit(graph)
 

@@ -18,7 +18,7 @@ class GraphDataModel(ObservableQObject):
     ):
         super().__init__()
         self.uid = uuid4().hex
-        self.measurements = measurements
+        self.measurements = sorted(measurements, key=lambda m: m.time)
         self.title = self._define_field("title", title)
         self.x_label = self._define_field("x_label", x_label)
         self.y_label = self._define_field("y_label", y_label)
