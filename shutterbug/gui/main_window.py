@@ -1,6 +1,12 @@
 import logging
 
-from PySide6.QtCore import QCoreApplication, QItemSelection, Slot
+from PySide6.QtCore import (
+    QCoreApplication,
+    QItemSelection,
+    QItemSelectionRange,
+    Slot,
+    Qt,
+)
 from PySide6.QtGui import QUndoStack
 from PySide6.QtWidgets import (
     QFileDialog,
@@ -132,25 +138,25 @@ class MainWindow(QMainWindow):
 
     @Slot(QItemSelection, QItemSelection)
     def _on_selection_changed(
-        self, deselected: QItemSelection, selected: QItemSelection
+        self, selected: QItemSelectionRange, _: QItemSelectionRange
     ):
         """Handles outliner changing selection"""
-        # Unpack data
-        deselected = deselected.data()
-        selected = selected.data()
+        s = selected.indexes()[0]
+        data = s.data(Qt.ItemDataRole.UserRole)
+        print(data)
         stack = self._undo_stack
 
         # Should be a better way of handling this
-        if isinstance(selected, FITSModel):
+        if isinstance(data, FITSModel):
             stack.push(
                 SelectFileCommand(
-                    selected_image=selected,
+                    selected_image=data,
                 )
             )
-        elif isinstance(selected, GraphDataModel):
-            stack.push(SelectGraphCommand(graph=selected))
-        elif isinstance(selected, StarIdentity):
-            stack.push(SelectStarCommand(identity=selected))
+        elif isinstance(data, GraphDataModel):
+            stack.push(SelectGraphCommand(graph=data))
+        elif isinstance(data, StarIdentity):
+            stack.push(SelectStarCommand(identity=data))
 
     @Slot()
     def on_redo(self):
