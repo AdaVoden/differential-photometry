@@ -5,6 +5,10 @@
     margin: 0px;
 }
 
+#outliner > QTreeView::branch {
+    border-image: url(none.png);
+}
+
 #sidebar {
     margin: 0px;
     max-width: 400px;

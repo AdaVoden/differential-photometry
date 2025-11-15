@@ -9,9 +9,11 @@
     - [ ] Add marker select
 - [ ] Reduce brightness/contrast processing time
 - [ ] Graph view
-  - [ ] Select graphs of different stars
+  - [x] Select graphs of different stars
 - [x] Spreadsheet view
 - [ ] Only search for stars in a small region around click
 - [ ] Select star in spreadsheet view to select star in image
 - [ ] Create Singleton class for managers to inherit
 - [ ] Create Manager class for managers, since they're all very similar
+- [ ] Set image storage to only store 8 bit version of image
+- [ ] Retrieve small chunks of data image for processing

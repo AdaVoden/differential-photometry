@@ -30,6 +30,7 @@ class Outliner(QWidget):
 
         # Create a file list and connect it here
         self.item_view = QTreeView()
+        self.item_view.setHeaderHidden(True)
         self.model = OutlinerModel()
         self.item_view.setModel(self.model)
         self.item_view.alternatingRowColors()
