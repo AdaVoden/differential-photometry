@@ -13,3 +13,5 @@
 - [x] Spreadsheet view
 - [ ] Only search for stars in a small region around click
 - [ ] Select star in spreadsheet view to select star in image
+- [ ] Create Singleton class for managers to inherit
+- [ ] Create Manager class for managers, since they're all very similar

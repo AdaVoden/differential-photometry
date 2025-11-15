@@ -143,7 +143,6 @@ class MainWindow(QMainWindow):
         """Handles outliner changing selection"""
         s = selected.indexes()[0]
         data = s.data(Qt.ItemDataRole.UserRole)
-        print(data)
         stack = self._undo_stack
 
         # Should be a better way of handling this
