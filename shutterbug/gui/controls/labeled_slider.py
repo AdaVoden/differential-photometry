@@ -9,9 +9,17 @@ from shutterbug.gui.controls.scrubby_slider import ScrubbySlider
 class LabeledSlider(QWidget):
     """Reusable labeled slider component"""
 
-    valueChanged = Signal(int)
+    valueChanged = Signal(float)
 
-    def __init__(self, name: str, min: int, max: int, default: int):
+    def __init__(
+        self,
+        name: str,
+        min: float,
+        max: float,
+        default: float,
+        number_type: str = "int",
+        decimal_places: int = 3,
+    ):
         super().__init__()
         layout = QHBoxLayout()
         self.setLayout(layout)
@@ -27,7 +35,7 @@ class LabeledSlider(QWidget):
         layout.addWidget(self.label)
 
         # Set up scrubby slider from inputs
-        self.slider = ScrubbySlider(min, max, default)
+        self.slider = ScrubbySlider(min, max, default, number_type, decimal_places)
         layout.addWidget(self.slider)
 
         # Attach slider's signal to custom signal
@@ -39,6 +47,6 @@ class LabeledSlider(QWidget):
         """Returns value of embedded slider"""
         return self.slider.value()
 
-    def setValue(self, value: int):
+    def setValue(self, value: float):
         """Sets value of embedded slider"""
         self.slider.setValue(value)

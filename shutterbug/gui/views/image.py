@@ -422,28 +422,15 @@ class ImageViewer(QGraphicsView):
         if self.current_image is None:
             return  # No image = no data
 
-        data = self.current_image.data
-        brightness_offset = self.current_image.brightness
-        contrast_factor = self.current_image.contrast
-        # Handle NaNs and Infs
-        data = np.nan_to_num(data, nan=0.0, posinf=0.0, neginf=0.0)
+        data = self.current_image.display_data.astype(np.float32)
+        brightness = self.current_image.brightness
+        contrast = self.current_image.contrast
+        # apply brightness/contrast
 
-        # Simple fixed percentile stretch
-        vmin, vmax = np.percentile(data, [1, 99])
+        data = data * contrast
 
-        # Clip and normalize to 0-1 first
-        data = np.clip(data, vmin, vmax)
-        data = (data - vmin) / (vmax - vmin + 1e-10)  # Avoid divide by zero
+        data = data + brightness
 
-        # apply contrast and brightness to 0-1 range
-        # Contrast: multiply (1.0 = no change)
-        data = data * (contrast_factor / 100)  # Normalize to ~1
-
-        # Brightness: add/subtract (-1 to 1 range)
-        data = data + (brightness_offset / 100.0)
-
-        # Clip to 0-1 and convert to 0-255
-        data = np.clip(data, 0, 1)
-        data = (data * 255).astype(np.uint8)
+        data = np.clip(data, 0, 255).astype(np.uint8)
 
         return data

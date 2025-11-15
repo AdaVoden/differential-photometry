@@ -87,8 +87,8 @@ class ImagePropertiesPanel(QWidget):
         layout.setAlignment(Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignTop)
 
         # Sliders
-        self.brightness_slider = LabeledSlider("Brightness", -100, 100, 0)
-        self.contrast_slider = LabeledSlider("Contrast", 50, 200, 100)
+        self.brightness_slider = LabeledSlider("Brightness", -100, 100, 0, "int")
+        self.contrast_slider = LabeledSlider("Contrast", 0, 2, 1, "float", 3)
 
         # Add to layout
         layout.addWidget(self.brightness_slider)
@@ -116,8 +116,8 @@ class ImagePropertiesPanel(QWidget):
             # Add new subscriptions and set the slider values
             image.updated.connect(self.set_brightness)
             image.updated.connect(self.set_contrast)
-            self.set_brightness(image.brightness)
-            self.set_contrast(image.contrast)
+            self.set_brightness(image)
+            self.set_contrast(image)
 
     @Slot(int)
     def _on_brightness_changed(self, value: int):
@@ -129,12 +129,14 @@ class ImagePropertiesPanel(QWidget):
         if self.current_image:
             self._undo_stack.push(SetContrastCommand(value, self.current_image))
 
-    @Slot(int)
-    def set_brightness(self, value: int):
+    @Slot(FITSModel)
+    def set_brightness(self, image: FITSModel):
+        value = image.brightness
         self.brightness_slider.setValue(value)
 
-    @Slot(int)
-    def set_contrast(self, value: int):
+    @Slot(FITSModel)
+    def set_contrast(self, image: FITSModel):
+        value = image.contrast
         self.contrast_slider.setValue(value)
 
     def get_state(self):

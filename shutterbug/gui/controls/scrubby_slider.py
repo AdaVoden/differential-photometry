@@ -1,18 +1,32 @@
 from PySide6.QtWidgets import QWidget, QHBoxLayout, QLineEdit, QPushButton
 from PySide6.QtCore import Qt, Signal, QPoint, Slot
-from PySide6.QtGui import QIntValidator, QCursor, QMouseEvent
+from PySide6.QtGui import QIntValidator, QCursor, QMouseEvent, QDoubleValidator
 
 
 class ScrubbySlider(QWidget):
     """A blender-like value box with drag-changing"""
 
-    valueChanged = Signal(int)
+    valueChanged = Signal(float)
 
-    def __init__(self, min_val: int, max_val: int, default: int):
+    def __init__(
+        self,
+        min_val: float,
+        max_val: float,
+        default: float,
+        number_type: str = "int",
+        decimal_places: int = 3,
+    ):
         super().__init__()
         self.min_val = min_val
         self.max_val = max_val
         self.current_val = default
+        self.number_type = number_type
+        if number_type == "int":
+            self.decimal_places = 0
+            self.decimal_mulitplier = 1
+        else:
+            self.decimal_places = decimal_places
+            self.decimal_mulitplier = 1 / 10**decimal_places
 
         # Set up dragging variables
         self.dragging = False
@@ -31,8 +45,20 @@ class ScrubbySlider(QWidget):
         layout.addWidget(self.left_btn)
 
         # Line edit for value display and input
-        self.line_edit = QLineEdit(str(default))
-        self.line_edit.setValidator(QIntValidator(min_val, max_val))
+        if number_type == "int":
+
+            self.line_edit = QLineEdit(str(int(default)))
+            min_val = int(min_val)
+            max_val = int(max_val)
+            self.line_edit.setValidator(QIntValidator(min_val, max_val))
+        elif number_type == "float":
+            min_val = float(min_val)
+            max_val = float(max_val)
+
+            self.line_edit = QLineEdit(f"{default:.{decimal_places}f}")
+            self.line_edit.setValidator(
+                QDoubleValidator(min_val, max_val, decimal_places)
+            )
         self.line_edit.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.line_edit.editingFinished.connect(self.on_text_changed)
 
@@ -66,7 +92,7 @@ class ScrubbySlider(QWidget):
         if self.dragging:
             delta = event.globalPosition().toPoint().x() - self.drag_start_pos.x()
             # adjust sensitivity: 1 pixel = 1 unit
-            new_value = self.drag_start_val + delta
+            new_value = self.drag_start_val + (delta * self.decimal_mulitplier)
             self.valueChanged.emit(new_value)
             event.accept()
         else:
@@ -85,18 +111,20 @@ class ScrubbySlider(QWidget):
     def on_text_changed(self):
         """Handles line edit text being modified"""
         try:
-            value = int(self.line_edit.text())
+            value = float(self.line_edit.text())
             self.valueChanged.emit(value)
         except ValueError:
-            self.line_edit.setText(str(self.current_val))
+            self.line_edit.setText(f"{self.current_val:.{self.decimal_places}f}")
 
-    @Slot(int)
-    def setValue(self, value: int):
+    @Slot(float)
+    def setValue(self, value: float):
         """Sets value of scrubby slider"""
+        if self.number_type == "int":
+            value = int(value)
         value = max(self.min_val, min(self.max_val, value))
         if value != self.current_val:
             self.current_val = value
-            self.line_edit.setText(str(value))
+            self.line_edit.setText(f"{value:.{self.decimal_places}f}")
 
     def value(self):
         """Returns the current value of the slider"""
@@ -105,9 +133,9 @@ class ScrubbySlider(QWidget):
     @Slot()
     def increment(self):
         """Increments slider by 1"""
-        self.valueChanged.emit(self.current_val + 1)
+        self.valueChanged.emit(self.current_val + 1 * self.decimal_mulitplier)
 
     @Slot()
     def decrement(self):
         """Decrements slider by 1"""
-        self.valueChanged.emit(self.current_val - 1)
+        self.valueChanged.emit(self.current_val - 1 * self.decimal_mulitplier)

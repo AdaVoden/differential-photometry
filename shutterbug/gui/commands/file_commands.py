@@ -87,10 +87,14 @@ def load_fits_image(filepath: Path):
     # This method can be implemented to load FITS data
     logging.debug(f"Loading FITS image from {filepath}")
 
-    with fits.open(filepath, uint=True) as hdul:
+    with fits.open(
+        filepath, uint=True, memmap=True, do_not_scale_image_data=True
+    ) as hdul:
         data = hdul[0].data  # type: ignore
         obs_time = hdul[0].header["JD"]  # type: ignore
-        image = FITSModel(filepath, data, obs_time)
+        bzero = hdul[0].header["BZERO"] if "BZERO" in hdul[0].header else 0  # type: ignore
+        bscale = hdul[0].header["BSCALE"] if "BSCALE" in hdul[0].header else 1  # type: ignore
+        image = FITSModel(filepath, data, obs_time, bzero, bscale)
         # Assuming image data is in the primary HDU
         return image
 
