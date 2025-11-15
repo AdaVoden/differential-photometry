@@ -4,6 +4,8 @@ from .star_identity import StarIdentity
 from .base_observable import ObservableQObject
 from .fits_model import FITSModel
 from .measurement_model import MeasurementMetadataModel
+from .graph_model import GraphDataModel
+from .outliner_model import OutlinerModel
 
 __all__ = [
     "StarMeasurement",
@@ -11,4 +13,6 @@ __all__ = [
     "ObservableQObject",
     "FITSModel",
     "MeasurementMetadataModel",
+    "GraphDataModel",
+    "OutlinerModel",
 ]

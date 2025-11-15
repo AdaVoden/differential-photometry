@@ -1,25 +1,37 @@
 import logging
 
+from PySide6.QtCore import QObject, Signal
 from scipy.spatial import KDTree
 from shutterbug.core.models import StarIdentity, StarMeasurement
 
 
-class StarCatalog:
+class StarCatalog(QObject):
     """Catalogues stars between images. Is a singleton."""
 
     _instance = None
+    star_added = Signal(StarIdentity)
+    star_removed = Signal(StarIdentity)
+    active_star_changed = Signal(StarIdentity)
+
+    def __init__(self):
+        if not hasattr(self, "_initialized"):
+            self._initialized = True
+
+            super().__init__()
+            self.stars = {}  # id -> StarIdentity
+            self.measurement_to_star = {}  # StarMeasurement -> StarIdentity
+            self.active_star = None  # selected star
+            self._kdtree = None
+            self._coords = []  # Reference coordinates
+            self._ids = []  # Matching star IDs
+            self._dirty = False
 
     def __new__(cls):
         if cls._instance is None:
             logging.debug("Creating Star Catalog singleton")
             cls._instance = super(StarCatalog, cls).__new__(cls)
             # initial variables
-            cls.stars = {}  # id -> StarIdentity
-            cls.measurement_to_star = {}  # StarMeasurement -> StarIdentity
-            cls._kdtree = None
-            cls._coords = []  # Reference coordinates
-            cls._ids = []  # Matching star IDs
-            cls._dirty = False
+
         return cls._instance
 
     def _add_star(self, star_identity: StarIdentity, x: float, y: float):
@@ -28,6 +40,7 @@ class StarCatalog:
         self._coords.append((x, y))
         self._ids.append(star_identity.id)
         self._dirty = True
+        self.star_added.emit(star_identity)
         logging.debug(f"Added identity: {star_identity.id}")
 
     def _remove_star(self, star_identity: StarIdentity, x: float, y: float):
@@ -36,6 +49,7 @@ class StarCatalog:
         self._coords.remove((x, y))
         self._ids.remove(star_identity.id)
         self._dirty = True
+        self.star_removed.emit(star_identity)
         logging.debug(f"Removed identity: {star_identity.id}")
 
     def _ensure_tree(self):
@@ -105,3 +119,13 @@ class StarCatalog:
             return self.measurement_to_star[measurement]
         else:
             return None
+
+    def set_active_star(self, star: StarIdentity | None):
+        """Sets active star"""
+        if self.active_star != star:
+            if star is None:
+                logging.debug(f"Setting active star to none")
+            else:
+                logging.debug(f"Setting star as active: {star.id}")
+            self.active_star = star
+            self.active_star_changed.emit(star)

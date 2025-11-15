@@ -69,11 +69,11 @@ class RemoveImagesCommand(QUndoCommand):
 class SelectFileCommand(QUndoCommand):
     """Selects file in outliner and viewer"""
 
-    def __init__(self, selected_image: FITSModel | None, image_manager: ImageManager):
+    def __init__(self, selected_image: FITSModel | None):
         super().__init__("Select File")
         self.selected_image = selected_image
-        self.old_image = image_manager.active_image
-        self.image_manager = image_manager
+        self.image_manager = ImageManager()
+        self.old_image = self.image_manager.active_image
 
     def redo(self) -> None:
         self.image_manager.set_active_image(self.selected_image)
@@ -97,7 +97,9 @@ def load_fits_image(filepath: Path):
 
 def load_images(image_paths: List[Path], image_manager: ImageManager):
     """Batch loads FITS images from list of paths"""
-    image_manager.add_images([load_fits_image(f) for f in image_paths])
+    images = [load_fits_image(f) for f in image_paths]
+    for image in images:
+        image_manager.add_image(image)
 
 
 def remove_images(image_names: List[Path], image_manager: ImageManager):
@@ -108,5 +110,4 @@ def remove_images(image_names: List[Path], image_manager: ImageManager):
         image = image_manager.get_image(name)
         if image:
             images.append(image)
-    if images:
-        image_manager.remove_images(images)
+            image_manager.remove_image(image)

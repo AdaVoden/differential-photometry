@@ -67,19 +67,17 @@ class MeasurementManager(QObject):
 
     def _ensure_tree(self, metadata: MeasurementMetadataModel):
         """Create or rebuild the KDTree for spacial detection"""
-        kdtree = metadata.kdtree
-        dirty = metadata.is_dirty
 
-        if kdtree is None or dirty is True:
+        if metadata.kdtree is None or metadata.is_dirty is True:
             if not metadata.star_coordinates:
-                self._kdtree = None
+                metadata.kdtree = None
                 return
             # Generate new tree!
             logging.debug(
                 f"StarManager rebuilt KDTree with {len(metadata.star_coordinates)} coordinates for image {metadata.image}"
             )
-            self._kdtree = KDTree(metadata.star_coordinates)
-        self._dirty = False
+            metadata.kdtree = KDTree(metadata.star_coordinates)
+        metadata.is_dirty = False
 
     def find_nearest(self, image_name: str, x: float, y: float, tolerance: float = 3.0):
         """Finds the nearest star from coordinate"""
@@ -89,12 +87,13 @@ class MeasurementManager(QObject):
             return None
 
         self._ensure_tree(metadata)
-        if self._kdtree is None:
+        kdtree = metadata.kdtree
+        if kdtree is None:
             return None
 
-        _, idx = self._kdtree.query((x, y), distance_upper_bound=tolerance)
+        _, idx = kdtree.query((x, y), distance_upper_bound=tolerance)
 
-        if idx == self._kdtree.n:
+        if idx == kdtree.n:
             # Found nothing
             return None
         else:
@@ -108,3 +107,7 @@ class MeasurementManager(QObject):
         if metadata is None:
             return []
         return list(metadata.stars.values())
+
+    def calculate_diff_mag(self, image_name: str):
+        """Calculates differential magnitude on all measurements in image"""
+        pass

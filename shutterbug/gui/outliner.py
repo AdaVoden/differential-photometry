@@ -1,22 +1,15 @@
 import logging
 
-from shutterbug.core.managers import ImageManager
-from shutterbug.core.models import FITSModel
-from .commands.file_commands import (
-    RemoveImagesCommand,
-    SelectFileCommand,
-)
-
-from PySide6.QtWidgets import QWidget, QVBoxLayout, QListWidget, QListWidgetItem, QMenu
-from PySide6.QtCore import Signal, Slot, Qt, QPoint
+from PySide6.QtCore import QItemSelection, QPoint, Qt, Slot, Signal
 from PySide6.QtGui import QUndoStack
-
-from typing import List
+from PySide6.QtWidgets import QMenu, QTreeView, QVBoxLayout, QWidget
+from shutterbug.core.managers import ImageManager, StarCatalog
+from shutterbug.core.models import OutlinerModel
 
 
 class Outliner(QWidget):
 
-    remove_item_requested = Signal(str)  # Signal emitted when an item is deleted
+    selection_changed = Signal(QItemSelection, QItemSelection)
 
     def __init__(self, undo_stack: QUndoStack):
         super().__init__()
@@ -26,9 +19,7 @@ class Outliner(QWidget):
 
         # Keep track of images
         self.image_manager = ImageManager()  # singleton
-
-        self.selected_item = None
-        self.loaded_items: List[str] = []  # List to keep track of loaded items
+        self.catalog = StarCatalog()
 
         # Set layout
         layout = QVBoxLayout()
@@ -38,116 +29,26 @@ class Outliner(QWidget):
         layout.setSpacing(2)
 
         # Create a file list and connect it here
-        self.file_list = QListWidget()
-        layout.addWidget(self.file_list)
+        self.item_view = QTreeView()
+        self.model = OutlinerModel()
+        self.item_view.setModel(self.model)
+        self.item_view.alternatingRowColors()
+        layout.addWidget(self.item_view)
 
         # Set up right-click context menu
-        self.file_list.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
-        self.file_list.customContextMenuRequested.connect(self.show_context_menu)
+        self.item_view.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        self.item_view.customContextMenuRequested.connect(self.show_context_menu)
 
-        self.file_list.itemClicked.connect(self._on_item_clicked)
-
-        # Image manager signals
-        self.image_manager.active_image_changed.connect(self._on_active_image_changed)
-        self.image_manager.images_added.connect(self._on_images_added)
-        self.image_manager.images_removed.connect(self._on_images_removed)
+        self.item_view.selectionModel().selectionChanged.connect(self.selection_changed)
 
         logging.debug("Outliner initialized")
-
-    @Slot(FITSModel)
-    def _on_active_image_changed(self, image: FITSModel | None):
-        """Handles active image being changed"""
-        if image:
-            self.select_item(image.filename)
-
-    @Slot(FITSModel)
-    def _on_images_removed(self, images: List[FITSModel]):
-        """Handles images being removed from manager"""
-        for image in images:
-            item = self.get_item(image.filename)
-            if item:
-                self.remove_item(item)
-
-    @Slot(FITSModel)
-    def _on_images_added(self, images: List[FITSModel]):
-        """Handles images being added to manager"""
-        for image in images:
-            self.add_item(image.filename)
 
     @Slot(QPoint)
     def show_context_menu(self, pos: QPoint):
         """Displays context menu for right-clicked item in file list"""
-        clicked_item = self.file_list.itemAt(pos)
-        if clicked_item:
-            menu = QMenu()
+        selection = self.item_view.selectionModel().selection()
+        menu = QMenu()
 
-            delete_action = menu.addAction("Delete")
-            delete_action.triggered.connect(self._on_delete_item)
+        delete_action = menu.addAction("Delete")
 
-            menu.exec(self.file_list.mapToGlobal(pos))
-
-    @Slot(str)
-    def _on_delete_item(self, item_name: str):
-        """Create delete command of item"""
-        self._undo_stack.push(
-            RemoveImagesCommand(
-                [item_name],
-                self.image_manager,
-            )
-        )
-
-    @Slot(QListWidgetItem)
-    def _on_item_clicked(self, item: QListWidgetItem):
-        """Handle item click events"""
-        logging.debug(f"Item clicked: {item.text()}")
-        image = self.image_manager.get_image(item.text())
-        self._undo_stack.push(SelectFileCommand(image, self.image_manager))
-
-    @Slot(str)
-    def add_item(self, item_name: str):
-        """Add an item to the outliner"""
-        self.file_list.addItem(item_name)
-        self.loaded_items.append(item_name)
-
-    @Slot(str)
-    def select_item(self, item_name: str | None):
-        """Selects an item in the outliner"""
-        if item_name is None:
-            logging.debug("Clearing Outliner selection")
-            self.file_list.clearSelection()
-            self.selected_item = None
-            return
-
-        for item in self.file_list.findItems(item_name, Qt.MatchFlag.MatchExactly):
-            if item.text() == item_name:
-                logging.debug(f"Selecting item {item_name} in Outliner")
-                self.file_list.setCurrentItem(item)
-                self.selected_item = item
-                return  # No more work to do
-
-    @Slot(QListWidgetItem)
-    def remove_item(self, item: QListWidgetItem):
-        """Remove an item from the outliner"""
-        logging.debug(f"Removing item: {item.text()}")
-        row = self.file_list.row(item)
-        self.file_list.takeItem(row)
-
-    def get_item(self, item_name: str) -> QListWidgetItem | None:
-        """Get item from outliner by item name"""
-        for item in self.file_list.findItems(item_name, Qt.MatchFlag.MatchExactly):
-            if item.text() == item_name:
-                return item
-        return None
-
-    def get_state(self):
-        return {"items": self.loaded_items, "selected_item": self.selected_item}
-
-    def set_state(self, state):
-        for item in state["items"]:
-            self.add_item(item)
-        self.selected_item = state["selected_item"]
-        selected_item = self.file_list.findItems(
-            self.selected_item, Qt.MatchFlag.MatchExactly
-        )[0]
-        self.file_list.setCurrentItem(selected_item)
-        self._on_item_clicked(selected_item)
+        menu.exec(self.item_view.mapToGlobal(pos))

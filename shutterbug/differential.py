@@ -47,7 +47,7 @@ def calculate_differential_magnitudes(
 
 
 def find_reference_stars(
-    metadata: pd.DataFrame,
+    data: pd.DataFrame,
     target_star: str,
     max_distance: float | None = None,
     min_refs: int = 10,
@@ -55,15 +55,15 @@ def find_reference_stars(
 ) -> List[str]:
     """Finds reference stars within a certain distance from the target star."""
     # Get target star position
-    target_pos = metadata[metadata["Name"] == target_star][["X", "Y"]].iloc[0]
+    target_pos = data[data["Name"] == target_star][["X", "Y"]].iloc[0]
 
     # Calculate distances to all other stars
-    metadata["distance"] = np.sqrt(
-        (metadata["X"] - target_pos.X) ** 2 + (metadata["Y"] - target_pos.Y) ** 2
+    data["distance"] = np.sqrt(
+        (data["X"] - target_pos.X) ** 2 + (data["Y"] - target_pos.Y) ** 2
     )
 
     # Sort by distance, excluding the target star itself
-    nearby = metadata[metadata["Name"] != target_star].sort_values(by="distance")
+    nearby = data[data["Name"] != target_star].sort_values(by="distance")
 
     # Strategy: Take closest N stars, ensuring we get enough
     # Start with max_distance if provided, otherwise take closest max_refs
