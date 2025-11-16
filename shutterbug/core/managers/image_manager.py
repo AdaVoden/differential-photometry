@@ -146,3 +146,38 @@ class ImageManager(QObject):
         image.stars = daofind(bg_subtracted)
 
         return image.stars
+
+    def get_8bit_preview(self):
+        """Gets the 8bit display version of the image data"""
+        if self.active_image is None:
+            return None
+
+        if self.active_image.display_data is not None:
+            return self.active_image.display_data
+
+        self.active_image.display_data = self._compute_8bit_preview(self.active_image)
+        return self.active_image.display_data
+
+    def _compute_8bit_preview(self, image: FITSModel):
+        """Computes the 8 bit display image from image data"""
+
+        bzero = image.bzero
+        bscale = image.bscale
+        # Get and scale data appropriately
+        data = bzero + (image.data * bscale)
+
+        # Handle NaNs and Infs
+        data = np.nan_to_num(data, nan=0.0, posinf=0.0, neginf=0.0)
+
+        # Simple fixed percentiel stretch
+        vmin, vmax = np.percentile(data, [1, 99])
+
+        # clip and normalize to 0-1
+        data = np.clip(data, vmin, vmax)
+        data = (data - vmin) / (vmax - vmin)
+
+        # clip and convert to 0-255
+        data = np.clip(data, 0, 1)
+        data = (data * 255).astype(np.uint8)
+
+        return data

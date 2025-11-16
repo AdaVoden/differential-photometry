@@ -422,7 +422,13 @@ class ImageViewer(QGraphicsView):
         if self.current_image is None:
             return  # No image = no data
 
-        data = self.current_image.display_data.astype(np.float32)
+        data = self.image_manager.get_8bit_preview()
+
+        if data is None:
+            return
+
+        data = data.astype(np.float32)
+
         brightness = self.current_image.brightness
         contrast = self.current_image.contrast
         # apply brightness/contrast
