@@ -3,7 +3,7 @@ from PySide6.QtWidgets import QVBoxLayout, QWidget, QTableView, QHeaderView
 from PySide6.QtGui import QStandardItem, QStandardItemModel
 from PySide6.QtCore import QModelIndex, Slot
 
-from shutterbug.core.managers.measurement_manager import MeasurementManager
+from shutterbug.core.managers import MeasurementManager
 from shutterbug.core.models import FITSModel, StarMeasurement
 from shutterbug.core.managers import ImageManager, StarCatalog
 
@@ -106,14 +106,12 @@ class SpreadsheetViewer(QWidget):
         if not self.current_image:
             return  # No work to do
         image_name = self.current_image.filename
-        rows = []
         for star in self.measure_manager.get_all_measurements(image_name):
 
             star_id = self.catalog.get_by_measurement(star)
             if star_id:
                 row = self._data_to_row(star, star_id.id)
-                rows.append(row)
-        self.model.appendRow(rows)
+                self.model.appendRow(row)
 
     def _idx_from_id(self, id: str) -> QModelIndex | None:
         """Finds index associated with id"""

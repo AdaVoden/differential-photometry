@@ -2,6 +2,8 @@ from typing import Optional
 
 from .base_observable import ObservableQObject
 
+from uuid import uuid4
+
 
 class StarMeasurement(ObservableQObject):
     """Measurement of a star within an image"""
@@ -21,6 +23,7 @@ class StarMeasurement(ObservableQObject):
     ):
         super().__init__()
         # Intrinsic
+        self.uid = uuid4().hex
         self.x = x
         self.y = y
         self.time = time

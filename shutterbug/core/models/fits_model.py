@@ -1,4 +1,5 @@
 from pathlib import Path
+from uuid import uuid4
 
 from .base_observable import ObservableQObject
 
@@ -14,6 +15,7 @@ class FITSModel(ObservableQObject):
         self, filepath: Path, data, obs_time: str, bzero: float, bscale: float
     ) -> None:
         super().__init__()
+        self.uid = uuid4().hex
         # File data
         self.filepath: Path = filepath
         self.filename: str = self.filepath.name

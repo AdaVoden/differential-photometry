@@ -19,7 +19,7 @@ class StarCatalog(QObject):
 
             super().__init__()
             self.stars = {}  # id -> StarIdentity
-            self.measurement_to_star = {}  # StarMeasurement -> StarIdentity
+            self.measurement_to_star = {}  # StarMeasurement.uid -> StarIdentity
             self.active_star = None  # selected star
             self._kdtree = None
             self._coords = []  # Reference coordinates
@@ -99,7 +99,7 @@ class StarCatalog(QObject):
             star = StarIdentity(id=star_id)
             self._add_star(star, measurement.x, measurement.y)
         star.measurements[measurement.image] = measurement
-        self.measurement_to_star[measurement] = star
+        self.measurement_to_star[measurement.uid] = star
         return star
 
     def unregister_measurement(self, measurement: StarMeasurement) -> None:
@@ -107,8 +107,10 @@ class StarCatalog(QObject):
         match_id = self.find_nearest(measurement.x, measurement.y)
         if match_id:
             star = self.stars[match_id]
+            print(star)
+            print(star.measurements)
             star.measurements.pop(measurement.image)
-            self.measurement_to_star.pop(measurement)
+            self.measurement_to_star.pop(measurement.uid)
             if len(star.measurements) == 0:
                 self._remove_star(star, measurement.x, measurement.y)
                 return
@@ -116,7 +118,7 @@ class StarCatalog(QObject):
     def get_by_measurement(self, measurement: StarMeasurement) -> StarIdentity | None:
         """Retreives a star's identity by a measurement, if any"""
         if measurement in self.measurement_to_star:
-            return self.measurement_to_star[measurement]
+            return self.measurement_to_star[measurement.uid]
         else:
             return None
 

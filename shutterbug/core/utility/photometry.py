@@ -111,6 +111,7 @@ def _calculate_magnitude_with_error(
 def calculate_differential_magnitude(
     target_star: StarMeasurement, ref_stars: List[StarMeasurement]
 ):
+    """Calculate differential magnitude on target image and stars"""
     # Make sure we're dealing with real data
     if target_star.mag_error is None:
         return target_star
@@ -118,13 +119,12 @@ def calculate_differential_magnitude(
         return target_star
     if len(ref_stars) < 1:
         return target_star
-    """Calculate differential magnitude on target image and stars"""
     ref_mags = [ref.mag for ref in ref_stars]
     ref_mags = np.asarray(ref_mags)
     ref_err = [ref.mag_error for ref in ref_stars]
     ref_err = np.asarray(ref_err)
-    # (-1) * (-ref_mags + target_mag) == target_mag - ref_mags
-    target_star.diff_mag = float(-1 * np.mean((-1 * ref_mags) + target_star.mag))
+    # (-ref_mags + target_mag) == target_mag - ref_mags
+    target_star.diff_mag = float(np.mean((-1 * ref_mags) + target_star.mag))
 
     # Error calculation
     ref_err_rms = np.sqrt(ref_err**2 + target_star.mag_error**2)
