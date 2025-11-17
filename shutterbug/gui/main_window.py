@@ -1,12 +1,6 @@
 import logging
 
-from PySide6.QtCore import (
-    QCoreApplication,
-    QItemSelection,
-    QItemSelectionRange,
-    Slot,
-    Qt,
-)
+from PySide6.QtCore import QCoreApplication, Slot
 from PySide6.QtGui import QUndoStack
 from PySide6.QtWidgets import (
     QFileDialog,
@@ -16,20 +10,18 @@ from PySide6.QtWidgets import (
     QProgressBar,
     QWidget,
 )
-from shutterbug.core.managers import ImageManager, StarCatalog, GraphManager
-from shutterbug.core.managers.measurement_manager import MeasurementManager
+from shutterbug.core.managers import (
+    GraphManager,
+    ImageManager,
+    MeasurementManager,
+    SelectionManager,
+    StarCatalog,
+)
 from shutterbug.core.models import FITSModel, StarMeasurement
-from shutterbug.core.models.graph_model import GraphDataModel
-from shutterbug.core.models.star_identity import StarIdentity
 from shutterbug.core.progress_bar_handler import ProgressHandler
 from shutterbug.core.utility.photometry import (
     calculate_differential_magnitude,
     measure_star_magnitude,
-)
-from shutterbug.gui.commands import (
-    SelectFileCommand,
-    SelectGraphCommand,
-    SelectStarCommand,
 )
 
 from .commands import LoadImagesCommand
@@ -47,14 +39,15 @@ class MainWindow(QMainWindow):
         self.setWindowTitle("Shutterbug")
         self.setGeometry(100, 100, 1200, 800)
 
+        # Set up undo stack
+        self._undo_stack = QUndoStack()
+
         # Instantiate singletons
         self.image_manager = ImageManager()
         self.star_catalog = StarCatalog()
         self.measure_manager = MeasurementManager()
         self.graph_manager = GraphManager()
-
-        # Set up undo stack
-        self._undo_stack = QUndoStack()
+        self.selection_manager = SelectionManager(self._undo_stack)
 
         # Set up save/load functionality
         self.project = ShutterbugProject()
@@ -101,7 +94,7 @@ class MainWindow(QMainWindow):
         self.viewer.batch_requested.connect(self.process_all_images)
 
         # Handle Outliner signals
-        self.sidebar.selection_changed.connect(self._on_selection_changed)
+        self.sidebar.object_selected.connect(self.selection_manager.set_selected_object)
         self.image_manager.image_added.connect(self.outliner_model.add_image)
         self.graph_manager.graph_added.connect(self.outliner_model.add_graph)
         self.star_catalog.star_added.connect(self.outliner_model.add_star)
@@ -148,27 +141,6 @@ class MainWindow(QMainWindow):
         # about_action = help_menu.addAction("About Shutterbug")
 
         logging.debug("Menu bar set up")
-
-    @Slot(QItemSelection, QItemSelection)
-    def _on_selection_changed(
-        self, selected: QItemSelectionRange, _: QItemSelectionRange
-    ):
-        """Handles outliner changing selection"""
-        s = selected.indexes()[0]
-        data = s.data(Qt.ItemDataRole.UserRole)
-        stack = self._undo_stack
-
-        # Should be a better way of handling this
-        if isinstance(data, FITSModel):
-            stack.push(
-                SelectFileCommand(
-                    selected_image=data,
-                )
-            )
-        elif isinstance(data, GraphDataModel):
-            stack.push(SelectGraphCommand(graph=data))
-        elif isinstance(data, StarIdentity):
-            stack.push(SelectStarCommand(identity=data))
 
     @Slot()
     def on_redo(self):

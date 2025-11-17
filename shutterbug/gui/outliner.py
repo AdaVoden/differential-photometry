@@ -1,6 +1,6 @@
 import logging
 
-from PySide6.QtCore import QItemSelection, QPoint, Qt, Slot, Signal
+from PySide6.QtCore import QItemSelection, QPoint, Qt, Signal, Slot
 from PySide6.QtGui import QUndoStack
 from PySide6.QtWidgets import QMenu, QTreeView, QVBoxLayout, QWidget
 from shutterbug.core.managers import ImageManager, StarCatalog
@@ -9,7 +9,7 @@ from shutterbug.core.models import OutlinerModel
 
 class Outliner(QWidget):
 
-    selection_changed = Signal(QItemSelection, QItemSelection)
+    object_selected = Signal(object)
 
     def __init__(self, undo_stack: QUndoStack):
         super().__init__()
@@ -40,9 +40,20 @@ class Outliner(QWidget):
         self.item_view.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self.item_view.customContextMenuRequested.connect(self.show_context_menu)
 
-        self.item_view.selectionModel().selectionChanged.connect(self.selection_changed)
+        self.item_view.selectionModel().selectionChanged.connect(
+            self._on_selection_changed
+        )
 
         logging.debug("Outliner initialized")
+
+    @Slot(QItemSelection, QItemSelection)
+    def _on_selection_changed(self, _: QItemSelection, selected: QItemSelection):
+        """Emits the selected data object from outliner click"""
+        # Get from internal list
+        s = selected.indexes()[0]
+        # Data stored in item
+        data = s.data(Qt.ItemDataRole.UserRole)
+        self.object_selected.emit(data)
 
     @Slot(QPoint)
     def show_context_menu(self, pos: QPoint):

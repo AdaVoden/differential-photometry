@@ -1,6 +1,6 @@
 import logging
 
-from PySide6.QtCore import QItemSelection, Signal
+from PySide6.QtCore import Signal
 from PySide6.QtGui import QUndoStack
 from PySide6.QtWidgets import QVBoxLayout, QWidget
 from shutterbug.gui.outliner import Outliner
@@ -9,7 +9,7 @@ from shutterbug.gui.tool_settings import Settings
 
 class Sidebar(QWidget):
 
-    selection_changed = Signal(QItemSelection, QItemSelection)
+    object_selected = Signal(object)
 
     def __init__(self, undo_stack: QUndoStack):
         super().__init__()
@@ -29,6 +29,6 @@ class Sidebar(QWidget):
         self.setLayout(layout)
 
         # pass up signals
-        self.outliner.selection_changed.connect(self.selection_changed)
+        self.outliner.object_selected.connect(self.object_selected)
 
         logging.debug("Sidebar initialized")

@@ -22,9 +22,8 @@ from PySide6.QtGui import (
 )
 from PySide6.QtWidgets import QGraphicsScene, QGraphicsView, QMenu
 
-from shutterbug.core.managers.measurement_manager import MeasurementManager
 from shutterbug.core.models import FITSModel, StarMeasurement
-from shutterbug.core.managers import ImageManager
+from shutterbug.core.managers import ImageManager, MeasurementManager
 from shutterbug.core.utility.photometry import measure_star_magnitude
 from shutterbug.gui.commands import RemoveMeasurementCommand, AddMeasurementCommand
 
@@ -94,6 +93,7 @@ class ImageViewer(QGraphicsView):
 
         logging.debug("Image Viewer initialized")
 
+    @Slot(FITSModel)
     def _on_image_changed(self, image: FITSModel):
         """Handles image manager active image changing"""
         measure_manager = self.measure_manager
