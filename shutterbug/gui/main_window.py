@@ -22,7 +22,10 @@ from shutterbug.core.models import FITSModel, StarMeasurement
 from shutterbug.core.models.graph_model import GraphDataModel
 from shutterbug.core.models.star_identity import StarIdentity
 from shutterbug.core.progress_bar_handler import ProgressHandler
-from shutterbug.core.utility.photometry import measure_star_magnitude
+from shutterbug.core.utility.photometry import (
+    calculate_differential_magnitude,
+    measure_star_magnitude,
+)
 from shutterbug.gui.commands import (
     SelectFileCommand,
     SelectGraphCommand,
@@ -131,6 +134,14 @@ class MainWindow(QMainWindow):
 
         redo_action = edit_menu.addAction("Redo")
         redo_action.triggered.connect(self.on_redo)
+
+        diff_menu = edit_menu.addMenu("Differential")
+
+        image_action = diff_menu.addAction("Differential Photometry (image)")
+        image_action.triggered.connect(self.differential_image)
+
+        all_action = diff_menu.addAction("Differential Photometry (all)")
+        all_action.triggered.connect(self.differential_all)
 
         # Help menu
         # help_menu = menu_bar.addMenu("Help")
@@ -246,3 +257,24 @@ class MainWindow(QMainWindow):
                                 image=img.filename,
                             )
                             self.measure_manager.add_measurement(measurement)
+
+    @Slot()
+    def differential_image(self, image_name: str | None = None):
+        """Calculates differential photometry on all measurements in image"""
+        if image_name is None:
+            if self.image_manager.active_image is None:
+                return  # No work to do
+            image_name = self.image_manager.active_image.filename
+
+        measurements = self.measure_manager.get_all_measurements(image_name)
+
+        for m in measurements:
+            # This could be a better algorithm
+            other_ms = [n for n in measurements if n != m]
+            calculate_differential_magnitude(m, other_ms)
+
+    @Slot()
+    def differential_all(self):
+        """Calculates differential photometry on all images' measurements"""
+        for image in self.image_manager.get_all_images():
+            self.differential_image(image.filename)

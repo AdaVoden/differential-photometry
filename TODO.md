@@ -15,5 +15,5 @@
 - [ ] Select star in spreadsheet view to select star in image
 - [ ] Create Singleton class for managers to inherit
 - [ ] Create Manager class for managers, since they're all very similar
-- [ ] Set image storage to only store 8 bit version of image
-- [ ] Retrieve small chunks of data image for processing
+- [x] Set image storage to only store 8 bit version of image
+- [x] Retrieve small chunks of data image for processing
