@@ -47,7 +47,7 @@ class Outliner(QWidget):
         logging.debug("Outliner initialized")
 
     @Slot(QItemSelection, QItemSelection)
-    def _on_selection_changed(self, _: QItemSelection, selected: QItemSelection):
+    def _on_selection_changed(self, selected: QItemSelection, _: QItemSelection):
         """Emits the selected data object from outliner click"""
         # Get from internal list
         s = selected.indexes()[0]

@@ -4,6 +4,7 @@ from PySide6.QtWidgets import QVBoxLayout, QWidget, QTableView, QHeaderView
 from PySide6.QtGui import QStandardItem, QStandardItemModel
 from PySide6.QtCore import QModelIndex, Slot, Qt
 
+from shutterbug.core.managers.selection_manager import SelectionManager
 from shutterbug.gui.adapters.tabular_data_interface import TabularDataInterface
 
 
@@ -14,6 +15,7 @@ class SpreadsheetViewer(QWidget):
         super().__init__()
         # Default variables
         self.adapter: TabularDataInterface | None = None
+        self.selection_manager = SelectionManager()
 
         # Layout without styling
         layout = QVBoxLayout()
