@@ -2,11 +2,22 @@ import sys
 import logging
 
 from PySide6.QtWidgets import QApplication
+from shutterbug.core.models.fits_model import FITSModel
+from shutterbug.gui.adapters import FITSModelAdapter, AdapterRegistry
 from shutterbug.gui.main_window import MainWindow
 
 from qt_material import apply_stylesheet
 
 from pathlib import Path
+
+ADAPTERS = [(FITSModel, FITSModelAdapter)]
+
+
+def register_adapters():
+    registry = AdapterRegistry()
+    for cls, adapter in ADAPTERS:
+        registry.register_adapter(cls, adapter)
+        logging.debug(f"Registered {cls.__name__} adapter")
 
 
 def load_stylesheet():
@@ -25,6 +36,7 @@ def load_stylesheet():
 def main():
     logging.basicConfig(level=logging.DEBUG)
     app = QApplication(sys.argv)
+    register_adapters()
     window = MainWindow()
     # qt material theme and custom style
     apply_stylesheet(app, theme="dark_purple.xml")

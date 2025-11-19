@@ -1,7 +1,7 @@
 from PySide6.QtGui import QUndoCommand
 
 from shutterbug.core.models import FITSModel
-from shutterbug.core.managers import ImageManager
+from shutterbug.core.managers import ImageManager, SelectionManager
 
 from astropy.io import fits
 
@@ -69,17 +69,24 @@ class RemoveImagesCommand(QUndoCommand):
 class SelectFileCommand(QUndoCommand):
     """Selects file in outliner and viewer"""
 
-    def __init__(self, selected_image: FITSModel | None):
+    def __init__(self, selected_image: FITSModel):
         super().__init__("Select File")
         self.selected_image = selected_image
-        self.image_manager = ImageManager()
-        self.old_image = self.image_manager.active_image
+        self.selection_m = SelectionManager()
+        self.old = self.selection_m._current
 
     def redo(self) -> None:
-        self.image_manager.set_active_image(self.selected_image)
+        logging.debug(
+            f"COMMAND: Setting active image to: {self.selected_image.filename}"
+        )
+        self.selection_m.set_selected_object(self.selected_image)
 
     def undo(self) -> None:
-        self.image_manager.set_active_image(self.old_image)
+        logging.debug(
+            f"COMMAND: undoing setting active image to: {self.selected_image.filename}"
+        )
+
+        self.selection_m.set_selected_object(self.old)
 
 
 def load_fits_image(filepath: Path):

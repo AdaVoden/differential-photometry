@@ -47,7 +47,7 @@ class MainWindow(QMainWindow):
         self.star_catalog = StarCatalog()
         self.measure_manager = MeasurementManager()
         self.graph_manager = GraphManager()
-        self.selection_manager = SelectionManager(self._undo_stack)
+        self.selection_manager = SelectionManager()
 
         # Set up save/load functionality
         self.project = ShutterbugProject()
@@ -88,6 +88,11 @@ class MainWindow(QMainWindow):
 
         # Add to status bar
         self.status_bar.addPermanentWidget(self.progress_bar)
+
+        # Handle Selection Signals
+        self.selection_manager.image_selected.connect(
+            self.image_manager.set_active_image
+        )
 
         # Handle Viewer signals
         self.viewer.propagation_requested.connect(self.propagate_star_selection)

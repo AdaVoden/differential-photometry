@@ -8,6 +8,7 @@ from shutterbug.core.models import (
     StarIdentity,
     StarMeasurement,
 )
+from shutterbug.gui.adapters.adapter_registry import AdapterRegistry
 from shutterbug.gui.adapters.tabular_data_interface import TabularDataInterface
 
 
@@ -23,6 +24,8 @@ class SelectionManager(QObject):
     def __init__(self):
         if not hasattr(self, "_initialized"):
             self._initialized = True
+            self.adapter_registry = AdapterRegistry()
+            self._current = None
             super().__init__()
 
     def __new__(cls):
@@ -35,4 +38,21 @@ class SelectionManager(QObject):
     @Slot(object)
     def set_selected_object(self, selected: Any):
         """Sets selected object in program"""
-        pass
+        self._current = selected
+        logging.debug(f"Attempting to find adapter for {type(selected).__name__}")
+        adapter = self.adapter_registry.get_adapter_for(selected)
+        if adapter is not None:
+            logging.debug("Adapter found")
+            self.adapter_changed.emit(adapter)
+        else:
+            logging.error(f"Failed to find adapter for {type(selected).__name__}")
+
+        # Still ought to be a better way
+        if isinstance(selected, FITSModel):
+            self.image_selected.emit(selected)
+        elif isinstance(selected, GraphDataModel):
+            self.graph_selected.emit(selected)
+        elif isinstance(selected, StarIdentity):
+            self.star_selected.emit(selected)
+        elif isinstance(selected, StarMeasurement):
+            self.measurement_selected.emit(selected)

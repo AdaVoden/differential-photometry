@@ -79,7 +79,7 @@ class MeasurementManager(QObject):
             metadata.kdtree = KDTree(metadata.star_coordinates)
         metadata.is_dirty = False
 
-    def find_nearest(self, image_name: str, x: float, y: float, tolerance: float = 3.0):
+    def find_nearest(self, image_name: str, x: float, y: float, tolerance: float = 5.0):
         """Finds the nearest star from coordinate"""
         metadata = self.metadata.get(image_name)
 
@@ -107,7 +107,3 @@ class MeasurementManager(QObject):
         if metadata is None:
             return []
         return list(metadata.stars.values())
-
-    def calculate_diff_mag(self, image_name: str):
-        """Calculates differential magnitude on all measurements in image"""
-        pass

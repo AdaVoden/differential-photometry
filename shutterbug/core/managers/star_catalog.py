@@ -107,8 +107,6 @@ class StarCatalog(QObject):
         match_id = self.find_nearest(measurement.x, measurement.y)
         if match_id:
             star = self.stars[match_id]
-            print(star)
-            print(star.measurements)
             star.measurements.pop(measurement.image)
             self.measurement_to_star.pop(measurement.uid)
             if len(star.measurements) == 0:
@@ -117,7 +115,7 @@ class StarCatalog(QObject):
 
     def get_by_measurement(self, measurement: StarMeasurement) -> StarIdentity | None:
         """Retreives a star's identity by a measurement, if any"""
-        if measurement in self.measurement_to_star:
+        if measurement.uid in self.measurement_to_star:
             return self.measurement_to_star[measurement.uid]
         else:
             return None

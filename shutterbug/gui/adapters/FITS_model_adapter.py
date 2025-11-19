@@ -14,17 +14,15 @@ from shutterbug.gui.adapters.tabular_data_interface import (
 )
 
 
-class StarMeasurementAdapter(TabularDataInterface):
+class FITSModelAdapter(TabularDataInterface):
 
     def __init__(
         self,
         image: FITSModel,
-        measurement_manager: MeasurementManager,
-        catalog: StarCatalog,
     ):
         self.image = image
-        self.measurement_manager = measurement_manager
-        self.catalog = catalog
+        self.measurement_manager = MeasurementManager()
+        self.catalog = StarCatalog()
         self._signals = AdapterSignals()
 
         # Set up signals
@@ -63,12 +61,8 @@ class StarMeasurementAdapter(TabularDataInterface):
         """Loads all stars from the Star Manager into table"""
         rows = []
         for star in self.measurement_manager.get_all_measurements(self.image.filename):
-
-            star_id = self.catalog.get_by_measurement(star)
-            if star_id:
-                row = self._data_to_row(star, star_id.id)
-                rows.append(row)
-
+            row = self._get_row_from_measurement(star)
+            rows.append(row)
         return rows
 
     def _data_to_row(self, star: StarMeasurement, star_id: str) -> List[QStandardItem]:

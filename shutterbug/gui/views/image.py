@@ -23,7 +23,7 @@ from PySide6.QtGui import (
 from PySide6.QtWidgets import QGraphicsScene, QGraphicsView, QMenu
 
 from shutterbug.core.models import FITSModel, StarMeasurement
-from shutterbug.core.managers import ImageManager, MeasurementManager
+from shutterbug.core.managers import MeasurementManager, SelectionManager, ImageManager
 from shutterbug.core.utility.photometry import measure_star_magnitude
 from shutterbug.gui.commands import RemoveMeasurementCommand, AddMeasurementCommand
 
@@ -50,10 +50,11 @@ class ImageViewer(QGraphicsView):
         self.setObjectName("viewer")
 
         self._undo_stack = undo_stack
+        self.selection = SelectionManager()
         self.image_manager = ImageManager()
         self.measure_manager = MeasurementManager()
 
-        self.current_image = self.image_manager.active_image
+        self.current_image = None
         self.markers = {}  # (x, y) -> marker
 
         # Zoom settings
@@ -89,28 +90,26 @@ class ImageViewer(QGraphicsView):
         self.setResizeAnchor(QGraphicsView.ViewportAnchor.AnchorUnderMouse)
 
         # Set up signals
-        self.image_manager.active_image_changed.connect(self._on_image_changed)
+        self.selection.image_selected.connect(self._on_image_selected)
+        self.measure_manager.measurement_added.connect(self.add_star_marker)
+        self.measure_manager.measurement_removed.connect(self.remove_star_marker)
 
         logging.debug("Image Viewer initialized")
 
     @Slot(FITSModel)
-    def _on_image_changed(self, image: FITSModel):
+    def _on_image_selected(self, image: FITSModel):
         """Handles image manager active image changing"""
-        measure_manager = self.measure_manager
-        if self.current_image:
-            self.current_image.updated.disconnect(self.update_display)
-            self.current_image.updated.disconnect(self.update_display)
-            measure_manager.measurement_added.disconnect(self.add_star_marker)
-            measure_manager.measurement_removed.disconnect(self.remove_star_marker)
+        if image != self.current_image:
+            if self.current_image:
+                self.current_image.updated.disconnect(self.update_display)
+                self.current_image.updated.disconnect(self.update_display)
 
-        self.current_image = image
-        if image:
-            image.updated.connect(self.update_display)
-            image.updated.connect(self.update_display)
-            measure_manager.measurement_added.connect(self.add_star_marker)
-            measure_manager.measurement_removed.connect(self.remove_star_marker)
+            self.current_image = image
+            if image:
+                image.updated.connect(self.update_display)
+                image.updated.connect(self.update_display)
 
-        self.update_display()
+            self.update_display()
 
     # Zoom properties for animation
     def get_zoom(self):
@@ -208,7 +207,7 @@ class ImageViewer(QGraphicsView):
     @Slot(QMouseEvent)
     def _on_viewer_clicked(self, event: QMouseEvent):
         """Handler for a click in the viewer"""
-        current_image = self.image_manager.active_image
+        current_image = self.current_image
         if current_image is None:
             # No image, we don't care
             return
@@ -245,7 +244,7 @@ class ImageViewer(QGraphicsView):
 
     def get_star(self, coordinates: QPoint):
         """Gets star, if any, under point"""
-        image = self.image_manager.active_image
+        image = self.current_image
         if image is None:
             # No work to do
             return None
@@ -373,12 +372,10 @@ class ImageViewer(QGraphicsView):
         display_data = self.get_normalized_data()
         if display_data is None:
             return  # No work to do!
-
+        logging.debug(f"Data normalized, attempting to display")
         # Convert to QImage
         height, width = display_data.shape
-        qimage = QImage(
-            display_data.data, width, height, QImage.Format.Format_Grayscale8
-        )
+        qimage = QImage(display_data, width, height, QImage.Format.Format_Grayscale8)
 
         # Display
         pixmap = QPixmap.fromImage(qimage)
@@ -419,13 +416,14 @@ class ImageViewer(QGraphicsView):
 
     def get_normalized_data(self):
         """Normalize the FITS data to 0-255 for display"""
+        logging.debug(f"Normalizing data for display")
         if self.current_image is None:
-            return  # No image = no data
+            return None  # No image = no data
 
-        data = self.image_manager.get_8bit_preview()
+        data = self.get_8bit_preview()
 
         if data is None:
-            return
+            return None
 
         data = data.astype(np.float32)
 
@@ -438,5 +436,41 @@ class ImageViewer(QGraphicsView):
         data = data + brightness
 
         data = np.clip(data, 0, 255).astype(np.uint8)
+
+        return data
+
+    def get_8bit_preview(self):
+        """Gets the 8bit display version of the image data"""
+        image = self.current_image
+        if image is None:
+            return None
+
+        if image.display_data is not None:
+            return image.display_data
+
+        image.display_data = self._compute_8bit_preview(image)
+        return image.display_data
+
+    def _compute_8bit_preview(self, image: FITSModel):
+        """Computes the 8 bit display image from image data"""
+
+        bzero = image.bzero
+        bscale = image.bscale
+        # Get and scale data appropriately
+        data = bzero + (image.data * bscale)
+
+        # Handle NaNs and Infs
+        data = np.nan_to_num(data, nan=0.0, posinf=0.0, neginf=0.0)
+
+        # Simple fixed percentiel stretch
+        vmin, vmax = np.percentile(data, [1, 99])
+
+        # clip and normalize to 0-1
+        data = np.clip(data, vmin, vmax)
+        data = (data - vmin) / (vmax - vmin)
+
+        # clip and convert to 0-255
+        data = np.clip(data, 0, 1)
+        data = (data * 255).astype(np.uint8)
 
         return data
