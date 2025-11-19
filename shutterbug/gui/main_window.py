@@ -18,10 +18,8 @@ from shutterbug.core.managers import (
 )
 from shutterbug.core.models import FITSModel, StarMeasurement
 from shutterbug.core.progress_bar_handler import ProgressHandler
-from shutterbug.core.utility.photometry import (
-    calculate_differential_magnitude,
-    measure_star_magnitude,
-)
+import shutterbug.core.utility.photometry as phot
+
 
 from .commands import LoadImagesCommand
 from .project import ShutterbugProject
@@ -206,14 +204,14 @@ class MainWindow(QMainWindow):
     def process_single_image(self, image: FITSModel):
         """Process one image for differential photometry"""
 
-        for star in self.measure_manager.get_all_measurements(image.filename):
-            measure_star_magnitude(star, data=image.data)
+        for measurement in self.star_catalog.get_measurements_by_image(image.filename):
+            phot.measure_star_magnitude(measurement, data=image.data)
 
     @Slot(FITSModel)
     def propagate_star_selection(self, image: FITSModel):
         """Propagates star selection across all images"""
         image_manager = self.image_manager
-        stars = self.measure_manager.get_all_measurements(image.filename)
+        stars = self.star_catalog.get_measurements_by_image(image.filename)
 
         with self.progress_handler("Propagating stars..."):
             for img in image_manager.get_all_images():
@@ -231,9 +229,9 @@ class MainWindow(QMainWindow):
                                 time=img.observation_time,
                                 image=img.filename,
                             )
-                            self.measure_manager.add_measurement(measurement)
+                            self.star_catalog.register_measurement(measurement)
 
-    @Slot()
+    @Slot(str)
     def differential_image(self, image_name: str | None = None):
         """Calculates differential photometry on all measurements in image"""
         if image_name is None:
@@ -241,12 +239,12 @@ class MainWindow(QMainWindow):
                 return  # No work to do
             image_name = self.image_manager.active_image.filename
 
-        measurements = self.measure_manager.get_all_measurements(image_name)
+        measurements = self.star_catalog.get_measurements_by_image(image_name)
 
         for m in measurements:
             # This could be a better algorithm
             other_ms = [n for n in measurements if n != m]
-            calculate_differential_magnitude(m, other_ms)
+            phot.calculate_differential_magnitude(m, other_ms)
 
     @Slot()
     def differential_all(self):

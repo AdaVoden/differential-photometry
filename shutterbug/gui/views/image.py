@@ -22,8 +22,7 @@ from PySide6.QtGui import (
     QWheelEvent,
 )
 from PySide6.QtWidgets import QGraphicsScene, QGraphicsView, QMenu
-from shutterbug.core.managers import ImageManager, SelectionManager
-from shutterbug.core.managers.star_catalog import StarCatalog
+from shutterbug.core.managers import ImageManager, SelectionManager, StarCatalog
 from shutterbug.core.models import FITSModel, StarMeasurement
 from shutterbug.core.utility.photometry import measure_star_magnitude
 from shutterbug.gui.commands import AddMeasurementCommand, RemoveMeasurementCommand
@@ -301,7 +300,7 @@ class ImageViewer(QGraphicsView):
 
     @Slot()
     def on_propagate_requested(self):
-        if not self.current_image:
+        if self.current_image is None:
             return None
 
         self.propagation_requested.emit(self.current_image)
