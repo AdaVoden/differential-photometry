@@ -1,6 +1,7 @@
 import logging
 from typing import Tuple
 
+import numpy as np
 from PySide6.QtCore import (
     Property,
     QPoint,
@@ -21,13 +22,11 @@ from PySide6.QtGui import (
     QWheelEvent,
 )
 from PySide6.QtWidgets import QGraphicsScene, QGraphicsView, QMenu
-
+from shutterbug.core.managers import ImageManager, SelectionManager
+from shutterbug.core.managers.star_catalog import StarCatalog
 from shutterbug.core.models import FITSModel, StarMeasurement
-from shutterbug.core.managers import MeasurementManager, SelectionManager, ImageManager
 from shutterbug.core.utility.photometry import measure_star_magnitude
-from shutterbug.gui.commands import RemoveMeasurementCommand, AddMeasurementCommand
-
-import numpy as np
+from shutterbug.gui.commands import AddMeasurementCommand, RemoveMeasurementCommand
 
 
 class ImageViewer(QGraphicsView):
@@ -51,8 +50,8 @@ class ImageViewer(QGraphicsView):
 
         self._undo_stack = undo_stack
         self.selection = SelectionManager()
+        self.catalog = StarCatalog()
         self.image_manager = ImageManager()
-        self.measure_manager = MeasurementManager()
 
         self.current_image = None
         self.markers = {}  # (x, y) -> marker
@@ -91,8 +90,8 @@ class ImageViewer(QGraphicsView):
 
         # Set up signals
         self.selection.image_selected.connect(self._on_image_selected)
-        self.measure_manager.measurement_added.connect(self.add_star_marker)
-        self.measure_manager.measurement_removed.connect(self.remove_star_marker)
+        self.catalog.measurement_added.connect(self.add_star_marker)
+        self.catalog.measurement_removed.connect(self.remove_star_marker)
 
         logging.debug("Image Viewer initialized")
 
@@ -228,10 +227,10 @@ class ImageViewer(QGraphicsView):
         if self.current_image is None:
             return  # No work to do
 
-        measurement_manager = self.measure_manager
+        catalog = self.catalog
         image_name = self.current_image.filename
 
-        stars = measurement_manager.get_all_measurements(image_name)
+        stars = catalog.get_measurements_by_image(image_name)
         for star in stars:
             measure_star_magnitude(star, data=self.current_image.data)
 
@@ -257,16 +256,18 @@ class ImageViewer(QGraphicsView):
 
     def get_measurement(self, coordinates: QPoint):
         """Gets already registered measurement at point, if any"""
-        measure_manager = self.measure_manager
+        catalog = self.catalog
         image = self.current_image
         if image is None:
             return None  # No work to do
 
         x, y = self._convert_to_image_coordinates(coordinates)
 
-        measurement = measure_manager.find_nearest(image.filename, x, y)
+        star = catalog.find_nearest(x, y)
+        if star is None:
+            return None
 
-        return measurement
+        return star.measurements.get(image.filename)
 
     def select_star(self, coordinates: QPoint):
         """Creates the select star command and pushes command to the stack"""
@@ -402,9 +403,14 @@ class ImageViewer(QGraphicsView):
             return
         image_name = self.current_image.filename
 
-        stars = self.measure_manager.get_all_measurements(image_name)
+        stars = self.catalog.get_all_stars()
+        measurements = []
         for star in stars:
-            self.add_star_marker(star, colour="cyan")
+            m = star.measurements.get(image_name)
+            if m is not None:
+                measurements.append(m)
+        for m in measurements:
+            self.add_star_marker(m, colour="cyan")
 
     @Slot()
     def update_display(self):

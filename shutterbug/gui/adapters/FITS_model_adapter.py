@@ -5,7 +5,6 @@ from PySide6.QtCore import Slot
 from PySide6.QtGui import QStandardItem
 from shutterbug.core.models import FITSModel, StarMeasurement
 from shutterbug.core.managers import (
-    MeasurementManager,
     StarCatalog,
 )
 from shutterbug.gui.adapters.tabular_data_interface import (
@@ -21,18 +20,13 @@ class FITSModelAdapter(TabularDataInterface):
         image: FITSModel,
     ):
         self.image = image
-        self.measurement_manager = MeasurementManager()
         self.catalog = StarCatalog()
         self._signals = AdapterSignals()
 
         # Set up signals
-        self.measurement_manager.measurement_added.connect(self._on_measurement_added)
-        self.measurement_manager.measurement_changed.connect(
-            self._on_measurement_changed
-        )
-        self.measurement_manager.measurement_removed.connect(
-            self._on_measurement_removed
-        )
+        self.catalog.measurement_added.connect(self._on_measurement_added)
+        self.catalog.measurement_updated.connect(self._on_measurement_changed)
+        self.catalog.measurement_removed.connect(self._on_measurement_removed)
 
     def get_column_headers(self) -> List[str]:
         """Gets column information for star measurements"""
@@ -60,9 +54,11 @@ class FITSModelAdapter(TabularDataInterface):
     def _load_all_stars(self):
         """Loads all stars from the Star Manager into table"""
         rows = []
-        for star in self.measurement_manager.get_all_measurements(self.image.filename):
-            row = self._get_row_from_measurement(star)
-            rows.append(row)
+        for star in self.catalog.get_all_stars():
+            measurement = star.measurements.get(self.image.filename)
+            if measurement is not None:
+                row = self._get_row_from_measurement(measurement)
+                rows.append(row)
         return rows
 
     def _data_to_row(self, star: StarMeasurement, star_id: str) -> List[QStandardItem]:

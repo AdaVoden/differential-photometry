@@ -1,6 +1,5 @@
 import logging
 from PySide6.QtGui import QUndoCommand
-from shutterbug.core.managers.measurement_manager import MeasurementManager
 from shutterbug.core.managers.star_catalog import StarCatalog
 from shutterbug.core.models import FITSModel, StarMeasurement
 from shutterbug.core.models.star_identity import StarIdentity
@@ -14,7 +13,6 @@ class AddMeasurementCommand(QUndoCommand):
         self.star = star
         self.image = image
         self.time = image.observation_time
-        self.measurement_manager = MeasurementManager()
         self.catalog = StarCatalog()
         self.measurement = StarMeasurement(
             x=self.star["xcentroid"],
@@ -29,7 +27,6 @@ class AddMeasurementCommand(QUndoCommand):
             f"COMMAND: Adding measurement at {m.x:.0f}/{m.y:.0f} for image {m.image}"
         )
         self.catalog.register_measurement(m)
-        self.measurement_manager.add_measurement(m)
 
     def undo(self):
         m = self.measurement
@@ -38,7 +35,6 @@ class AddMeasurementCommand(QUndoCommand):
         )
 
         self.catalog.unregister_measurement(m)
-        self.measurement_manager.remove_measurement(m)
 
 
 class RemoveMeasurementCommand(QUndoCommand):
@@ -47,7 +43,6 @@ class RemoveMeasurementCommand(QUndoCommand):
     def __init__(self, measurement: StarMeasurement):
         super().__init__()
         self.measurement = measurement
-        self.measurement_manager = MeasurementManager()
         self.catalog = StarCatalog()
 
     def redo(self):
@@ -56,7 +51,6 @@ class RemoveMeasurementCommand(QUndoCommand):
             f"COMMAND: Removing measurement at {m.x:.0f}/{m.y:.0f} for image {m.image}"
         )
         self.catalog.unregister_measurement(m)
-        self.measurement_manager.remove_measurement(m)
 
     def undo(self):
         m = self.measurement
@@ -64,7 +58,6 @@ class RemoveMeasurementCommand(QUndoCommand):
             f"COMMAND: Undoing measurement removal at {m.x:.0f}/{m.y:.0f} for image {m.image}"
         )
         self.catalog.register_measurement(m)
-        self.measurement_manager.add_measurement(m)
 
 
 class SelectStarCommand(QUndoCommand):

@@ -1,4 +1,5 @@
 import logging
+from typing import Dict, List
 
 from PySide6.QtCore import QObject, Signal
 from scipy.spatial import KDTree
@@ -12,14 +13,22 @@ class StarCatalog(QObject):
     star_added = Signal(StarIdentity)
     star_removed = Signal(StarIdentity)
     active_star_changed = Signal(StarIdentity)
+    # Object because StarMeasurements are QObservableObjects
+    # And those emit the object type.
+    # I need to fix.
+    measurement_added = Signal(object)
+    measurement_removed = Signal(object)
+    measurement_updated = Signal(object)
 
     def __init__(self):
         if not hasattr(self, "_initialized"):
             self._initialized = True
 
             super().__init__()
-            self.stars = {}  # id -> StarIdentity
-            self.measurement_to_star = {}  # StarMeasurement.uid -> StarIdentity
+            self.stars: Dict[str, StarIdentity] = {}  # id -> StarIdentity
+            self.measurement_to_star: Dict[str, StarIdentity] = (
+                {}
+            )  # StarMeasurement.uid -> StarIdentity
             self.active_star = None  # selected star
             self._kdtree = None
             self._coords = []  # Reference coordinates
@@ -65,7 +74,9 @@ class StarCatalog(QObject):
             self._kdtree = KDTree(self._coords)
         self._dirty = False
 
-    def find_nearest(self, x: float, y: float, tolerance: float = 3.0):
+    def find_nearest(
+        self, x: float, y: float, tolerance: float = 3.0
+    ) -> StarIdentity | None:
         """Finds stars, if any, that exist at x/y position within tolerance"""
         self._ensure_tree()
 
@@ -78,7 +89,7 @@ class StarCatalog(QObject):
             # Found nothing
             return None
         else:
-            return self._ids[idx]
+            return self.stars[self._ids[idx]]
 
     def _new_id(self) -> int:
         """Creates a new ID for a StarIdentity"""
@@ -91,24 +102,25 @@ class StarCatalog(QObject):
 
     def register_measurement(self, measurement: StarMeasurement) -> StarIdentity:
         """Registers measurement with catalog"""
-        match_id = self.find_nearest(measurement.x, measurement.y)
-        if match_id:
-            star = self.stars[match_id]
-        else:
+        star = self.find_nearest(measurement.x, measurement.y)
+        if star is None:
             star_id = f"Star_{self._new_id()}"
             star = StarIdentity(id=star_id)
             self._add_star(star, measurement.x, measurement.y)
         star.measurements[measurement.image] = measurement
         self.measurement_to_star[measurement.uid] = star
+        self.measurement_added.emit(measurement)
+        measurement.updated.connect(self.measurement_updated)
         return star
 
     def unregister_measurement(self, measurement: StarMeasurement) -> None:
         """Removes measurement from star in catalog"""
-        match_id = self.find_nearest(measurement.x, measurement.y)
-        if match_id:
-            star = self.stars[match_id]
+        star = self.find_nearest(measurement.x, measurement.y)
+        if star is not None:
+            self.measurement_removed.emit(measurement)
             star.measurements.pop(measurement.image)
             self.measurement_to_star.pop(measurement.uid)
+            measurement.updated.disconnect(self.measurement_updated)
             if len(star.measurements) == 0:
                 self._remove_star(star, measurement.x, measurement.y)
                 return
@@ -119,6 +131,17 @@ class StarCatalog(QObject):
             return self.measurement_to_star[measurement.uid]
         else:
             return None
+
+    def get_measurements_by_image(self, image_name: str) -> List[StarMeasurement]:
+        measurements = []
+        for star in self.get_all_stars():
+            m = star.measurements.get(image_name)
+            if m is not None:
+                measurements.append(m)
+        return measurements
+
+    def get_all_stars(self) -> List[StarIdentity]:
+        return list(self.stars.values())
 
     def set_active_star(self, star: StarIdentity | None):
         """Sets active star"""

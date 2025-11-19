@@ -13,7 +13,6 @@ from PySide6.QtWidgets import (
 from shutterbug.core.managers import (
     GraphManager,
     ImageManager,
-    MeasurementManager,
     SelectionManager,
     StarCatalog,
 )
@@ -45,7 +44,6 @@ class MainWindow(QMainWindow):
         # Instantiate singletons
         self.image_manager = ImageManager()
         self.star_catalog = StarCatalog()
-        self.measure_manager = MeasurementManager()
         self.graph_manager = GraphManager()
         self.selection_manager = SelectionManager()
 

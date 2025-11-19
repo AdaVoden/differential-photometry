@@ -13,13 +13,12 @@ class StarIdentity(ObservableQObject):
     def __init__(
         self,
         id: str,
-        measurements: Dict[str, StarMeasurement] = {},
         use_in_ensemble: bool = True,
         label: Optional[str] = None,
     ):
         super().__init__()
         self.uid = uuid4().hex
         self.id = id
-        self.measurements = measurements
+        self.measurements: Dict[str, StarMeasurement] = {}
         self.use_in_ensemble = use_in_ensemble
         self.label = label
