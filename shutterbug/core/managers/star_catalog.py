@@ -133,6 +133,7 @@ class StarCatalog(QObject):
             return None
 
     def get_measurements_by_image(self, image_name: str) -> List[StarMeasurement]:
+        """Gets all measurements that belong to a specific image"""
         measurements = []
         for star in self.get_all_stars():
             m = star.measurements.get(image_name)
@@ -141,6 +142,7 @@ class StarCatalog(QObject):
         return measurements
 
     def get_all_stars(self) -> List[StarIdentity]:
+        """Gets all stars currently registered"""
         return list(self.stars.values())
 
     def set_active_star(self, star: StarIdentity | None):
