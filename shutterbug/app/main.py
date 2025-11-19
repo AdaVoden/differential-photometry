@@ -2,15 +2,19 @@ import sys
 import logging
 
 from PySide6.QtWidgets import QApplication
-from shutterbug.core.models.fits_model import FITSModel
-from shutterbug.gui.adapters import FITSModelAdapter, AdapterRegistry
+from shutterbug.core.models import StarIdentity, FITSModel
+from shutterbug.gui.adapters import (
+    FITSModelAdapter,
+    AdapterRegistry,
+    StarIdentityAdapter,
+)
 from shutterbug.gui.main_window import MainWindow
 
 from qt_material import apply_stylesheet
 
 from pathlib import Path
 
-ADAPTERS = [(FITSModel, FITSModelAdapter)]
+ADAPTERS = [(FITSModel, FITSModelAdapter), (StarIdentity, StarIdentityAdapter)]
 
 
 def register_adapters():

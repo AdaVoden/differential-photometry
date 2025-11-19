@@ -10,6 +10,7 @@
 - [ ] Reduce brightness/contrast processing time
 - [ ] Graph view
   - [x] Select graphs of different stars
+  - [ ] See all measurements of star across images
 - [x] Spreadsheet view
 - [ ] Only search for stars in a small region around click
 - [ ] Select star in spreadsheet view to select star in image

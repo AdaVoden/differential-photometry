@@ -1,25 +1,22 @@
 import logging
+
 from typing import List
 
 from PySide6.QtCore import Slot
 from PySide6.QtGui import QStandardItem
-from shutterbug.core.models import FITSModel, StarMeasurement
-from shutterbug.core.managers import (
-    StarCatalog,
-)
+
+from shutterbug.core.managers import StarCatalog
+from shutterbug.core.models import StarIdentity
+from shutterbug.core.models.star_measurement import StarMeasurement
 from shutterbug.gui.adapters.tabular_data_interface import (
-    AdapterSignals,
     TabularDataInterface,
+    AdapterSignals,
 )
 
 
-class FITSModelAdapter(TabularDataInterface):
-
-    def __init__(
-        self,
-        image: FITSModel,
-    ):
-        self.image = image
+class StarIdentityAdapter(TabularDataInterface):
+    def __init__(self, star: StarIdentity):
+        self.star = star
         self.catalog = StarCatalog()
         self._signals = AdapterSignals()
 
@@ -31,7 +28,7 @@ class FITSModelAdapter(TabularDataInterface):
     def get_column_headers(self) -> List[str]:
         """Gets column information for star measurements"""
         return [
-            "ID",
+            "Image",
             "X",
             "Y",
             "Flux",
@@ -44,27 +41,25 @@ class FITSModelAdapter(TabularDataInterface):
 
     def get_row_data(self) -> List:
         """Gets row data for star measurements"""
-        return self._load_all_stars()
+        return self._load_all_measurements()
 
     @property
     def signals(self) -> AdapterSignals:
         """Provides signals for the adapter"""
         return self._signals
 
-    def _load_all_stars(self):
-        """Loads all stars from the Star Catalog into table"""
+    def _load_all_measurements(self) -> List[QStandardItem]:
+        """Loads all measurements from star into table"""
         rows = []
-        for star in self.catalog.get_all_stars():
-            measurement = star.measurements.get(self.image.filename)
-            if measurement is not None:
-                row = self._get_row_from_measurement(measurement)
-                rows.append(row)
+        for measurement in self.star.measurements.values():
+            row = self._data_to_row(measurement)
+            rows.append(row)
         return rows
 
-    def _data_to_row(self, star: StarMeasurement, star_id: str) -> List[QStandardItem]:
-        """Converts a star object to a model row"""
+    def _data_to_row(self, star: StarMeasurement) -> List[QStandardItem]:
+        """Converts star measurement to data row for display in spreadsheet"""
         row = [
-            QStandardItem(star_id),
+            QStandardItem(star.image),
             QStandardItem(self._float_to_str(star.x)),
             QStandardItem(self._float_to_str(star.y)),
             QStandardItem(self._float_to_str(star.flux)),
@@ -77,28 +72,19 @@ class FITSModelAdapter(TabularDataInterface):
         return row
 
     def _float_to_str(self, item: float | None) -> str:
-        """Converts a float to a string"""
         return "" if item is None else f"{item:.2f}"
-
-    def _get_row_from_measurement(self, measurement: StarMeasurement):
-        """Gets ID from catalog and returns the row"""
-        star_id = self.catalog.get_by_measurement(measurement)
-        if star_id is None:
-            logging.error("Adapter unable to get catalog star id from measurement")
-            return
-        return self._data_to_row(measurement, star_id.id)
 
     @Slot(StarMeasurement)
     def _on_measurement_changed(self, measurement: StarMeasurement):
         """Handles measurement being changed"""
-        self.signals.item_updated.emit(self._get_row_from_measurement(measurement))
+        self.signals.item_updated.emit(self._data_to_row(measurement))
 
     @Slot(StarMeasurement)
     def _on_measurement_added(self, measurement: StarMeasurement):
         """Handles measurement being added to image"""
-        self.signals.item_added.emit(self._get_row_from_measurement(measurement))
+        self.signals.item_added.emit(self._data_to_row(measurement))
 
     @Slot(StarMeasurement)
     def _on_measurement_removed(self, measurement: StarMeasurement):
         """Handles measurement being removed from image"""
-        self.signals.item_removed.emit(self._get_row_from_measurement(measurement))
+        self.signals.item_removed.emit(self._data_to_row(measurement))
