@@ -17,6 +17,7 @@ from shutterbug.core.managers import (
     StarCatalog,
 )
 from shutterbug.core.models import FITSModel, StarMeasurement
+from shutterbug.core.models.graph_model import GraphDataModel
 from shutterbug.core.progress_bar_handler import ProgressHandler
 import shutterbug.core.utility.photometry as phot
 
@@ -89,6 +90,7 @@ class MainWindow(QMainWindow):
         self.selection_manager.image_selected.connect(
             self.image_manager.set_active_image
         )
+        self.selection_manager.star_selected.connect(self.star_catalog.set_active_star)
 
         # Handle Viewer signals
         self.viewer.propagation_requested.connect(self.propagate_star_selection)
@@ -136,6 +138,9 @@ class MainWindow(QMainWindow):
 
         all_action = diff_menu.addAction("Differential Photometry (all)")
         all_action.triggered.connect(self.differential_all)
+
+        graph_action = diff_menu.addAction("Graph selected star")
+        graph_action.triggered.connect(self.create_graph_from_selection)
 
         # Help menu
         # help_menu = menu_bar.addMenu("Help")
@@ -251,3 +256,12 @@ class MainWindow(QMainWindow):
         """Calculates differential photometry on all images' measurements"""
         for image in self.image_manager.get_all_images():
             self.differential_image(image.filename)
+
+    @Slot()
+    def create_graph_from_selection(self):
+        star = self.star_catalog.active_star
+        logging.debug("Graph creation called")
+        if star is not None:
+            graph = GraphDataModel.from_star(star)
+            self.graph_manager.add_graph(graph)
+            self.graph_manager.set_active_graph(graph)

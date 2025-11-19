@@ -1,5 +1,7 @@
 from typing import List, Optional
 
+from shutterbug.core.models import StarIdentity
+
 from .base_observable import ObservableQObject
 from .star_measurement import StarMeasurement
 from uuid import uuid4
@@ -42,3 +44,7 @@ class GraphDataModel(ObservableQObject):
     def get_error(self):
         """Gets all error of graph"""
         return [m.diff_err for m in self.measurements if m.diff_err]
+
+    @classmethod
+    def from_star(cls, star: StarIdentity):
+        return cls(measurements=list(star.measurements.values()))

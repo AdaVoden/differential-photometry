@@ -1,3 +1,4 @@
+import logging
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 from PySide6.QtCore import Slot
@@ -18,13 +19,14 @@ class GraphViewer(QWidget):
         self.setLayout(layout)
 
         self.graph_manager = GraphManager()
+        self.graph = None
         # Graph settings
         self.figure = Figure(figsize=(5, 4))
         self.canvas = FigureCanvas(self.figure)
         self.ax = None
         layout.addWidget(self.canvas)
 
-        self.graph_manager.active_graph_changed.connect(self.display)
+        self.graph_manager.active_graph_changed.connect(self._on_active_graph_change)
 
     def _clear(self):
         """Clears active graph and axes object"""
@@ -32,13 +34,25 @@ class GraphViewer(QWidget):
             return  # No work to do
 
         self.ax.clear()
+        self.figure.clear()
         self.ax = None
 
     @Slot(GraphDataModel)
-    def display(self, graph_data: GraphDataModel | None):
-        """Displays input graph"""
+    def _on_active_graph_change(self, graph_data: GraphDataModel | None):
         if graph_data is None:
+            logging.debug(f"Graph viewer clearing graph, no graph selected")
             self._clear()
+            self.graph = None
+            return
+        logging.debug(f"Graph updated in graphing viewer")
+        self.graph = graph_data
+        self._clear()
+        self.display()
+
+    def display(self):
+        """Displays input graph"""
+        graph_data = self.graph
+        if graph_data is None:
             return
 
         xs = graph_data.get_xs()
