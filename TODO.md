@@ -8,9 +8,10 @@
     - [ ] Add box select
     - [ ] Add marker select
 - [ ] Reduce brightness/contrast processing time
-- [ ] Graph view
+- [ ] Improve ScrubbySlider with debounce
+- [x] Graph view
   - [x] Select graphs of different stars
-  - [ ] See all measurements of star across images
+  - [x] See all measurements of star across images
 - [x] Spreadsheet view
 - [ ] Only search for stars in a small region around click
 - [ ] Select star in spreadsheet view to select star in image
@@ -18,3 +19,8 @@
 - [ ] Create Manager class for managers, since they're all very similar
 - [x] Set image storage to only store 8 bit version of image
 - [x] Retrieve small chunks of data image for processing
+- [ ] Control hints display in bottom toolbar (Like Blender)
+- [ ] Hover tooltips
+- [ ] Bug: extra rows added to spreadsheet on measurement update
+- [ ] Bug: Star markers do not align with stars in different images
+- [ ] Fix image sliding on image selection

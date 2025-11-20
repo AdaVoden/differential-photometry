@@ -193,7 +193,7 @@ class ImageViewer(QGraphicsView):
         calc_phot_action.triggered.connect(self._on_photometry_requested)
 
         propagate_action = menu.addAction("Propagate star selection")
-        propagate_action.triggered.connect(self.on_propagate_requested)
+        propagate_action.triggered.connect(self._on_propagate_requested)
 
         process_action = menu.addAction("Batch process all images")
         process_action.triggered.connect(self.batch_requested)
@@ -240,7 +240,7 @@ class ImageViewer(QGraphicsView):
 
         self.image_manager.find_stars()
 
-    def get_star(self, coordinates: QPoint):
+    def get_star_at_point(self, coordinates: QPoint):
         """Gets star, if any, under point"""
         image = self.current_image
         if image is None:
@@ -253,7 +253,7 @@ class ImageViewer(QGraphicsView):
 
         return star
 
-    def get_measurement(self, coordinates: QPoint):
+    def get_registered_measurement(self, coordinates: QPoint):
         """Gets already registered measurement at point, if any"""
         catalog = self.catalog
         image = self.current_image
@@ -273,7 +273,7 @@ class ImageViewer(QGraphicsView):
         logging.debug(
             f"Attempting to select star at {coordinates.x()}/{coordinates.y()}"
         )
-        star = self.get_star(coordinates)
+        star = self.get_star_at_point(coordinates)
         current_image = self.image_manager.active_image
 
         if star is None or current_image is None:
@@ -289,7 +289,7 @@ class ImageViewer(QGraphicsView):
             f"Attempting to deselect star at {coordinates.x()}/{coordinates.y()}"
         )
         current_image = self.image_manager.active_image
-        measurement = self.get_measurement(coordinates)
+        measurement = self.get_registered_measurement(coordinates)
 
         if measurement is None or current_image is None:
             logging.debug("No star found or current image is not set")
@@ -299,7 +299,7 @@ class ImageViewer(QGraphicsView):
         self._undo_stack.push(RemoveMeasurementCommand(measurement))
 
     @Slot()
-    def on_propagate_requested(self):
+    def _on_propagate_requested(self):
         if self.current_image is None:
             return None
 

@@ -1,5 +1,5 @@
 from PySide6.QtWidgets import QWidget, QHBoxLayout, QLineEdit, QPushButton
-from PySide6.QtCore import Qt, Signal, QPoint, Slot
+from PySide6.QtCore import QTimer, Qt, Signal, QPoint, Slot
 from PySide6.QtGui import QIntValidator, QCursor, QMouseEvent, QDoubleValidator
 
 
@@ -32,6 +32,10 @@ class ScrubbySlider(QWidget):
         self.dragging = False
         self.drag_start_pos = QPoint()
         self.drag_start_val = 0
+        self.debounce_timer = QTimer()
+        self.debounce_timer.setSingleShot(True)
+        self.debounce_timer.timeout.connect(self.commit_update)
+        self.new_value = 0
 
         # Layout
         layout = QHBoxLayout()
@@ -82,6 +86,7 @@ class ScrubbySlider(QWidget):
             self.dragging = True
             self.drag_start_pos = event.globalPosition().toPoint()
             self.drag_start_val = self.current_val
+            self.new_value = self.current_val
             self.line_edit.setCursor(QCursor(Qt.CursorShape.SizeHorCursor))
             event.accept()
         else:
@@ -90,10 +95,13 @@ class ScrubbySlider(QWidget):
     def line_edit_mouse_move(self, event: QMouseEvent):
         """Handles mouse moving in slider"""
         if self.dragging:
+
+            self.debounce_timer.stop()
+            self.debounce_timer.start(84)  # ~12 FPS
             delta = event.globalPosition().toPoint().x() - self.drag_start_pos.x()
             # adjust sensitivity: 1 pixel = 1 unit
-            new_value = self.drag_start_val + (delta * self.decimal_mulitplier)
-            self.valueChanged.emit(new_value)
+            self.new_value = self.drag_start_val + (delta * self.decimal_mulitplier)
+            self.set_text_value(self.new_value)
             event.accept()
         else:
             QLineEdit.mouseMoveEvent(self.line_edit, event)
@@ -107,14 +115,21 @@ class ScrubbySlider(QWidget):
         else:
             QLineEdit.mouseReleaseEvent(self.line_edit, event)
 
+    def set_text_value(self, value: float):
+        """Sets the text value to input"""
+        self.line_edit.blockSignals(True)
+        self.line_edit.setText(f"{value:.{self.decimal_places}f}")
+        self.line_edit.blockSignals(False)
+
     @Slot()
     def on_text_changed(self):
         """Handles line edit text being modified"""
         try:
             value = float(self.line_edit.text())
-            self.valueChanged.emit(value)
+            if value != self.current_val:
+                self.valueChanged.emit(value)
         except ValueError:
-            self.line_edit.setText(f"{self.current_val:.{self.decimal_places}f}")
+            self.set_text_value(self.current_val)
 
     @Slot(float)
     def setValue(self, value: float):
@@ -124,7 +139,7 @@ class ScrubbySlider(QWidget):
         value = max(self.min_val, min(self.max_val, value))
         if value != self.current_val:
             self.current_val = value
-            self.line_edit.setText(f"{value:.{self.decimal_places}f}")
+            self.set_text_value(self.current_val)
 
     def value(self):
         """Returns the current value of the slider"""
@@ -139,3 +154,8 @@ class ScrubbySlider(QWidget):
     def decrement(self):
         """Decrements slider by 1"""
         self.valueChanged.emit(self.current_val - 1 * self.decimal_mulitplier)
+
+    @Slot(float)
+    def commit_update(self):
+        """Commits the change to the slider by emitting it"""
+        self.valueChanged.emit(self.new_value)

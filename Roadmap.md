@@ -36,5 +36,5 @@
     - [x] Keep same view on image change
     - [x] Click to remove stars
     - [x] Spreadsheet to view data
-    - [ ] Graph viewer to view timeseries calculations
+    - [x] Graph viewer to view timeseries calculations
 
