@@ -186,9 +186,6 @@ class ImageViewer(QGraphicsView):
 
         # select_star_action = menu.addAction("Select as Target Star")
 
-        find_stars_action = menu.addAction("Find all stars in image")
-        find_stars_action.triggered.connect(self.find_stars_in_image)
-
         calc_phot_action = menu.addAction("Calculate magnitude for selected star")
         calc_phot_action.triggered.connect(self._on_photometry_requested)
 
@@ -233,14 +230,7 @@ class ImageViewer(QGraphicsView):
         for star in stars:
             measure_star_magnitude(star, data=self.current_image.data)
 
-    @Slot()
-    def find_stars_in_image(self):
-        if self.current_image is None:
-            return  # No work to do
-
-        self.image_manager.find_stars()
-
-    def get_star_at_point(self, coordinates: QPoint):
+    def get_centroid_at_point(self, coordinates: QPoint):
         """Gets star, if any, under point"""
         image = self.current_image
         if image is None:
@@ -248,8 +238,9 @@ class ImageViewer(QGraphicsView):
             return None
 
         x, y = self._convert_to_image_coordinates(coordinates)
+        logging.debug(f"Attempting to select centroid at {x}/{y}")
 
-        star = self.image_manager.find_nearest_star(x, y)
+        star = self.image_manager.find_nearest_centroid(image, x, y)
 
         return star
 
@@ -270,10 +261,7 @@ class ImageViewer(QGraphicsView):
 
     def select_star(self, coordinates: QPoint):
         """Creates the select star command and pushes command to the stack"""
-        logging.debug(
-            f"Attempting to select star at {coordinates.x()}/{coordinates.y()}"
-        )
-        star = self.get_star_at_point(coordinates)
+        star = self.get_centroid_at_point(coordinates)
         current_image = self.image_manager.active_image
 
         if star is None or current_image is None:
@@ -308,13 +296,10 @@ class ImageViewer(QGraphicsView):
     def _convert_to_image_coordinates(self, coordinate: QPoint) -> Tuple[float, float]:
         """Converts coordinates of click to coordinates of active image"""
         # Step 1, convert to scene coordinates
-        scene_pos = self.mapToScene(coordinate)
-
-        # Step 2, map to Pixmap
-        pix_pos = self.pixmap_item.mapToScene(scene_pos)
-
-        # Step 3, there is no step 3
-        return pix_pos.x(), pix_pos.y()
+        scene_pos = self.mapToScene(coordinate).toPoint()
+        print(scene_pos)
+        # Step 2, there is no step 2
+        return scene_pos.x(), scene_pos.y()
 
     def add_star_marker(
         self,

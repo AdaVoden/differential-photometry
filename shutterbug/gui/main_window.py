@@ -225,7 +225,9 @@ class MainWindow(QMainWindow):
 
                     for star in stars:
                         with self.progress_handler("Finding stars in image..."):
-                            star_data = image_manager.find_nearest_star(star.x, star.y)
+                            star_data = image_manager.find_nearest_centroid(
+                                img, star.x, star.y
+                            )
 
                         if star_data:
                             measurement = StarMeasurement(

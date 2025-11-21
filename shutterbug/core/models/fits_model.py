@@ -1,6 +1,8 @@
 from pathlib import Path
 from uuid import uuid4
 
+from math import floor, ceil
+
 from .base_observable import ObservableQObject
 
 
@@ -10,6 +12,7 @@ class FITSModel(ObservableQObject):
     # Display defaults
     BRIGHTNESS_OFFSET_DEFAULT = 0
     CONTRAST_FACTOR_DEFAULT = 1
+    STAMP_PADDING_DEFAULT = 50
 
     def __init__(
         self, filepath: Path, data, obs_time: str, bzero: float, bscale: float
@@ -29,6 +32,9 @@ class FITSModel(ObservableQObject):
         # Data for display
         self.display_data = None
 
+        # Stamp variables
+        self.stamp_padding = self.STAMP_PADDING_DEFAULT
+
         # Image display settings
         self.brightness: int = self._define_field(
             "brightness", self.BRIGHTNESS_OFFSET_DEFAULT
@@ -39,10 +45,12 @@ class FITSModel(ObservableQObject):
 
         # Star variables, computed
         self.background: float | None = None
-        self.stars = None  # Detected stars
 
     def get_stamp(self, x: float, y: float, r: float):
         """Gets selected stamp of main data image"""
-        x0, x1 = x - r, x + r
-        y0, y1 = y - r, y + r
-        return self.data[y0:y1, x0:x1]
+        r = r + self.stamp_padding
+        x0, x1 = floor(x - r), ceil(x + r)
+        y0, y1 = floor(y - r), ceil(y + r)
+        data = self.data[y0:y1, x0:x1]
+        data = self.bzero + data * self.bscale
+        return data

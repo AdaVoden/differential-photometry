@@ -78,64 +78,54 @@ class ImageManager(QObject):
         """Returns the master list of images from manager"""
         return list(self.images.values())
 
-    def find_nearest_star(
-        self, x: float, y: float, max_distance: int = MAX_DISTANCE_DEFAULT
+    def find_nearest_centroid(
+        self,
+        image: FITSModel,
+        x: float,
+        y: float,
+        max_distance: int = MAX_DISTANCE_DEFAULT,
     ):
-        image = self.active_image
-        if image is None:
-            return None  # No work to do!
+        stamp = image.get_stamp(x, y, max_distance)
+        centroids = self.find_centroids(stamp)
 
-        if image.stars is None:
-            self.find_stars()
+        if centroids is None:
+            return
 
-        if image.stars is None:
-            # No stars found
-            return None
-
-        stars = image.stars
-
+        # Get stamp center
+        stamp_size = stamp.shape[0]
+        s_x, s_y = stamp_size / 2, stamp_size / 2
         # Calculate distance to all stars
         distances = np.sqrt(
-            (stars["xcentroid"] - x) ** 2 + (stars["ycentroid"] - y) ** 2
+            (centroids["xcentroid"] - s_x) ** 2 + (centroids["ycentroid"] - s_y) ** 2
         )
 
         min_idx = np.argmin(distances)
 
         if distances[min_idx] <= max_distance:
-            return stars[min_idx]
+            centroid = centroids[min_idx]
+            # Recalculate on image coordinates
+            centroid["xcentroid"] = x + centroid["xcentroid"] - s_x
+            centroid["ycentroid"] = y + centroid["ycentroid"] - s_y
+            return centroids[min_idx]
 
         return None
 
-    def _compute_background(self):
+    def _compute_background(self, data):
         """Calculate background of image using sigma-clipped statistics"""
-        if self.active_image is None:
-            return  # No work to do
 
-        image = self.active_image
-        _, median, _ = stats.sigma_clipped_stats(image.data, sigma=self.sigma)
-        image.background = median
+        _, median, _ = stats.sigma_clipped_stats(data, sigma=self.sigma)
+
         return median
 
-    def get_background_subtracted(self):
+    def get_background_subtracted(self, data):
         """Get background-subtracted data, creates if unavailable"""
-        if self.active_image is None:
-            return  # No work to do
-
-        image = self.active_image
-
-        if image.background is None:
-            self._compute_background()
-            # Simply subtract background from original data
-        background_subtracted = image.data - image.background
+        background = self._compute_background(data)
+        background_subtracted = data - background
         return background_subtracted
 
-    def find_stars(self):
-        """Detect stars using DAOStarFinder"""
-        image = self.active_image
-        if image is None:
-            return
-
-        bg_subtracted = self.get_background_subtracted()
+    def find_centroids(self, data):
+        """Detect centroids using DAOStarFinder"""
+        bg_subtracted = self.get_background_subtracted(data)
         if bg_subtracted is None:
             return
 
@@ -143,6 +133,6 @@ class ImageManager(QObject):
         _, _, std = stats.sigma_clipped_stats(bg_subtracted, sigma=self.sigma)
 
         daofind = DAOStarFinder(fwhm=self.fwhm, threshold=self.threshold * std)
-        image.stars = daofind(bg_subtracted)
+        centroids = daofind(bg_subtracted)
 
-        return image.stars
+        return centroids

@@ -7,13 +7,13 @@
     - [ ] Add star select
     - [ ] Add box select
     - [ ] Add marker select
-- [ ] Reduce brightness/contrast processing time
-- [ ] Improve ScrubbySlider with debounce
+- [x] Reduce brightness/contrast processing time
+- [x] Improve ScrubbySlider with debounce
 - [x] Graph view
   - [x] Select graphs of different stars
   - [x] See all measurements of star across images
 - [x] Spreadsheet view
-- [ ] Only search for stars in a small region around click
+- [x] Only search for stars in a small region around click
 - [ ] Select star in spreadsheet view to select star in image
 - [ ] Create Singleton class for managers to inherit
 - [ ] Create Manager class for managers, since they're all very similar
@@ -22,5 +22,5 @@
 - [ ] Control hints display in bottom toolbar (Like Blender)
 - [ ] Hover tooltips
 - [ ] Bug: extra rows added to spreadsheet on measurement update
-- [ ] Bug: Star markers do not align with stars in different images
-- [ ] Fix image sliding on image selection
+- [x] Bug: Star markers do not align with stars in different images
+- [ ] Bug: image sliding on image selection
