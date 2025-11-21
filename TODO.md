@@ -23,4 +23,4 @@
 - [ ] Hover tooltips
 - [ ] Bug: extra rows added to spreadsheet on measurement update
 - [x] Bug: Star markers do not align with stars in different images
-- [ ] Bug: image sliding on image selection
+- [x] Bug: image sliding on image selection

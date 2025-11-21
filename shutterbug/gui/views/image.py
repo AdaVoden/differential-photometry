@@ -18,6 +18,7 @@ from PySide6.QtGui import (
     QMouseEvent,
     QPen,
     QPixmap,
+    QTransform,
     QUndoStack,
     QWheelEvent,
 )
@@ -60,6 +61,7 @@ class ImageViewer(QGraphicsView):
         self.zoom_max = self.ZOOM_MAXIMUM_DEFAULT
         self.zoom_min = self.ZOOM_MINIMUM_DEFAULT
         self.scale(1.0, 1.0)  # Scale of 1
+        self.first_image = True
 
         # Zoom animation settings
         self._zoom_level = 1.0  # base scale
@@ -151,7 +153,7 @@ class ImageViewer(QGraphicsView):
 
         # Animate the zoom change
         self.anim = QPropertyAnimation(self, b"zoom")
-        self.anim.setDuration(25)  # Tweak for feel
+        self.anim.setDuration(10)  # Tweak for feel
         self.anim.setStartValue(self._zoom_level)
         self.anim.setEndValue(new_scale)
         self.anim.start()
@@ -297,7 +299,6 @@ class ImageViewer(QGraphicsView):
         """Converts coordinates of click to coordinates of active image"""
         # Step 1, convert to scene coordinates
         scene_pos = self.mapToScene(coordinate).toPoint()
-        print(scene_pos)
         # Step 2, there is no step 2
         return scene_pos.x(), scene_pos.y()
 
@@ -348,7 +349,6 @@ class ImageViewer(QGraphicsView):
         self._clear_markers()
 
         old_center = self.mapToScene(self.viewport().rect().center())
-        old_zoom = self._zoom_level
 
         # Store new image
         self.current_image = image
@@ -365,13 +365,15 @@ class ImageViewer(QGraphicsView):
         # Display
         pixmap = QPixmap.fromImage(qimage)
         self.pixmap_item.setPixmap(pixmap)
-        self.fitInView(self.pixmap_item, Qt.AspectRatioMode.KeepAspectRatio)
+        if self.first_image:
+            self.fitInView(self.pixmap_item, Qt.AspectRatioMode.KeepAspectRatio)
+            self.first_image = False
 
-        # Keep same view
-        self._zoom_level = old_zoom
-        self.scale(old_zoom, old_zoom)
         self.centerOn(old_center)
-
+        new_center = self.mapToScene(self.viewport().rect().center())
+        # Fixing upward drift
+        delta = old_center - new_center
+        self.centerOn(old_center + delta)
         self._display_markers_for_image()
 
     def _clear_image(self):
