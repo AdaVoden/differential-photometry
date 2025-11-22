@@ -18,7 +18,6 @@ from PySide6.QtGui import (
     QMouseEvent,
     QPen,
     QPixmap,
-    QTransform,
     QUndoStack,
     QWheelEvent,
 )
@@ -27,6 +26,7 @@ from shutterbug.core.managers import ImageManager, SelectionManager, StarCatalog
 from shutterbug.core.models import FITSModel, StarMeasurement
 from shutterbug.core.utility.photometry import measure_star_magnitude
 from shutterbug.gui.commands import AddMeasurementCommand, RemoveMeasurementCommand
+from shutterbug.gui.controls import PopOverPanel
 
 
 class ImageViewer(QGraphicsView):
@@ -52,6 +52,9 @@ class ImageViewer(QGraphicsView):
         self.selection = SelectionManager()
         self.catalog = StarCatalog()
         self.image_manager = ImageManager()
+
+        self.popover = PopOverPanel(self)
+        self.popover.hide()
 
         self.current_image = None
         self.markers = {}  # (x, y) -> marker
@@ -113,9 +116,11 @@ class ImageViewer(QGraphicsView):
 
     # Zoom properties for animation
     def get_zoom(self):
+        """Gets zoom level"""
         return self._zoom_level
 
     def set_zoom(self, value: float):
+        """Sets zoom level"""
         if self._zoom_level == 0:
             return
 
@@ -231,6 +236,18 @@ class ImageViewer(QGraphicsView):
         stars = catalog.get_measurements_by_image(image_name)
         for star in stars:
             measure_star_magnitude(star, data=self.current_image.data)
+
+    def _toggle_popover(self):
+        """Toggles popover panel"""
+        if self.popover.isVisible():
+            self.popover.hide()
+        else:
+            self.popover.show_at_corner()
+
+    def keyPressEvent(self, event):
+        """Handles keypress events"""
+        if event.key() == Qt.Key.Key_N:
+            self._toggle_popover()
 
     def get_centroid_at_point(self, coordinates: QPoint):
         """Gets star, if any, under point"""

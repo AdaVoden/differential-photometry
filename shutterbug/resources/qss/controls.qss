@@ -26,3 +26,12 @@ LabeledSlider {
 LabeledSlider > QLabel {
     min-width: 75px;
 }
+
+#popover > QWidget {
+    background-color: rgba(35, 35, 35, 220);
+    border-radius: 8px;
+    min-width: 40px;
+    min-height: 40px;
+    max-width: 40px;
+    max-height: 40px;
+}
