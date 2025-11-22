@@ -1,0 +1,28 @@
+ScrubbySlider {
+    max-width: 100px;
+    max-height: 30px;
+}
+
+ScrubbySlider QPushButton {
+    max-width: 10px;
+    min-width: 10px;
+    padding: 2px;
+    border-style: outset;
+    border-width: 1px;
+    border-color: gray;
+}
+
+ScrubbySlider QLineEdit {
+    max-width: 75px;
+    padding-left: 0px;
+    padding-right: 0px;
+    text-align: center;
+}
+
+LabeledSlider {
+    max-width: 200px;
+}
+
+LabeledSlider > QLabel {
+    min-width: 75px;
+}

@@ -148,3 +148,5 @@ profiles/
 /output/
 results/
 /data/
+
+.projectile

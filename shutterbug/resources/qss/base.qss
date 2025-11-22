@@ -1,0 +1,19 @@
+/* Clear out extra padding and spaces in widgets */
+
+#outliner {
+    min-height: 300px;
+    margin: 0px;
+}
+
+#outliner > QTreeView::branch {
+    border-image: url(none.png);
+}
+
+#sidebar {
+    margin: 0px;
+    max-width: 400px;
+}
+
+#viewer {
+    margin: 0px;
+}

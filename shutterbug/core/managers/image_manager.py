@@ -1,0 +1,138 @@
+import logging
+from typing import Dict, List
+
+import numpy as np
+from astropy import stats
+from photutils.detection import DAOStarFinder
+from PySide6.QtCore import QObject, Signal
+from shutterbug.core.models import FITSModel
+
+
+class ImageManager(QObject):
+    """Manages multiple images and tracks which is active"""
+
+    _instance = None
+
+    image_added = Signal(FITSModel)
+    active_image_changed = Signal(FITSModel)
+    image_removed = Signal(FITSModel)
+
+    # Star Finding defaults
+    MAX_DISTANCE_DEFAULT = 20  # pixels
+    SIGMA_DEFAULT = 3.0
+    FWHM_DEFAULT = 3.0
+    THRESHOLD_DEFAULT = 5.0
+
+    def __init__(self):
+        if not hasattr(self, "_initialized"):
+            self._initialized = True
+
+            super().__init__()
+            self.images: Dict[str, FITSModel] = {}
+            self.active_image: FITSModel | None = None
+
+            # photometry settings
+            self.fwhm: float = self.FWHM_DEFAULT
+            self.threshold: float = self.THRESHOLD_DEFAULT
+            self.sigma: float = self.SIGMA_DEFAULT
+
+    def __new__(cls):
+        if cls._instance is None:
+            logging.debug("Creating Image Manager singleton")
+            cls._instance = super().__new__(cls)
+
+        return cls._instance
+
+    def add_image(self, image: FITSModel):
+        """Add image to manager"""
+        self.images[image.filename] = image
+        self.image_added.emit(image)
+
+    def set_active_image(self, image: FITSModel | None):
+        """Sets active image"""
+        if self.active_image != image:
+            if image is None:
+                logging.debug(f"Setting active image to None")
+            else:
+                logging.debug(f"Setting image as active: {image.filename}")
+            self.active_image = image
+            self.active_image_changed.emit(image)
+
+    def remove_image(self, image: FITSModel):
+        """Removes image from manager"""
+        if image.filename in self.images.keys():
+            self.images.pop(image.filename)
+
+        if self.active_image == image:
+            self.active_image = None
+            self.active_image_changed.emit(self.active_image)
+        self.image_removed.emit(image)
+
+    def get_image(self, image_name: str) -> FITSModel | None:
+        """Returns image from manager"""
+        if image_name in self.images.keys():
+            return self.images[image_name]
+        return None
+
+    def get_all_images(self) -> List[FITSModel]:
+        """Returns the master list of images from manager"""
+        return list(self.images.values())
+
+    def find_nearest_centroid(
+        self,
+        image: FITSModel,
+        x: float,
+        y: float,
+        max_distance: int = MAX_DISTANCE_DEFAULT,
+    ):
+        stamp = image.get_stamp(x, y, max_distance)
+        centroids = self.find_centroids(stamp)
+
+        if centroids is None:
+            return
+
+        # Get stamp center
+        stamp_size = stamp.shape[0]
+        s_x, s_y = stamp_size / 2, stamp_size / 2
+        # Calculate distance to all stars
+        distances = np.sqrt(
+            (centroids["xcentroid"] - s_x) ** 2 + (centroids["ycentroid"] - s_y) ** 2
+        )
+
+        min_idx = np.argmin(distances)
+
+        if distances[min_idx] <= max_distance:
+            centroid = centroids[min_idx]
+            # Recalculate on image coordinates
+            centroid["xcentroid"] = x + centroid["xcentroid"] - s_x
+            centroid["ycentroid"] = y + centroid["ycentroid"] - s_y
+            return centroids[min_idx]
+
+        return None
+
+    def _compute_background(self, data):
+        """Calculate background of image using sigma-clipped statistics"""
+
+        _, median, _ = stats.sigma_clipped_stats(data, sigma=self.sigma)
+
+        return median
+
+    def get_background_subtracted(self, data):
+        """Get background-subtracted data, creates if unavailable"""
+        background = self._compute_background(data)
+        background_subtracted = data - background
+        return background_subtracted
+
+    def find_centroids(self, data):
+        """Detect centroids using DAOStarFinder"""
+        bg_subtracted = self.get_background_subtracted(data)
+        if bg_subtracted is None:
+            return
+
+        # Estimate FWHM and threshold
+        _, _, std = stats.sigma_clipped_stats(bg_subtracted, sigma=self.sigma)
+
+        daofind = DAOStarFinder(fwhm=self.fwhm, threshold=self.threshold * std)
+        centroids = daofind(bg_subtracted)
+
+        return centroids

@@ -1,0 +1,26 @@
+- [x] Propagate error with magnitude
+- [ ] Add icons for tabs
+- [x] Undo/Redo
+- [ ] Unbreak Save project/load project
+- [ ] Add About Shutterbug
+- [ ] Add controls to Viewer
+    - [ ] Add star select
+    - [ ] Add box select
+    - [ ] Add marker select
+- [x] Reduce brightness/contrast processing time
+- [x] Improve ScrubbySlider with debounce
+- [x] Graph view
+  - [x] Select graphs of different stars
+  - [x] See all measurements of star across images
+- [x] Spreadsheet view
+- [x] Only search for stars in a small region around click
+- [ ] Select star in spreadsheet view to select star in image
+- [ ] Create Singleton class for managers to inherit
+- [ ] Create Manager class for managers, since they're all very similar
+- [x] Set image storage to only store 8 bit version of image
+- [x] Retrieve small chunks of data image for processing
+- [ ] Control hints display in bottom toolbar (Like Blender)
+- [ ] Hover tooltips
+- [ ] Bug: extra rows added to spreadsheet on measurement update
+- [x] Bug: Star markers do not align with stars in different images
+- [x] Bug: image sliding on image selection
