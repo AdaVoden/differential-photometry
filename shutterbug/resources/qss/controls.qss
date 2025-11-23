@@ -26,3 +26,18 @@ LabeledSlider {
 LabeledSlider > QLabel {
     min-width: 75px;
 }
+
+
+#popover > QToolButton {
+    background-color: rgba(30, 30, 30, 150);
+    border: none;
+    border-radius: 8px;
+    padding: 6px 12px;
+    max-width: 40px;
+    max-height: 40px;
+    margin-top: 10px;
+    margin-left: 10px;
+}
+#popover > QToolButton:checked {
+    background-color: rgba(80, 80, 80, 220);
+}
