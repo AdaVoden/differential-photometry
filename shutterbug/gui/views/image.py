@@ -69,6 +69,9 @@ class ImageViewer(QGraphicsView):
         self._target_viewport_pos = QPointF()
         self.anim = None
 
+        # Drag settings
+        self._drag_start = None
+
         self.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
         # Set up scene
@@ -483,3 +486,9 @@ class ImageViewer(QGraphicsView):
         data = (data * 255).astype(np.uint8)
 
         return data
+
+    def update_selection_rect(self):
+        pass
+
+    def apply_box_selection(self):
+        pass
