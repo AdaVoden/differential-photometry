@@ -23,10 +23,16 @@ from PySide6.QtGui import (
 )
 from PySide6.QtWidgets import QGraphicsScene, QGraphicsView, QMenu
 from shutterbug.core.managers import ImageManager, SelectionManager, StarCatalog
-from shutterbug.core.models import FITSModel, StarMeasurement
+from shutterbug.core.models import FITSModel, StarMeasurement, StarIdentity
 from shutterbug.core.utility.photometry import measure_star_magnitude
-from shutterbug.gui.commands import AddMeasurementCommand, RemoveMeasurementCommand
+from shutterbug.gui.commands import (
+    AddMeasurementCommand,
+    RemoveMeasurementCommand,
+    SelectStarCommand,
+)
 from shutterbug.gui.controls import PopOverPanel
+from shutterbug.gui.managers import ToolManager
+from shutterbug.gui.tools import Tool, SelectTool
 
 
 class ImageViewer(QGraphicsView):
@@ -52,6 +58,8 @@ class ImageViewer(QGraphicsView):
         self.selection = SelectionManager()
         self.catalog = StarCatalog()
         self.image_manager = ImageManager()
+        self.tool_manager = ToolManager()
+        self.tool_manager.set_tool(SelectTool)
 
         self.current_image = None
         self.markers = {}  # (x, y) -> marker
@@ -78,6 +86,9 @@ class ImageViewer(QGraphicsView):
         scene = QGraphicsScene(self)
         self.setScene(scene)
 
+        # Popover panel
+        self.popover = PopOverPanel(self)
+
         # Add pixmap item to scene, blank for now
         self.pixmap_item = scene.addPixmap(QPixmap())
 
@@ -96,9 +107,7 @@ class ImageViewer(QGraphicsView):
         self.selection.image_selected.connect(self._on_image_selected)
         self.catalog.measurement_added.connect(self.add_star_marker)
         self.catalog.measurement_removed.connect(self.remove_star_marker)
-
-        # Popover panel
-        self.popover = PopOverPanel(self)
+        self.tool_manager.tool_changed.connect(self._on_tool_changed)
 
         logging.debug("Image Viewer initialized")
 
@@ -116,6 +125,10 @@ class ImageViewer(QGraphicsView):
                 image.updated.connect(self.update_display)
 
             self.update_display()
+
+    @Slot(Tool)
+    def _on_tool_changed(self, tool: Tool):
+        pass
 
     # Zoom properties for animation
     def get_zoom(self):
@@ -140,6 +153,7 @@ class ImageViewer(QGraphicsView):
 
     zoom = Property(float, get_zoom, set_zoom)
 
+    @Slot(QWheelEvent)
     def wheelEvent(self, event: QWheelEvent):
         # Are we zooming in or out?
         zoom = event.angleDelta().y() > 0
@@ -166,6 +180,7 @@ class ImageViewer(QGraphicsView):
         self.anim.setEndValue(new_scale)
         self.anim.start()
 
+    @Slot(QMouseEvent)
     def mousePressEvent(self, event: QMouseEvent):
         if event.button() == Qt.MouseButton.MiddleButton:
             # start panning
@@ -180,16 +195,21 @@ class ImageViewer(QGraphicsView):
             )
             super().mousePressEvent(fake_event)
         else:
-            # Normal left click
-            self._on_viewer_clicked(event)
-            super().mousePressEvent(event)
+            if self.current_image and self.tool_manager.tool:
+                self.tool_manager.tool.mouse_press(self, event)
 
+    @Slot(QMouseEvent)
     def mouseReleaseEvent(self, event: QMouseEvent) -> None:
         if event.button() == Qt.MouseButton.MiddleButton:
             # Stop panning
             self.setDragMode(QGraphicsView.DragMode.NoDrag)
+        if self.current_image and self.tool_manager.tool:
+            self.tool_manager.tool.mouse_release(self, event)
 
-        super().mouseReleaseEvent(event)
+    @Slot(QMouseEvent)
+    def mouseMoveEvent(self, event: QMouseEvent) -> None:
+        if self.current_image and self.tool_manager.tool:
+            self.tool_manager.tool.mouse_move(self, event)
 
     def contextMenuEvent(self, event: QContextMenuEvent) -> None:
         menu = QMenu()
@@ -208,24 +228,6 @@ class ImageViewer(QGraphicsView):
         menu.exec(event.globalPos())
 
         super().contextMenuEvent(event)
-
-    @Slot(QMouseEvent)
-    def _on_viewer_clicked(self, event: QMouseEvent):
-        """Handler for a click in the viewer"""
-        current_image = self.current_image
-        if current_image is None:
-            # No image, we don't care
-            return
-
-        # Alt + Click, remove a star
-        if event.modifiers() == Qt.KeyboardModifier.AltModifier:
-            if event.button() == Qt.MouseButton.LeftButton:
-                self.deselect_star(event.pos())
-            return
-
-        if event.button() == Qt.MouseButton.LeftButton:
-            self.select_star(event.pos())
-            return
 
     @Slot()
     def _on_photometry_requested(self):
@@ -254,7 +256,7 @@ class ImageViewer(QGraphicsView):
 
     def get_centroid_at_point(self, coordinates: QPoint):
         """Gets star, if any, under point"""
-        image = self.current_image
+        image = self.image_manager.active_image
         if image is None:
             # No work to do
             return None
@@ -266,10 +268,10 @@ class ImageViewer(QGraphicsView):
 
         return star
 
-    def get_registered_measurement(self, coordinates: QPoint):
+    def get_registered_measurement(self, coordinates: QPoint) -> StarIdentity | None:
         """Gets already registered measurement at point, if any"""
         catalog = self.catalog
-        image = self.current_image
+        image = self.image_manager.active_image
         if image is None:
             return None  # No work to do
 
@@ -279,34 +281,60 @@ class ImageViewer(QGraphicsView):
         if star is None:
             return None
 
-        return star.measurements.get(image.filename)
+        return star
+
+    def get_star_at_point(self, coordinates: QPoint):
+        """Grabs star at selected point"""
+        # First check to see if we have any registered at point
+        star = self.get_registered_measurement(coordinates)
+        if star:
+            return star  # Success
+
+        # Second, check if there's a centroid at point
+        centroid = self.get_centroid_at_point(coordinates)
+        if centroid:
+            return centroid
+
+        # Found nothing
+        return None
 
     def select_star(self, coordinates: QPoint):
         """Creates the select star command and pushes command to the stack"""
-        star = self.get_centroid_at_point(coordinates)
         current_image = self.image_manager.active_image
+        if current_image is None:
+            return  # Nothing to do
 
-        if star is None or current_image is None:
-            logging.debug("No star found or current image is not set")
+        star = self.get_star_at_point(coordinates)
+        if star is None:
+            logging.debug(
+                f"No star found under click at point ({coordinates.x()}, {coordinates.y()})"
+            )
             return  # No work to do
-        logging.debug("Star found, creating command")
-
-        self._undo_stack.push(AddMeasurementCommand(star, current_image))
+        if isinstance(star, StarIdentity):
+            self._undo_stack.push(SelectStarCommand(star))
+        else:
+            self._undo_stack.push(AddMeasurementCommand(star, current_image))
 
     def deselect_star(self, coordinates: QPoint):
         """Creates the deselect star command and pushes command to the stack"""
+        current_image = self.image_manager.active_image
+        if current_image is None:
+            return  # Nothing to do
         logging.debug(
             f"Attempting to deselect star at {coordinates.x()}/{coordinates.y()}"
         )
-        current_image = self.image_manager.active_image
-        measurement = self.get_registered_measurement(coordinates)
+        star = self.get_registered_measurement(coordinates)
 
-        if measurement is None or current_image is None:
-            logging.debug("No star found or current image is not set")
+        if star is None:
+            logging.debug(
+                f"No star found under click at point ({coordinates.x()}, {coordinates.y()})"
+            )
             return  # No work to do
-        logging.debug("Star found, creating command")
 
-        self._undo_stack.push(RemoveMeasurementCommand(measurement))
+        logging.debug("Star found, creating command")
+        measurement = star.measurements.get(current_image.filename)
+        if measurement is not None:
+            self._undo_stack.push(RemoveMeasurementCommand(measurement))
 
     @Slot()
     def _on_propagate_requested(self):
