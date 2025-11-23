@@ -53,9 +53,6 @@ class ImageViewer(QGraphicsView):
         self.catalog = StarCatalog()
         self.image_manager = ImageManager()
 
-        self.popover = PopOverPanel(self)
-        self.popover.hide()
-
         self.current_image = None
         self.markers = {}  # (x, y) -> marker
 
@@ -96,6 +93,9 @@ class ImageViewer(QGraphicsView):
         self.selection.image_selected.connect(self._on_image_selected)
         self.catalog.measurement_added.connect(self.add_star_marker)
         self.catalog.measurement_removed.connect(self.remove_star_marker)
+
+        # Popover panel
+        self.popover = PopOverPanel(self)
 
         logging.debug("Image Viewer initialized")
 
