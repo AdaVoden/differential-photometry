@@ -7,6 +7,7 @@ from PySide6.QtCore import (
     QPoint,
     QPointF,
     QPropertyAnimation,
+    QRect,
     Qt,
     Signal,
     Slot,
@@ -21,7 +22,7 @@ from PySide6.QtGui import (
     QUndoStack,
     QWheelEvent,
 )
-from PySide6.QtWidgets import QGraphicsScene, QGraphicsView, QMenu
+from PySide6.QtWidgets import QGraphicsScene, QGraphicsView, QMenu, QRubberBand
 from shutterbug.core.managers import ImageManager, SelectionManager, StarCatalog
 from shutterbug.core.models import FITSModel, StarMeasurement, StarIdentity
 from shutterbug.core.utility.photometry import measure_star_magnitude
@@ -77,8 +78,8 @@ class ImageViewer(QGraphicsView):
         self._target_viewport_pos = QPointF()
         self.anim = None
 
-        # Drag settings
-        self._drag_start = None
+        # Box selection settings
+        self.rubberBand = QRubberBand(QRubberBand.Shape.Rectangle, self)
 
         self.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
@@ -108,6 +109,8 @@ class ImageViewer(QGraphicsView):
         self.catalog.measurement_added.connect(self.add_star_marker)
         self.catalog.measurement_removed.connect(self.remove_star_marker)
         self.tool_manager.tool_changed.connect(self._on_tool_changed)
+
+        self.popover.tool_selected.connect(self.tool_manager.set_tool)
 
         logging.debug("Image Viewer initialized")
 
@@ -198,6 +201,8 @@ class ImageViewer(QGraphicsView):
             if self.current_image and self.tool_manager.tool:
                 self.tool_manager.tool.mouse_press(self, event)
 
+            super().mousePressEvent(event)
+
     @Slot(QMouseEvent)
     def mouseReleaseEvent(self, event: QMouseEvent) -> None:
         if event.button() == Qt.MouseButton.MiddleButton:
@@ -206,10 +211,14 @@ class ImageViewer(QGraphicsView):
         if self.current_image and self.tool_manager.tool:
             self.tool_manager.tool.mouse_release(self, event)
 
+        super().mouseReleaseEvent(event)
+
     @Slot(QMouseEvent)
     def mouseMoveEvent(self, event: QMouseEvent) -> None:
         if self.current_image and self.tool_manager.tool:
             self.tool_manager.tool.mouse_move(self, event)
+
+        super().mouseMoveEvent(event)
 
     def contextMenuEvent(self, event: QContextMenuEvent) -> None:
         menu = QMenu()
@@ -515,8 +524,14 @@ class ImageViewer(QGraphicsView):
 
         return data
 
-    def update_selection_rect(self):
-        pass
+    def update_selection_rect(self, start: QPoint, end: QPoint):
+        rect = QRect(start, end)
+        self.rubberBand.setGeometry(rect.normalized())
+        self.rubberBand.show()
 
-    def apply_box_selection(self):
-        pass
+    def apply_box_selection(self, start: QPoint, end: QPoint):
+        self.rubberBand.hide()
+        # Get in image coordinates
+        start_image = self.mapToScene(start).toPoint()
+        end_image = self.mapToScene(end).toPoint()
+        # Send to image manager, select all stars
