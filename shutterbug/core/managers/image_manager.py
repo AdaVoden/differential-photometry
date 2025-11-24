@@ -4,7 +4,7 @@ from typing import Dict, List
 import numpy as np
 from astropy import stats
 from photutils.detection import DAOStarFinder
-from PySide6.QtCore import QObject, Signal
+from PySide6.QtCore import QObject, QPoint, Signal
 from shutterbug.core.models import FITSModel
 
 
@@ -122,6 +122,30 @@ class ImageManager(QObject):
         background = self._compute_background(data)
         background_subtracted = data - background
         return background_subtracted
+
+    def find_centroids_from_points(self, start: QPoint, end: QPoint):
+        if self.active_image is None:
+            return []
+        x0, x1 = start.x(), end.x()
+        y0, y1 = start.y(), end.y()
+
+        # Account for every possible drag direction
+        if y1 < y0:
+            y1, y0 = y0, y1
+        if x1 < x0:
+            x1, x0 = x0, x1
+
+        data = self.active_image.get_stamp_from_points(x0, x1, y0, y1)
+
+        centroids = self.find_centroids(data)
+        if centroids is None:
+            return []
+
+        # Recalculate on image coordinates
+        centroids["xcentroid"] = x0 + centroids["xcentroid"]
+        centroids["ycentroid"] = y0 + centroids["ycentroid"]
+
+        return centroids
 
     def find_centroids(self, data):
         """Detect centroids using DAOStarFinder"""

@@ -3,6 +3,8 @@ from uuid import uuid4
 
 from math import floor, ceil
 
+from PySide6.QtCore import QPoint
+
 from .base_observable import ObservableQObject
 
 
@@ -54,3 +56,7 @@ class FITSModel(ObservableQObject):
         data = self.data[y0:y1, x0:x1]
         data = self.bzero + data * self.bscale
         return data
+
+    def get_stamp_from_points(self, x0: int, x1: int, y0: int, y1: int):
+        data = self.data[y0:y1, x0:x1]
+        return self.bzero + data * self.bscale

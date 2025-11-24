@@ -1,7 +1,7 @@
 from .file_commands import LoadImagesCommand, RemoveImagesCommand, SelectFileCommand
 from .image_commands import SetBrightnessCommand, SetContrastCommand
 from .star_commands import (
-    AddMeasurementCommand,
+    AddMeasurementsCommand,
     RemoveMeasurementCommand,
     SelectStarCommand,
     DeselectStarCommand,
@@ -14,7 +14,7 @@ __all__ = [
     "SelectFileCommand",
     "SetBrightnessCommand",
     "SetContrastCommand",
-    "AddMeasurementCommand",
+    "AddMeasurementsCommand",
     "RemoveMeasurementCommand",
     "SelectStarCommand",
     "DeselectStarCommand",

@@ -27,7 +27,7 @@ from shutterbug.core.managers import ImageManager, SelectionManager, StarCatalog
 from shutterbug.core.models import FITSModel, StarMeasurement, StarIdentity
 from shutterbug.core.utility.photometry import measure_star_magnitude
 from shutterbug.gui.commands import (
-    AddMeasurementCommand,
+    AddMeasurementsCommand,
     RemoveMeasurementCommand,
     SelectStarCommand,
 )
@@ -322,7 +322,7 @@ class ImageViewer(QGraphicsView):
         if isinstance(star, StarIdentity):
             self._undo_stack.push(SelectStarCommand(star))
         else:
-            self._undo_stack.push(AddMeasurementCommand(star, current_image))
+            self._undo_stack.push(AddMeasurementsCommand([star], current_image))
 
     def deselect_star(self, coordinates: QPoint):
         """Creates the deselect star command and pushes command to the stack"""
@@ -347,6 +347,7 @@ class ImageViewer(QGraphicsView):
 
     @Slot()
     def _on_propagate_requested(self):
+        """Handles image propagation being requested"""
         if self.current_image is None:
             return None
 
@@ -457,6 +458,7 @@ class ImageViewer(QGraphicsView):
 
     @Slot()
     def update_display(self):
+        """Updates image display"""
         if self.current_image is None:
             self.pixmap_item.setPixmap(QPixmap())
             return
@@ -525,13 +527,22 @@ class ImageViewer(QGraphicsView):
         return data
 
     def update_selection_rect(self, start: QPoint, end: QPoint):
+        """Updates rectangle for purposes of selection"""
         rect = QRect(start, end)
         self.rubberBand.setGeometry(rect.normalized())
         self.rubberBand.show()
 
     def apply_box_selection(self, start: QPoint, end: QPoint):
+        """Applies box selection"""
         self.rubberBand.hide()
+        if self.current_image is None:
+            return  # No work to do
         # Get in image coordinates
         start_image = self.mapToScene(start).toPoint()
         end_image = self.mapToScene(end).toPoint()
         # Send to image manager, select all stars
+        centroids = self.image_manager.find_centroids_from_points(
+            start_image, end_image
+        )
+        if len(centroids) >= 1:
+            self._undo_stack.push(AddMeasurementsCommand(centroids, self.current_image))

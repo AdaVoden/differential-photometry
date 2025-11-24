@@ -1,40 +1,45 @@
 import logging
+from typing import List
 from PySide6.QtGui import QUndoCommand
 from shutterbug.core.managers.star_catalog import StarCatalog
 from shutterbug.core.models import FITSModel, StarMeasurement
 from shutterbug.core.models.star_identity import StarIdentity
 
 
-class AddMeasurementCommand(QUndoCommand):
+class AddMeasurementsCommand(QUndoCommand):
     """Command to select a star"""
 
-    def __init__(self, star, image: FITSModel):
+    def __init__(self, stars: List, image: FITSModel):
         super().__init__()
-        self.star = star
+        self.stars = stars
         self.image = image
         self.time = image.observation_time
         self.catalog = StarCatalog()
-        self.measurement = StarMeasurement(
-            x=self.star["xcentroid"],
-            y=self.star["ycentroid"],
-            time=self.time,
-            image=self.image.filename,
-        )
+        self.measurements = []
 
     def redo(self):
-        m = self.measurement
-        logging.debug(
-            f"COMMAND: Adding measurement at {m.x:.0f}/{m.y:.0f} for image {m.image}"
-        )
-        self.catalog.register_measurement(m)
+        for star in self.stars:
+            measurement = StarMeasurement(
+                x=star["xcentroid"],
+                y=star["ycentroid"],
+                time=self.time,
+                image=self.image.filename,
+            )
+
+            m = measurement
+            logging.debug(
+                f"COMMAND: Adding measurement at {m.x:.0f}/{m.y:.0f} for image {m.image}"
+            )
+            self.catalog.register_measurement(m)
+            self.measurements.append(m)
 
     def undo(self):
-        m = self.measurement
-        logging.debug(
-            f"COMMAND: Undoing measurement addition at {m.x:.0f}/{m.y:.0f} for image {m.image}"
-        )
+        for m in self.measurements:
+            logging.debug(
+                f"COMMAND: Undoing measurement addition at {m.x:.0f}/{m.y:.0f} for image {m.image}"
+            )
 
-        self.catalog.unregister_measurement(m)
+            self.catalog.unregister_measurement(m)
 
 
 class RemoveMeasurementCommand(QUndoCommand):

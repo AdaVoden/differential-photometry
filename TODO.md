@@ -4,8 +4,8 @@
 - [ ] Unbreak Save project/load project
 - [ ] Add About Shutterbug
 - [ ] Add controls to Viewer
-    - [ ] Add star select
-    - [ ] Add box select
+    - [x] Add star select
+    - [x] Add box select
     - [ ] Add marker select
 - [x] Reduce brightness/contrast processing time
 - [x] Improve ScrubbySlider with debounce
