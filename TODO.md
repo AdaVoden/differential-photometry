@@ -19,6 +19,14 @@
 - [ ] Create Manager class for managers, since they're all very similar
 - [x] Set image storage to only store 8 bit version of image
 - [x] Retrieve small chunks of data image for processing
+- [ ] Overlay manager for tools
+- [ ] Hover-highlight for stars
+- [ ] Tool properties panel
+- [ ] Collapsible sections in popover
+- [ ] Toggle arrow for N panel
+- [ ] Split-view editor system
+- [ ] Hotkeys
+  - [ ] Hotkey management system
 - [ ] Control hints display in bottom toolbar (Like Blender)
 - [ ] Hover tooltips
 - [ ] Bug: extra rows added to spreadsheet on measurement update

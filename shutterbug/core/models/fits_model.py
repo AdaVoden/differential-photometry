@@ -3,8 +3,6 @@ from uuid import uuid4
 
 from math import floor, ceil
 
-from PySide6.QtCore import QPoint
-
 from .base_observable import ObservableQObject
 
 
