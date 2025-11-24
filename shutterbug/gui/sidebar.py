@@ -1,17 +1,24 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from shutterbug.gui.main_window import MainWindow
+
 import logging
 
 from PySide6.QtCore import Signal
 from PySide6.QtGui import QUndoStack
 from PySide6.QtWidgets import QVBoxLayout, QWidget
 from shutterbug.gui.outliner import Outliner
-from shutterbug.gui.tool_settings import Settings
+from shutterbug.gui.properties import Properties
 
 
 class Sidebar(QWidget):
 
     object_selected = Signal(object)
 
-    def __init__(self, undo_stack: QUndoStack):
+    def __init__(self, undo_stack: QUndoStack, main_window: MainWindow):
         super().__init__()
         # Initialize sidebar components here
         self.setObjectName("sidebar")
@@ -22,7 +29,7 @@ class Sidebar(QWidget):
         layout.setSpacing(2)
         # Outliner on top, Settings below
         self.outliner = Outliner(undo_stack)
-        self.settings = Settings(undo_stack)
+        self.settings = Properties(undo_stack, main_window)
 
         layout.addWidget(self.outliner, stretch=1)
         layout.addWidget(self.settings, stretch=3)

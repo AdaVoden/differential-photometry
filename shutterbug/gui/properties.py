@@ -1,25 +1,27 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from shutterbug.gui.main_window import MainWindow
+
 import logging
 
-from shutterbug.gui.controls.labeled_slider import LabeledSlider
+from PySide6.QtCore import Qt, Slot
+from PySide6.QtGui import QUndoStack
+from PySide6.QtWidgets import QLabel, QTabWidget, QVBoxLayout, QWidget
 from shutterbug.core.managers import ImageManager
 from shutterbug.core.models import FITSModel
 from shutterbug.gui.commands.image_commands import (
     SetBrightnessCommand,
     SetContrastCommand,
 )
-
-from PySide6.QtWidgets import (
-    QWidget,
-    QVBoxLayout,
-    QLabel,
-    QTabWidget,
-)
-from PySide6.QtCore import Qt, Slot
-from PySide6.QtGui import QUndoStack
+from shutterbug.gui.controls.labeled_slider import LabeledSlider
+from shutterbug.gui.tools.base_tool import Tool
 
 
-class Settings(QWidget):
-    def __init__(self, undo_stack: QUndoStack):
+class Properties(QWidget):
+    def __init__(self, undo_stack: QUndoStack, main_window: MainWindow):
         super().__init__()
         self.setObjectName("settings")
 
@@ -37,15 +39,20 @@ class Settings(QWidget):
         self.tabs.setTabPosition(QTabWidget.TabPosition.West)
 
         # Different property panels
+        self.tool_properties = ToolPropertiesPanel()
         self.image_properties = ImagePropertiesPanel(undo_stack)
         self.star_properties = StarPropertiesPanel(undo_stack)
         self.general_properties = GeneralPropertiesPanel(undo_stack)
 
+        self.tabs.addTab(self.tool_properties, "Tool")
         self.tabs.addTab(self.general_properties, "Gen")
         self.tabs.addTab(self.image_properties, "Image")
         self.tabs.addTab(self.star_properties, "Star")
 
         self.show_image_properties()
+
+        # Main Window signals
+        main_window.active_tool_changed.connect(self._on_active_tool_change)
 
         logging.debug("Tool settings initialized")
 
@@ -65,6 +72,10 @@ class Settings(QWidget):
 
     def set_state(self, state):
         self.image_properties.set_state(state["image_properties"])
+
+    @Slot(Tool)
+    def _on_active_tool_change(self, tool: Tool):
+        self.tool_properties.set_panel(tool.tool_panel())
 
 
 class ImagePropertiesPanel(QWidget):
@@ -189,3 +200,29 @@ class GeneralPropertiesPanel(QWidget):
         self.setLayout(layout)
         # Add general property controls here
         logging.debug("General properties panel initialized")
+
+
+class ToolPropertiesPanel(QWidget):
+    def __init__(self):
+        super().__init__()
+        layout = QVBoxLayout()
+        self.setLayout(layout)
+
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(5)
+        layout.setAlignment(Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignTop)
+
+        logging.debug("Tool properties panel initialized")
+
+    def set_panel(self, widget: QWidget | None):
+        """Sets tool widgets"""
+        # Remove old stuff
+        layout = self.layout()
+        if layout is not None:
+            while layout.count():
+                item = layout.takeAt(0)
+                if w := item.widget():
+                    w.deleteLater()
+
+            if widget is not None:
+                layout.addWidget(widget)

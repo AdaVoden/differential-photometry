@@ -9,6 +9,7 @@ from PySide6.QtWidgets import (
 from PySide6.QtGui import QUndoStack
 from PySide6.QtCore import Signal, Slot
 
+from shutterbug.gui.tools.base_tool import Tool
 from shutterbug.gui.views import ImageViewer, GraphViewer, SpreadsheetViewer
 
 
@@ -17,6 +18,7 @@ class MultiViewer(QWidget):
 
     propagation_requested = Signal()
     batch_requested = Signal()
+    tool_changed = Signal(Tool)
 
     def __init__(self, undo_stack: QUndoStack):
         super().__init__()
@@ -55,6 +57,7 @@ class MultiViewer(QWidget):
         self.mode_selector.currentIndexChanged.connect(self.change_mode)
         self.image_viewer.propagation_requested.connect(self.propagation_requested)
         self.image_viewer.batch_requested.connect(self.batch_requested)
+        self.image_viewer.tool_changed.connect(self.tool_changed)
 
         logging.debug("Multiviewer intialized")
 

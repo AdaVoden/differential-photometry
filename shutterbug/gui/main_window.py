@@ -1,6 +1,6 @@
 import logging
 
-from PySide6.QtCore import QCoreApplication, Slot
+from PySide6.QtCore import QCoreApplication, Slot, Signal
 from PySide6.QtGui import QUndoStack
 from PySide6.QtWidgets import (
     QFileDialog,
@@ -20,6 +20,7 @@ from shutterbug.core.models import FITSModel, StarMeasurement
 from shutterbug.core.models.graph_model import GraphDataModel
 from shutterbug.core.progress_bar_handler import ProgressHandler
 import shutterbug.core.utility.photometry as phot
+from shutterbug.gui.tools.base_tool import Tool
 
 
 from .commands import LoadImagesCommand
@@ -29,6 +30,8 @@ from .views import MultiViewer
 
 
 class MainWindow(QMainWindow):
+
+    active_tool_changed = Signal(Tool)
 
     def __init__(self):
         super().__init__()
@@ -50,7 +53,7 @@ class MainWindow(QMainWindow):
         self.project = ShutterbugProject()
 
         # Create sidebar and viewer
-        self.sidebar = Sidebar(self._undo_stack)
+        self.sidebar = Sidebar(self._undo_stack, self)
         self.viewer = MultiViewer(self._undo_stack)
         self.outliner_model = self.sidebar.outliner.model
 
@@ -95,6 +98,7 @@ class MainWindow(QMainWindow):
         # Handle Viewer signals
         self.viewer.propagation_requested.connect(self.propagate_star_selection)
         self.viewer.batch_requested.connect(self.process_all_images)
+        self.viewer.tool_changed.connect(self.active_tool_changed)
 
         # Handle Outliner signals
         self.sidebar.object_selected.connect(self.selection_manager.set_selected_object)

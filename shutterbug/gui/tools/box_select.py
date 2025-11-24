@@ -3,19 +3,22 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from PySide6.QtGui import QMouseEvent
+from PySide6.QtWidgets import QVBoxLayout, QWidget
 
 if TYPE_CHECKING:
     from shutterbug.gui.views.image import ImageViewer
 
 from shutterbug.gui.tools.base_tool import Tool
+from shutterbug.gui.controls import LabeledSlider
 
 
 class BoxSelectTool(Tool):
 
     def __init__(self):
         super().__init__()
-        self._name = "BoxSelect"
+        self._name = "Box Select"
         self._drag_start = None
+        self.threshold = 1
 
     def mouse_press(self, viewer: ImageViewer, event: QMouseEvent):
         self._drag_start = event.pos()
@@ -30,3 +33,14 @@ class BoxSelectTool(Tool):
             end = event.pos()
             viewer.apply_box_selection(self._drag_start, end)
         self._drag_start = None
+
+    def tool_panel(self):
+        widget = QWidget()
+        layout = QVBoxLayout(widget)
+
+        threshold = LabeledSlider("Threshold", 0, 5, self.threshold, "float", 3)
+        threshold.valueChanged.connect(lambda v: setattr(self, "threshold", v))
+
+        layout.addWidget(threshold)
+
+        return widget

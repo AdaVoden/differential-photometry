@@ -31,7 +31,7 @@ from shutterbug.gui.commands import (
     RemoveMeasurementCommand,
     SelectStarCommand,
 )
-from shutterbug.gui.controls import PopOverPanel
+from shutterbug.gui.controls.popover_panel import PopOverPanel
 from shutterbug.gui.managers import ToolManager
 from shutterbug.gui.tools import Tool, SelectTool
 
@@ -40,6 +40,7 @@ class ImageViewer(QGraphicsView):
 
     propagation_requested = Signal(FITSModel)
     batch_requested = Signal()
+    tool_changed = Signal(Tool)
 
     # Zoom defaults
     ZOOM_FACTOR_DEFAULT = 1.1
@@ -131,7 +132,8 @@ class ImageViewer(QGraphicsView):
 
     @Slot(Tool)
     def _on_tool_changed(self, tool: Tool):
-        pass
+        """Handles tool changing in Tool Manager"""
+        self.tool_changed.emit(tool)
 
     # Zoom properties for animation
     def get_zoom(self):

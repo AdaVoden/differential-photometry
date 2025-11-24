@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from PySide6.QtWidgets import QWidget
+
 if TYPE_CHECKING:
     from shutterbug.gui.views.image import ImageViewer
 
@@ -26,3 +28,6 @@ class SelectTool(Tool):
         if event.button() == Qt.MouseButton.LeftButton:
             viewer.select_star(event.pos())
             return
+
+    def tool_panel(self) -> QWidget | None:
+        return None

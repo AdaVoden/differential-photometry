@@ -1,5 +1,7 @@
 from abc import ABC, abstractmethod
 
+from PySide6.QtWidgets import QWidget
+
 
 class AbstractTool(ABC):
 
@@ -23,6 +25,9 @@ class AbstractTool(ABC):
     def key_press(self, viewer, event):
         pass
 
+    def tool_panel(self) -> QWidget | None:
+        raise NotImplementedError
+
 
 class Tool(AbstractTool):
 
@@ -33,3 +38,6 @@ class Tool(AbstractTool):
     @property
     def name(self):
         return self._name
+
+    def tool_panel(self) -> QWidget | None:
+        return None
