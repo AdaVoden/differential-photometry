@@ -18,6 +18,7 @@ from shutterbug.gui.commands.image_commands import (
 )
 from shutterbug.gui.controls.labeled_slider import LabeledSlider
 from shutterbug.gui.tools.base_tool import Tool
+from shutterbug.gui.panels.collapsible_section import CollapsibleSection
 
 
 class Properties(QWidget):
@@ -75,7 +76,7 @@ class Properties(QWidget):
 
     @Slot(Tool)
     def _on_active_tool_change(self, tool: Tool):
-        self.tool_properties.set_panel(tool.tool_panel())
+        self.tool_properties.set_panel(tool)
 
 
 class ImagePropertiesPanel(QWidget):
@@ -214,7 +215,7 @@ class ToolPropertiesPanel(QWidget):
 
         logging.debug("Tool properties panel initialized")
 
-    def set_panel(self, widget: QWidget | None):
+    def set_panel(self, tool: Tool):
         """Sets tool widgets"""
         # Remove old stuff
         layout = self.layout()
@@ -224,5 +225,10 @@ class ToolPropertiesPanel(QWidget):
                 if w := item.widget():
                     w.deleteLater()
 
-            if widget is not None:
-                layout.addWidget(widget)
+            # Add new stuff
+            label = QLabel(tool.name)
+            layout.addWidget(label)
+            tool_options = tool.tool_panel()
+            if tool_options is not None:
+                section = CollapsibleSection("Options", [tool_options], self)
+                layout.addWidget(section)
