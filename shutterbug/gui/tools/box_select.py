@@ -3,7 +3,6 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from PySide6.QtGui import QMouseEvent
-from PySide6.QtWidgets import QVBoxLayout, QWidget
 
 if TYPE_CHECKING:
     from shutterbug.gui.views.image import ImageViewer
@@ -35,12 +34,8 @@ class BoxSelectTool(Tool):
         self._drag_start = None
 
     def tool_panel(self):
-        widget = QWidget()
-        layout = QVBoxLayout(widget)
 
         threshold = LabeledSlider("Threshold", 0, 5, self.threshold, "float", 3)
         threshold.valueChanged.connect(lambda v: setattr(self, "threshold", v))
 
-        layout.addWidget(threshold)
-
-        return widget
+        return threshold

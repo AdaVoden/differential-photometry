@@ -21,8 +21,10 @@
 - [x] Retrieve small chunks of data image for processing
 - [ ] Overlay manager for tools
 - [ ] Hover-highlight for stars
-- [ ] Tool properties panel
-- [ ] Collapsible sections in popover
+- [x] Tool properties panel
+- [ ] Collapsible sections 
+  - [ ] In Popover
+  - [x] In Properties menu
 - [ ] Toggle arrow for N panel
 - [ ] Split-view editor system
 - [ ] Hotkeys

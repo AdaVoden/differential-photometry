@@ -16,7 +16,6 @@ dependencies = [
     "pyside6 (>=6.10.0,<7.0.0)",
     "photutils (>=2.3.0,<3.0.0)",
     "matplotlib (>=3.10.7,<4.0.0)",
-    "qt-material (>=2.17,<3.0)",
     "scipy (>=1.16.3,<2.0.0)"
 ]
 

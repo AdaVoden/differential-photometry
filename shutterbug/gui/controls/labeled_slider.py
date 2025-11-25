@@ -26,6 +26,7 @@ class LabeledSlider(QWidget):
         # Set up margins and spacing
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(5)
+        layout.addStretch(1)
 
         # Qlabel for display
         self.label = QLabel(name)

@@ -92,19 +92,22 @@ class ImagePropertiesPanel(QWidget):
         self.setObjectName("imageProperties")
         layout = QVBoxLayout()
         self.setLayout(layout)
+        layout.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignTop)
 
         # Remove layout styling
-        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setContentsMargins(16, 8, 8, 8)
         layout.setSpacing(5)
-        layout.setAlignment(Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignTop)
 
         # Sliders
         self.brightness_slider = LabeledSlider("Brightness", -100, 100, 0, "int")
         self.contrast_slider = LabeledSlider("Contrast", 0, 2, 1, "float", 3)
 
-        # Add to layout
-        layout.addWidget(self.brightness_slider)
-        layout.addWidget(self.contrast_slider)
+        # Panel
+        self.settings_panel = CollapsibleSection(
+            "Image Settings", [self.brightness_slider, self.contrast_slider], self
+        )
+
+        layout.addWidget(self.settings_panel)
 
         # Signals to slots
         self.brightness_slider.valueChanged.connect(self._on_brightness_changed)
@@ -209,9 +212,9 @@ class ToolPropertiesPanel(QWidget):
         layout = QVBoxLayout()
         self.setLayout(layout)
 
-        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setContentsMargins(16, 8, 8, 8)
         layout.setSpacing(5)
-        layout.setAlignment(Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignTop)
+        layout.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignTop)
 
         logging.debug("Tool properties panel initialized")
 

@@ -10,8 +10,6 @@ from shutterbug.gui.adapters import (
 )
 from shutterbug.gui.main_window import MainWindow
 
-from qt_material import apply_stylesheet
-
 from pathlib import Path
 
 ADAPTERS = [(FITSModel, FITSModelAdapter), (StarIdentity, StarIdentityAdapter)]
@@ -27,7 +25,11 @@ def register_adapters():
 def load_stylesheet():
     qss_dir = Path(__file__).parent.parent / "resources" / "qss"
 
-    stylesheets = [qss_dir / "base.qss", qss_dir / "controls.qss"]
+    stylesheets = [
+        qss_dir / "base.qss",
+        qss_dir / "controls.qss",
+        qss_dir / "panels.qss",
+    ]
 
     combined = ""
     for qss_file in stylesheets:
@@ -42,8 +44,6 @@ def main():
     app = QApplication(sys.argv)
     register_adapters()
     window = MainWindow()
-    # qt material theme and custom style
-    apply_stylesheet(app, theme="dark_purple.xml")
 
     # Open and load qss file
     app.setStyleSheet(app.styleSheet() + "\n" + load_stylesheet())
