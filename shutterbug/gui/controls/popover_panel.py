@@ -1,11 +1,11 @@
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import QButtonGroup, QToolButton, QVBoxLayout, QWidget
-from shutterbug.gui.tools import Tool, SelectTool, BoxSelectTool
+from shutterbug.gui.tools import BaseTool, SelectTool, BoxSelectTool
 
 
 class PopOverPanel(QWidget):
     closed = Signal()
-    tool_selected = Signal(Tool)
+    tool_selected = Signal(BaseTool)
 
     def __init__(self, parent: QWidget | None = None):
         super().__init__(parent)
@@ -32,7 +32,7 @@ class PopOverPanel(QWidget):
         layout.addWidget(self.select_btn)
         layout.addWidget(self.box_btn)
 
-    def _make_button(self, text: str, tool: Tool, checked=False) -> QToolButton:
+    def _make_button(self, text: str, tool: BaseTool, checked=False) -> QToolButton:
         """Makes a toggle-able button"""
         btn = QToolButton()
         btn.setText(text)

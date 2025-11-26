@@ -4,30 +4,22 @@ from typing import TYPE_CHECKING
 
 from PySide6.QtWidgets import QWidget
 
+from shutterbug.gui.operators.select_operator import SelectOperator
+from shutterbug.gui.operators.base_operator import BaseOperator
+
 if TYPE_CHECKING:
     from shutterbug.gui.views.image import ImageViewer
 
 from PySide6.QtGui import QMouseEvent
 from PySide6.QtCore import Qt
-from .base_tool import Tool
+from .base_tool import BaseTool
 
 
-class SelectTool(Tool):
+class SelectTool(BaseTool):
+    name = "Select"
 
-    def __init__(self):
-        super().__init__()
-        self._name = "Select"
+    def create_operator(self, viewer: ImageViewer) -> BaseOperator:
+        return SelectOperator(viewer)
 
-    def mouse_press(self, viewer: ImageViewer, event: QMouseEvent):
-        # Alt + Click, remove a star
-        if event.modifiers() == Qt.KeyboardModifier.AltModifier:
-            if event.button() == Qt.MouseButton.LeftButton:
-                viewer.deselect_star(event.pos())
-            return
-
-        if event.button() == Qt.MouseButton.LeftButton:
-            viewer.select_star(event.pos())
-            return
-
-    def tool_panel(self) -> QWidget | None:
+    def create_settings_widget(self) -> QWidget | None:
         return None

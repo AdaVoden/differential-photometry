@@ -16,6 +16,7 @@ from PySide6.QtGui import (
     QColor,
     QContextMenuEvent,
     QImage,
+    QKeyEvent,
     QMouseEvent,
     QPen,
     QPixmap,
@@ -33,14 +34,14 @@ from shutterbug.gui.commands import (
 )
 from shutterbug.gui.controls.popover_panel import PopOverPanel
 from shutterbug.gui.managers import ToolManager
-from shutterbug.gui.tools import Tool, SelectTool
+from shutterbug.gui.tools import BaseTool, SelectTool
 
 
 class ImageViewer(QGraphicsView):
 
     propagation_requested = Signal(FITSModel)
     batch_requested = Signal()
-    tool_changed = Signal(Tool)
+    tool_changed = Signal(BaseTool)
 
     # Zoom defaults
     ZOOM_FACTOR_DEFAULT = 1.1
@@ -60,7 +61,7 @@ class ImageViewer(QGraphicsView):
         self.selection = SelectionManager()
         self.catalog = StarCatalog()
         self.image_manager = ImageManager()
-        self.tool_manager = ToolManager()
+        self.tool_manager = ToolManager(self)
         self.tool_manager.set_tool(SelectTool)
 
         self.current_image = None
@@ -130,8 +131,8 @@ class ImageViewer(QGraphicsView):
 
             self.update_display()
 
-    @Slot(Tool)
-    def _on_tool_changed(self, tool: Tool):
+    @Slot(BaseTool)
+    def _on_tool_changed(self, tool: BaseTool):
         """Handles tool changing in Tool Manager"""
         self.tool_changed.emit(tool)
 
@@ -187,6 +188,8 @@ class ImageViewer(QGraphicsView):
 
     @Slot(QMouseEvent)
     def mousePressEvent(self, event: QMouseEvent):
+        if self.current_image is None:
+            return None
         if event.button() == Qt.MouseButton.MiddleButton:
             # start panning
             self.setDragMode(QGraphicsView.DragMode.ScrollHandDrag)
@@ -200,27 +203,36 @@ class ImageViewer(QGraphicsView):
             )
             super().mousePressEvent(fake_event)
         else:
-            if self.current_image and self.tool_manager.tool:
-                self.tool_manager.tool.mouse_press(self, event)
-
+            if event.button() == Qt.MouseButton.LeftButton:
+                self.tool_manager.begin_operation(event)
             super().mousePressEvent(event)
 
     @Slot(QMouseEvent)
-    def mouseReleaseEvent(self, event: QMouseEvent) -> None:
+    def mouseReleaseEvent(self, event: QMouseEvent):
+        if self.current_image is None:
+            return None
         if event.button() == Qt.MouseButton.MiddleButton:
             # Stop panning
             self.setDragMode(QGraphicsView.DragMode.NoDrag)
-        if self.current_image and self.tool_manager.tool:
-            self.tool_manager.tool.mouse_release(self, event)
-
+        if event.button() == Qt.MouseButton.LeftButton:
+            self.tool_manager.end_operation_confirm()
         super().mouseReleaseEvent(event)
 
     @Slot(QMouseEvent)
     def mouseMoveEvent(self, event: QMouseEvent) -> None:
-        if self.current_image and self.tool_manager.tool:
-            self.tool_manager.tool.mouse_move(self, event)
+        if self.current_image is None:
+            return None
+        self.tool_manager.update_operation(event)
 
         super().mouseMoveEvent(event)
+
+    @Slot(QKeyEvent)
+    def keyPressEvent(self, event: QKeyEvent):
+        """Handles keypress events"""
+        if event.key() == Qt.Key.Key_N:
+            self._toggle_popover()
+        if event.key() == Qt.Key.Key_Escape:
+            self.tool_manager.end_operation_cancel()
 
     def contextMenuEvent(self, event: QContextMenuEvent) -> None:
         menu = QMenu()
@@ -259,11 +271,6 @@ class ImageViewer(QGraphicsView):
             self.popover.hide()
         else:
             self.popover.show_at_corner()
-
-    def keyPressEvent(self, event):
-        """Handles keypress events"""
-        if event.key() == Qt.Key.Key_N:
-            self._toggle_popover()
 
     def get_centroid_at_point(self, coordinates: QPoint):
         """Gets star, if any, under point"""

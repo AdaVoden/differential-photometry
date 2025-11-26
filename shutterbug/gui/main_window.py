@@ -20,7 +20,7 @@ from shutterbug.core.models import FITSModel, StarMeasurement
 from shutterbug.core.models.graph_model import GraphDataModel
 from shutterbug.core.progress_bar_handler import ProgressHandler
 import shutterbug.core.utility.photometry as phot
-from shutterbug.gui.tools.base_tool import Tool
+from shutterbug.gui.tools.base_tool import BaseTool
 
 
 from .commands import LoadImagesCommand
@@ -31,7 +31,7 @@ from .views import MultiViewer
 
 class MainWindow(QMainWindow):
 
-    active_tool_changed = Signal(Tool)
+    active_tool_changed = Signal(BaseTool)
 
     def __init__(self):
         super().__init__()
