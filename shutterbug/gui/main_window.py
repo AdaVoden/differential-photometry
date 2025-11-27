@@ -32,6 +32,7 @@ from .views import MultiViewer
 class MainWindow(QMainWindow):
 
     active_tool_changed = Signal(BaseTool)
+    tool_settings_changed = Signal(QWidget)
 
     def __init__(self):
         super().__init__()
@@ -99,6 +100,7 @@ class MainWindow(QMainWindow):
         self.viewer.propagation_requested.connect(self.propagate_star_selection)
         self.viewer.batch_requested.connect(self.process_all_images)
         self.viewer.tool_changed.connect(self.active_tool_changed)
+        self.viewer.tool_settings_changed.connect(self.tool_settings_changed)
 
         # Handle Outliner signals
         self.sidebar.object_selected.connect(self.selection_manager.set_selected_object)

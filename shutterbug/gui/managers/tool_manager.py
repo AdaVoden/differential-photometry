@@ -36,7 +36,6 @@ class ToolManager(QObject):
         tool = tool_cls()
         self._current_tool = tool
         self.tool_changed.emit(tool)
-        self.tool_settings_changed.emit(tool.create_settings_widget())
 
     def begin_operation(self, event: QMouseEvent):
         """Creates operator and begins operation"""
@@ -45,6 +44,9 @@ class ToolManager(QObject):
 
         op = self._current_tool.create_operator(self.viewer)
         self.active_operator = op
+
+        widget = op.create_settings_widget()
+        self.tool_settings_changed.emit(widget)
 
         op.finished.connect(self._operator_finished)
         op.cancelled.connect(self._operator_cancelled)

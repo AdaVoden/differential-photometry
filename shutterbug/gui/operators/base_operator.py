@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from PySide6.QtGui import QMouseEvent, QUndoCommand
+from PySide6.QtWidgets import QWidget
 
 if TYPE_CHECKING:
     from shutterbug.gui.views.image import ImageViewer
@@ -20,6 +21,9 @@ class BaseOperator(QObject):
         self.viewer = viewer
         self.active = True
 
+    def create_settings_widget(self) -> QWidget | None:
+        raise NotImplementedError
+
     # Called on mouse press
     def start(self, event: QMouseEvent):
         pass
@@ -31,6 +35,7 @@ class BaseOperator(QObject):
     # Mouse release or enter key
     def confirm(self):
         """Return QUndoCommand or None if no action"""
+        self.cleanup_preview()
         cmd = self.build_command()
         self.finished.emit(cmd)
 

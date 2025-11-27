@@ -18,8 +18,7 @@ class BoxSelectTool(BaseTool):
 
     def create_settings_widget(self):
 
-        # threshold = LabeledSlider("Threshold", 0, 5, self.threshold, "float", 3)
-        # threshold.valueChanged.connect(lambda v: setattr(self, "threshold", v))
+        threshold = LabeledSlider("Threshold", 0, 5, 3, "float", 3)
+        threshold.valueChanged.connect(lambda v: setattr(self, "threshold", v))
 
-        # return threshold
-        return None
+        return threshold

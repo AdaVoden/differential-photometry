@@ -23,9 +23,9 @@ from PySide6.QtGui import (
     QUndoStack,
     QWheelEvent,
 )
-from PySide6.QtWidgets import QGraphicsScene, QGraphicsView, QMenu, QRubberBand
+from PySide6.QtWidgets import QGraphicsScene, QGraphicsView, QMenu, QWidget
 from shutterbug.core.managers import ImageManager, SelectionManager, StarCatalog
-from shutterbug.core.models import FITSModel, StarMeasurement, StarIdentity
+from shutterbug.core.models import FITSModel, StarIdentity, StarMeasurement
 from shutterbug.core.utility.photometry import measure_star_magnitude
 from shutterbug.gui.commands import (
     AddMeasurementsCommand,
@@ -42,6 +42,7 @@ class ImageViewer(QGraphicsView):
     propagation_requested = Signal(FITSModel)
     batch_requested = Signal()
     tool_changed = Signal(BaseTool)
+    tool_settings_changed = Signal(QWidget)
 
     # Zoom defaults
     ZOOM_FACTOR_DEFAULT = 1.1
@@ -56,16 +57,16 @@ class ImageViewer(QGraphicsView):
         super().__init__()
         # Initial variables
         self.setObjectName("viewer")
+        self.current_image = None
+        self.markers = {}  # (x, y) -> marker
 
+        # Manager setup
         self._undo_stack = undo_stack
         self.selection = SelectionManager()
         self.catalog = StarCatalog()
         self.image_manager = ImageManager()
         self.tool_manager = ToolManager(self)
         self.tool_manager.set_tool(SelectTool)
-
-        self.current_image = None
-        self.markers = {}  # (x, y) -> marker
 
         # Zoom settings
         self.zoom_factor = self.ZOOM_FACTOR_DEFAULT
@@ -79,9 +80,6 @@ class ImageViewer(QGraphicsView):
         self._target_scene_pos = QPointF()
         self._target_viewport_pos = QPointF()
         self.anim = None
-
-        # Box selection settings
-        self.rubberBand = QRubberBand(QRubberBand.Shape.Rectangle, self)
 
         self.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
@@ -111,6 +109,7 @@ class ImageViewer(QGraphicsView):
         self.catalog.measurement_added.connect(self.add_star_marker)
         self.catalog.measurement_removed.connect(self.remove_star_marker)
         self.tool_manager.tool_changed.connect(self._on_tool_changed)
+        self.tool_manager.tool_settings_changed.connect(self.tool_settings_changed)
 
         self.popover.tool_selected.connect(self.tool_manager.set_tool)
 
@@ -535,23 +534,7 @@ class ImageViewer(QGraphicsView):
 
         return data
 
-    def update_selection_rect(self, start: QPoint, end: QPoint):
-        """Updates rectangle for purposes of selection"""
-        rect = QRect(start, end)
-        self.rubberBand.setGeometry(rect.normalized())
-        self.rubberBand.show()
-
-    def apply_box_selection(self, start: QPoint, end: QPoint):
-        """Applies box selection"""
-        self.rubberBand.hide()
-        if self.current_image is None:
-            return  # No work to do
-        # Get in image coordinates
-        start_image = self.mapToScene(start).toPoint()
-        end_image = self.mapToScene(end).toPoint()
-        # Send to image manager, select all stars
-        centroids = self.image_manager.find_centroids_from_points(
-            start_image, end_image
-        )
-        if len(centroids) >= 1:
-            self._undo_stack.push(AddMeasurementsCommand(centroids, self.current_image))
+    def viewport_rect_to_scene(self, rect: QRect) -> QRect:
+        """Converts a rect to scene coordinates"""
+        poly = self.mapToScene(rect)
+        return poly.boundingRect().toRect()

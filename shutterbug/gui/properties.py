@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from shutterbug.gui.operators.base_operator import BaseOperator
+
 if TYPE_CHECKING:
     from shutterbug.gui.main_window import MainWindow
 
@@ -54,6 +56,7 @@ class Properties(QWidget):
 
         # Main Window signals
         main_window.active_tool_changed.connect(self._on_active_tool_change)
+        main_window.tool_settings_changed.connect(self._on_settings_change)
 
         logging.debug("Tool settings initialized")
 
@@ -76,7 +79,11 @@ class Properties(QWidget):
 
     @Slot(BaseTool)
     def _on_active_tool_change(self, tool: BaseTool):
-        self.tool_properties.set_panel(tool)
+        self.tool_properties.set_tool_name(tool)
+
+    @Slot(QWidget)
+    def _on_settings_change(self, settings: QWidget):
+        self.tool_properties.set_panel(settings)
 
 
 class ImagePropertiesPanel(QWidget):
@@ -216,9 +223,18 @@ class ToolPropertiesPanel(QWidget):
         layout.setSpacing(5)
         layout.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignTop)
 
+        self.tool_name = None
+        self.tool_icon = None
+
         logging.debug("Tool properties panel initialized")
 
-    def set_panel(self, tool: BaseTool):
+    @Slot(BaseTool)
+    def set_tool_name(self, tool: BaseTool):
+        self.tool_name = tool.name
+        self.tool_icon = tool.icon
+
+    @Slot(QWidget)
+    def set_panel(self, settings_widget: QWidget):
         """Sets tool widgets"""
         # Remove old stuff
         layout = self.layout()
@@ -229,9 +245,8 @@ class ToolPropertiesPanel(QWidget):
                     w.deleteLater()
 
             # Add new stuff
-            label = QLabel(tool.name)
+            label = QLabel(self.tool_name)
             layout.addWidget(label)
-            tool_options = tool.create_settings_widget()
-            if tool_options is not None:
-                section = CollapsibleSection("Options", [tool_options], self)
+            if settings_widget is not None:
+                section = CollapsibleSection("Options", [settings_widget], self)
                 layout.addWidget(section)

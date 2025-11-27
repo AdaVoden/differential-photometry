@@ -1,11 +1,36 @@
-from PySide6.QtCore import QRect, QSize
-from PySide6.QtGui import QMouseEvent
+from __future__ import annotations
+from typing import TYPE_CHECKING
+
+from shutterbug.gui.tools.box_select_settings import BoxSelectSettingsWidget
+
+if TYPE_CHECKING:
+    from shutterbug.gui.views.image import ImageViewer
+
+from PySide6.QtCore import QRect, QSize, Slot
+from PySide6.QtGui import QMouseEvent, QPen, QColor
 from PySide6.QtWidgets import QRubberBand
 from shutterbug.gui.commands.star_commands import AddMeasurementsCommand
 from shutterbug.gui.operators.base_operator import BaseOperator
+from shutterbug.gui.operators.operator_parameters import BoxSelectParameters
 
 
 class BoxSelectOperator(BaseOperator):
+
+    def __init__(self, viewer: ImageViewer):
+        super().__init__(viewer)
+        # Parameters live here
+        self.params = BoxSelectParameters()
+        self.params.changed.connect(self._on_params_changed)
+
+        # Initial variables
+        self.start_pos = None
+        self.end_pos = None
+        self.rubber = None
+        self.preview_items = []
+
+    def create_settings_widget(self) -> BoxSelectSettingsWidget:
+        return BoxSelectSettingsWidget(self.params)
+
     def start(self, event: QMouseEvent):
         """Begins selection box at point of click"""
         self.start_pos = event.pos()
@@ -17,21 +42,76 @@ class BoxSelectOperator(BaseOperator):
         """Updates selection box on mouse move"""
         if not self.active:
             return
-        end_pos = event.pos()
-        rect = QRect(self.start_pos, end_pos).normalized()
-        self.rubber.setGeometry(rect)
+        self.end_pos = event.pos()
+        if self.start_pos and self.end_pos:
+            rect = QRect(self.start_pos, self.end_pos).normalized()
+            if self.rubber:
+                self.rubber.setGeometry(rect)
+
+            # Compute scene rect
+            self.scene_rect = self.viewer.viewport_rect_to_scene(rect)
+            self._update_preview()
 
     def build_command(self):
+        """Builds command that adds star measurements to project"""
+        if not self.rubber:
+            return  # No work to do
+
         scene_rect = self.viewer.viewport_rect_to_scene(self.rubber.geometry())
         stars = self._find_stars_in(scene_rect)
-        if not stars:
-            return None
-        if not self.viewer.current_image:
-            return None
+
+        if not stars or not self.viewer.current_image:
+            return None  # No work to do
+
         return AddMeasurementsCommand(stars, self.viewer.current_image)
 
     def cleanup_preview(self):
-        self.rubber.deleteLater()
+        """Cleans preview"""
+        if self.rubber:
+            self.rubber.deleteLater()
+            self.rubber.hide()
+            self.rubber = None
+
+    def _update_preview(self):
+        """Updates preview of command"""
+        # Clear old preview
+        for item in self.preview_items:
+            item.scene().removeItem(item)
+
+        self.preview_items.clear()
+
+        # Query stars using threshold
+        if not self.rubber:
+            return  # Something broke
+        stars = self._find_stars_in(self.scene_rect)
+
+        if not stars or not self.viewer.current_image:
+            return None
+
+        # Build the preview
+        for star in stars:
+            pen = QPen(QColor("cyan"))
+            pen.setWidth(2)
+
+            circle = self.viewer.scene().addEllipse(
+                star["xcentroid"] - 20, star["ycentroid"] - 20, 40, 40, pen
+            )
+            self.preview_items.append(circle)
 
     def _find_stars_in(self, scene_rect: QRect):
-        pass
+        """Finds stars in a rectangle"""
+        upper_left = scene_rect.topLeft()
+        bottom_right = scene_rect.bottomRight()
+
+        image_manager = self.viewer.image_manager
+        centroids = image_manager.find_centroids_from_points(
+            upper_left, bottom_right, threshold=self.params.threshold
+        )
+
+        return centroids
+
+    @Slot()
+    def _on_params_changed(self):
+        """Handles parameters changing in Box Selection"""
+        if self.active:
+            self._update_preview()
