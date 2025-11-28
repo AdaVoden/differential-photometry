@@ -25,3 +25,12 @@ class BoxSelectSettingsWidget(QWidget):
         """Updates parameter Threshold in params"""
         self.params.threshold = value
         self.params.changed.emit()
+
+
+class BoxSelectToolSettingsWidget(QWidget):
+    def __init__(self, params: BoxSelectParameters):
+        super().__init__()
+        self._build_ui()
+
+    def _build_ui(self):
+        return None

@@ -16,10 +16,10 @@ from shutterbug.gui.operators.operator_parameters import BoxSelectParameters
 
 class BoxSelectOperator(BaseOperator):
 
-    def __init__(self, viewer: ImageViewer):
+    def __init__(self, viewer: ImageViewer, params: BoxSelectParameters):
         super().__init__(viewer)
         # Parameters live here
-        self.params = BoxSelectParameters()
+        self.params = params
         self.params.changed.connect(self._on_params_changed)
 
         # Initial variables
