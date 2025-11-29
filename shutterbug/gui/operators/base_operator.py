@@ -38,8 +38,8 @@ class BaseOperator(QObject):
     # Mouse release or enter key
     def confirm(self):
         """Return QUndoCommand or None if no action"""
-        self.cleanup_preview()
         cmd = self.build_command()
+        self.cleanup_preview()
         self.finished.emit(cmd)
 
     # Called on escape, RMB or cancel

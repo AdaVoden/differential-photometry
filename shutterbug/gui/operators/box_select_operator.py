@@ -60,8 +60,8 @@ class BoxSelectOperator(BaseOperator):
         scene_rect = self.viewer.viewport_rect_to_scene(self.rubber.geometry())
         stars = self._find_stars_in(scene_rect)
 
-        if not stars or not self.viewer.current_image:
-            return None  # No work to do
+        if not stars or self.viewer.current_image is None:
+            return None  # Things have gone wrong
 
         return AddMeasurementsCommand(stars, self.viewer.current_image)
 
@@ -85,7 +85,7 @@ class BoxSelectOperator(BaseOperator):
             return  # Something broke
         stars = self._find_stars_in(self.scene_rect)
 
-        if not stars or not self.viewer.current_image:
+        if not stars or self.viewer.current_image is None:
             return None
 
         # Build the preview

@@ -18,6 +18,7 @@ class AddMeasurementsCommand(QUndoCommand):
         self.measurements = []
 
     def redo(self):
+        logging.debug(f"COMMAND: Adding {len(self.stars)} measurements")
         for star in self.stars:
             measurement = StarMeasurement(
                 x=star["xcentroid"],
@@ -27,17 +28,13 @@ class AddMeasurementsCommand(QUndoCommand):
             )
 
             m = measurement
-            logging.debug(
-                f"COMMAND: Adding measurement at {m.x:.0f}/{m.y:.0f} for image {m.image}"
-            )
             self.catalog.register_measurement(m)
             self.measurements.append(m)
 
     def undo(self):
+        logging.debug(f"COMMAND: undoing addition of {len(self.stars)} measurements")
+
         for m in self.measurements:
-            logging.debug(
-                f"COMMAND: Undoing measurement addition at {m.x:.0f}/{m.y:.0f} for image {m.image}"
-            )
 
             self.catalog.unregister_measurement(m)
 

@@ -117,6 +117,8 @@ class ImageViewer(QGraphicsView):
 
         self.popover.tool_selected.connect(self.tool_manager.set_tool)
         self.tool_manager.operator_changed.connect(self._on_operator_changed)
+        self.tool_manager.operator_finished.connect(self._on_operator_finished)
+        self.tool_manager.operator_cancelled.connect(self._on_operator_finished)
 
         logging.debug("Image Viewer initialized")
 
@@ -145,6 +147,11 @@ class ImageViewer(QGraphicsView):
         """Handles operator changing in Tool Manager"""
         self.op_panel.set_panel(operator)
         self._toggle_popover(self.op_panel)
+
+    @Slot()
+    def _on_operator_finished(self):
+        """Handles operator being finished or cancelled"""
+        self.op_panel.hide()
 
     # Zoom properties for animation
     def get_zoom(self):
@@ -246,8 +253,6 @@ class ImageViewer(QGraphicsView):
 
     def contextMenuEvent(self, event: QContextMenuEvent) -> None:
         menu = QMenu()
-
-        # select_star_action = menu.addAction("Select as Target Star")
 
         calc_phot_action = menu.addAction("Calculate magnitude for selected star")
         calc_phot_action.triggered.connect(self._on_photometry_requested)

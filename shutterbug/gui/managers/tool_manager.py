@@ -18,6 +18,8 @@ class ToolManager(QObject):
     tool_changed = Signal(BaseTool)
     operator_changed = Signal(BaseOperator)
     tool_settings_changed = Signal(QWidget)
+    operator_finished = Signal()
+    operator_cancelled = Signal()
 
     def __init__(self, viewer: ImageViewer):
         super().__init__()
@@ -69,12 +71,17 @@ class ToolManager(QObject):
         if self.active_operator:
             self.active_operator.cancel()
 
+    @Slot(QUndoCommand)
     def _operator_finished(self, cmd: QUndoCommand | None):
         """Finished current operation by pushing command to stack"""
         self.active_operator = None
-        if cmd:
+        if cmd is not None:
+            print("Command is not none")
             self.viewer._undo_stack.push(cmd)
+        self.operator_finished.emit()
 
+    @Slot()
     def _operator_cancelled(self):
         """Cancels current operation"""
         self.active_operator = None
+        self.operator_cancelled.emit()

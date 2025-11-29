@@ -6,6 +6,4 @@ class OperatorParameters(QObject):
 
 
 class BoxSelectParameters(OperatorParameters):
-    def __init__(self):
-        super().__init__()
-        self.threshold = 3.0
+    threshold = 3.0
