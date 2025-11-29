@@ -232,7 +232,7 @@ class ImageViewer(QGraphicsView):
             # Stop panning
             self.setDragMode(QGraphicsView.DragMode.NoDrag)
         if event.button() == Qt.MouseButton.LeftButton:
-            self.tool_manager.end_operation_confirm()
+            self.tool_manager.end_operation_interaction()
         super().mouseReleaseEvent(event)
 
     @Slot(QMouseEvent)
@@ -250,6 +250,9 @@ class ImageViewer(QGraphicsView):
             self._toggle_popover(self.popover)
         if event.key() == Qt.Key.Key_Escape:
             self.tool_manager.end_operation_cancel()
+
+        if event.key() == Qt.Key.Key_Enter:
+            self.tool_manager.end_operation_confirm()
 
     def contextMenuEvent(self, event: QContextMenuEvent) -> None:
         menu = QMenu()

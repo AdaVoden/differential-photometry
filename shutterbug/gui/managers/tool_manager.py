@@ -61,6 +61,11 @@ class ToolManager(QObject):
         if self.active_operator:
             self.active_operator.update(event)
 
+    def end_operation_interaction(self):
+        """Ends interaction phase of operator"""
+        if self.active_operator:
+            self.active_operator.stop_interaction()
+
     def end_operation_confirm(self):
         """Successfully ends current operation, if any"""
         if self.active_operator:

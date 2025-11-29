@@ -18,6 +18,7 @@ class BaseOperator(QObject):
     cancelled = Signal()
 
     name = "Base Operator"
+    listening = True
 
     def __init__(self, viewer: ImageViewer):
         super().__init__()
@@ -33,6 +34,9 @@ class BaseOperator(QObject):
 
     # Called on mouse move
     def update(self, event: QMouseEvent):
+        pass
+
+    def stop_interaction(self):
         pass
 
     # Mouse release or enter key

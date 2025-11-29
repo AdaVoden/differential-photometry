@@ -43,9 +43,13 @@ class BoxSelectOperator(BaseOperator):
         self.rubber.setGeometry(QRect(event.pos(), QSize()))
         self.rubber.show()
 
+    def stop_interaction(self):
+        self._update_preview()
+        self.listening = False
+
     def update(self, event: QMouseEvent):
         """Updates selection box on mouse move"""
-        if not self.active:
+        if not self.active or not self.listening:
             return
         self.end_pos = event.pos()
         if self.start_pos and self.end_pos:
