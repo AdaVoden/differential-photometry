@@ -19,11 +19,11 @@
 - [ ] Create Manager class for managers, since they're all very similar
 - [x] Set image storage to only store 8 bit version of image
 - [x] Retrieve small chunks of data image for processing
-- [ ] Overlay manager for tools
+- [x] Overlay manager for tools
 - [ ] Hover-highlight for stars
 - [x] Tool properties panel
-- [ ] Collapsible sections 
-  - [ ] In Popover
+- [x] Collapsible sections 
+  - [x] In Popover
   - [x] In Properties menu
 - [ ] Toggle arrow for N panel
 - [ ] Split-view editor system
@@ -31,6 +31,11 @@
   - [ ] Hotkey management system
 - [ ] Control hints display in bottom toolbar (Like Blender)
 - [ ] Hover tooltips
+- [ ] Add focus system to end operators
+- [ ] Improve display of outliner
+  - [ ] Remove black part to left of entries
+  - [ ] Add expansion arrows to trees
+- [ ] Have first image open on load
 - [ ] Bug: extra rows added to spreadsheet on measurement update
 - [x] Bug: Star markers do not align with stars in different images
 - [x] Bug: image sliding on image selection
