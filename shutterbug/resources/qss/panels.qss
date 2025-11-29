@@ -29,6 +29,18 @@
     background: #5A5A5A;
 }
 
+#popover > #collapsibleSection {
+    border: none;
+    background-color: rgba(30, 30, 30, 150);
+    border-radius: 8px;
+}
+
+#popover > #collapsibleSection > QPushButton{
+    border: none;
+    background-color: rgba(40, 40, 40, 150);
+    border-radius: 8px
+}
+
 
 #popover > QToolButton {
     background-color: rgba(30, 30, 30, 150);

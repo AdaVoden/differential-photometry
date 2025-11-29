@@ -16,31 +16,36 @@ from PySide6.QtGui import (
     QColor,
     QContextMenuEvent,
     QImage,
+    QKeyEvent,
     QMouseEvent,
     QPen,
     QPixmap,
     QUndoStack,
     QWheelEvent,
 )
-from PySide6.QtWidgets import QGraphicsScene, QGraphicsView, QMenu, QRubberBand
+from PySide6.QtWidgets import QGraphicsScene, QGraphicsView, QMenu, QWidget
 from shutterbug.core.managers import ImageManager, SelectionManager, StarCatalog
-from shutterbug.core.models import FITSModel, StarMeasurement, StarIdentity
+from shutterbug.core.models import FITSModel, StarIdentity, StarMeasurement
 from shutterbug.core.utility.photometry import measure_star_magnitude
 from shutterbug.gui.commands import (
     AddMeasurementsCommand,
     RemoveMeasurementCommand,
     SelectStarCommand,
 )
-from shutterbug.gui.controls.popover_panel import PopOverPanel
+from shutterbug.gui.operators.base_operator import BaseOperator
+from shutterbug.gui.panels.base_popover import BasePopOver
+from shutterbug.gui.panels.operator_panel import OperatorPanel
+from shutterbug.gui.panels.tool_panel import ToolPanel
 from shutterbug.gui.managers import ToolManager
-from shutterbug.gui.tools import Tool, SelectTool
+from shutterbug.gui.tools import BaseTool, SelectTool
 
 
 class ImageViewer(QGraphicsView):
 
     propagation_requested = Signal(FITSModel)
     batch_requested = Signal()
-    tool_changed = Signal(Tool)
+    tool_changed = Signal(BaseTool)
+    tool_settings_changed = Signal(QWidget)
 
     # Zoom defaults
     ZOOM_FACTOR_DEFAULT = 1.1
@@ -55,16 +60,16 @@ class ImageViewer(QGraphicsView):
         super().__init__()
         # Initial variables
         self.setObjectName("viewer")
+        self.current_image = None
+        self.markers = {}  # (x, y) -> marker
 
+        # Manager setup
         self._undo_stack = undo_stack
         self.selection = SelectionManager()
         self.catalog = StarCatalog()
         self.image_manager = ImageManager()
-        self.tool_manager = ToolManager()
+        self.tool_manager = ToolManager(self)
         self.tool_manager.set_tool(SelectTool)
-
-        self.current_image = None
-        self.markers = {}  # (x, y) -> marker
 
         # Zoom settings
         self.zoom_factor = self.ZOOM_FACTOR_DEFAULT
@@ -79,9 +84,6 @@ class ImageViewer(QGraphicsView):
         self._target_viewport_pos = QPointF()
         self.anim = None
 
-        # Box selection settings
-        self.rubberBand = QRubberBand(QRubberBand.Shape.Rectangle, self)
-
         self.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
         # Set up scene
@@ -89,7 +91,8 @@ class ImageViewer(QGraphicsView):
         self.setScene(scene)
 
         # Popover panel
-        self.popover = PopOverPanel(self)
+        self.popover = ToolPanel(self)
+        self.op_panel = OperatorPanel(self)
 
         # Add pixmap item to scene, blank for now
         self.pixmap_item = scene.addPixmap(QPixmap())
@@ -110,8 +113,10 @@ class ImageViewer(QGraphicsView):
         self.catalog.measurement_added.connect(self.add_star_marker)
         self.catalog.measurement_removed.connect(self.remove_star_marker)
         self.tool_manager.tool_changed.connect(self._on_tool_changed)
+        self.tool_manager.tool_settings_changed.connect(self.tool_settings_changed)
 
         self.popover.tool_selected.connect(self.tool_manager.set_tool)
+        self.tool_manager.operator_changed.connect(self._on_operator_changed)
 
         logging.debug("Image Viewer initialized")
 
@@ -130,10 +135,16 @@ class ImageViewer(QGraphicsView):
 
             self.update_display()
 
-    @Slot(Tool)
-    def _on_tool_changed(self, tool: Tool):
+    @Slot(BaseTool)
+    def _on_tool_changed(self, tool: BaseTool):
         """Handles tool changing in Tool Manager"""
         self.tool_changed.emit(tool)
+
+    @Slot(BaseOperator)
+    def _on_operator_changed(self, operator: BaseOperator):
+        """Handles operator changing in Tool Manager"""
+        self.op_panel.set_panel(operator)
+        self._toggle_popover(self.op_panel)
 
     # Zoom properties for animation
     def get_zoom(self):
@@ -187,6 +198,8 @@ class ImageViewer(QGraphicsView):
 
     @Slot(QMouseEvent)
     def mousePressEvent(self, event: QMouseEvent):
+        if self.current_image is None:
+            return None
         if event.button() == Qt.MouseButton.MiddleButton:
             # start panning
             self.setDragMode(QGraphicsView.DragMode.ScrollHandDrag)
@@ -200,27 +213,36 @@ class ImageViewer(QGraphicsView):
             )
             super().mousePressEvent(fake_event)
         else:
-            if self.current_image and self.tool_manager.tool:
-                self.tool_manager.tool.mouse_press(self, event)
-
+            if event.button() == Qt.MouseButton.LeftButton:
+                self.tool_manager.begin_operation(event)
             super().mousePressEvent(event)
 
     @Slot(QMouseEvent)
-    def mouseReleaseEvent(self, event: QMouseEvent) -> None:
+    def mouseReleaseEvent(self, event: QMouseEvent):
+        if self.current_image is None:
+            return None
         if event.button() == Qt.MouseButton.MiddleButton:
             # Stop panning
             self.setDragMode(QGraphicsView.DragMode.NoDrag)
-        if self.current_image and self.tool_manager.tool:
-            self.tool_manager.tool.mouse_release(self, event)
-
+        if event.button() == Qt.MouseButton.LeftButton:
+            self.tool_manager.end_operation_confirm()
         super().mouseReleaseEvent(event)
 
     @Slot(QMouseEvent)
     def mouseMoveEvent(self, event: QMouseEvent) -> None:
-        if self.current_image and self.tool_manager.tool:
-            self.tool_manager.tool.mouse_move(self, event)
+        if self.current_image is None:
+            return None
+        self.tool_manager.update_operation(event)
 
         super().mouseMoveEvent(event)
+
+    @Slot(QKeyEvent)
+    def keyPressEvent(self, event: QKeyEvent):
+        """Handles keypress events"""
+        if event.key() == Qt.Key.Key_N:
+            self._toggle_popover(self.popover)
+        if event.key() == Qt.Key.Key_Escape:
+            self.tool_manager.end_operation_cancel()
 
     def contextMenuEvent(self, event: QContextMenuEvent) -> None:
         menu = QMenu()
@@ -253,17 +275,12 @@ class ImageViewer(QGraphicsView):
         for star in stars:
             measure_star_magnitude(star, data=self.current_image.data)
 
-    def _toggle_popover(self):
+    def _toggle_popover(self, panel: BasePopOver):
         """Toggles popover panel"""
-        if self.popover.isVisible():
-            self.popover.hide()
+        if panel.isVisible():
+            panel.hide()
         else:
-            self.popover.show_at_corner()
-
-    def keyPressEvent(self, event):
-        """Handles keypress events"""
-        if event.key() == Qt.Key.Key_N:
-            self._toggle_popover()
+            panel.show_at_corner()
 
     def get_centroid_at_point(self, coordinates: QPoint):
         """Gets star, if any, under point"""
@@ -528,23 +545,7 @@ class ImageViewer(QGraphicsView):
 
         return data
 
-    def update_selection_rect(self, start: QPoint, end: QPoint):
-        """Updates rectangle for purposes of selection"""
-        rect = QRect(start, end)
-        self.rubberBand.setGeometry(rect.normalized())
-        self.rubberBand.show()
-
-    def apply_box_selection(self, start: QPoint, end: QPoint):
-        """Applies box selection"""
-        self.rubberBand.hide()
-        if self.current_image is None:
-            return  # No work to do
-        # Get in image coordinates
-        start_image = self.mapToScene(start).toPoint()
-        end_image = self.mapToScene(end).toPoint()
-        # Send to image manager, select all stars
-        centroids = self.image_manager.find_centroids_from_points(
-            start_image, end_image
-        )
-        if len(centroids) >= 1:
-            self._undo_stack.push(AddMeasurementsCommand(centroids, self.current_image))
+    def viewport_rect_to_scene(self, rect: QRect) -> QRect:
+        """Converts a rect to scene coordinates"""
+        poly = self.mapToScene(rect)
+        return poly.boundingRect().toRect()

@@ -1,5 +1,5 @@
-from .base_tool import Tool, AbstractTool
+from .base_tool import BaseTool
 from .select import SelectTool
 from .box_select import BoxSelectTool
 
-__all__ = ["Tool", "SelectTool", "BoxSelectTool", "AbstractTool"]
+__all__ = ["BaseTool", "SelectTool", "BoxSelectTool"]

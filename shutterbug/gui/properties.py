@@ -17,7 +17,7 @@ from shutterbug.gui.commands.image_commands import (
     SetContrastCommand,
 )
 from shutterbug.gui.controls.labeled_slider import LabeledSlider
-from shutterbug.gui.tools.base_tool import Tool
+from shutterbug.gui.tools.base_tool import BaseTool
 from shutterbug.gui.panels.collapsible_section import CollapsibleSection
 
 
@@ -74,8 +74,8 @@ class Properties(QWidget):
     def set_state(self, state):
         self.image_properties.set_state(state["image_properties"])
 
-    @Slot(Tool)
-    def _on_active_tool_change(self, tool: Tool):
+    @Slot(BaseTool)
+    def _on_active_tool_change(self, tool: BaseTool):
         self.tool_properties.set_panel(tool)
 
 
@@ -218,7 +218,8 @@ class ToolPropertiesPanel(QWidget):
 
         logging.debug("Tool properties panel initialized")
 
-    def set_panel(self, tool: Tool):
+    @Slot(BaseTool)
+    def set_panel(self, tool: BaseTool):
         """Sets tool widgets"""
         # Remove old stuff
         layout = self.layout()
@@ -231,7 +232,7 @@ class ToolPropertiesPanel(QWidget):
             # Add new stuff
             label = QLabel(tool.name)
             layout.addWidget(label)
-            tool_options = tool.tool_panel()
-            if tool_options is not None:
-                section = CollapsibleSection("Options", [tool_options], self)
+            settings = tool.create_settings_widget()
+            if settings is not None:
+                section = CollapsibleSection("Options", [settings], self)
                 layout.addWidget(section)

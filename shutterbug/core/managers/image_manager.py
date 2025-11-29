@@ -123,7 +123,7 @@ class ImageManager(QObject):
         background_subtracted = data - background
         return background_subtracted
 
-    def find_centroids_from_points(self, start: QPoint, end: QPoint):
+    def find_centroids_from_points(self, start: QPoint, end: QPoint, threshold: float):
         if self.active_image is None:
             return []
         x0, x1 = start.x(), end.x()
@@ -136,8 +136,13 @@ class ImageManager(QObject):
             x1, x0 = x0, x1
 
         data = self.active_image.get_stamp_from_points(x0, x1, y0, y1)
+        # Prevent error from having no area to search
+        h = data.shape[0]
+        w = data.shape[1]
+        if (h * w) <= 50:
+            return  # Not enough area
 
-        centroids = self.find_centroids(data)
+        centroids = self.find_centroids(data, threshold)
         if centroids is None:
             return []
 
@@ -147,7 +152,7 @@ class ImageManager(QObject):
 
         return centroids
 
-    def find_centroids(self, data):
+    def find_centroids(self, data, threshold: float = THRESHOLD_DEFAULT):
         """Detect centroids using DAOStarFinder"""
         bg_subtracted = self.get_background_subtracted(data)
         if bg_subtracted is None:
@@ -156,7 +161,7 @@ class ImageManager(QObject):
         # Estimate FWHM and threshold
         _, _, std = stats.sigma_clipped_stats(bg_subtracted, sigma=self.sigma)
 
-        daofind = DAOStarFinder(fwhm=self.fwhm, threshold=self.threshold * std)
+        daofind = DAOStarFinder(fwhm=self.fwhm, threshold=threshold * std)
         centroids = daofind(bg_subtracted)
 
         return centroids

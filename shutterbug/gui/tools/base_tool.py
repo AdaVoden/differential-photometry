@@ -1,43 +1,24 @@
-from abc import ABC, abstractmethod
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+from shutterbug.gui.operators.base_operator import BaseOperator
+
+if TYPE_CHECKING:
+    from shutterbug.gui.views.image import ImageViewer
 
 from PySide6.QtWidgets import QWidget
 
 
-class AbstractTool(ABC):
-
-    @property
-    @abstractmethod
-    def name(self):
-        raise NotImplementedError
-
-    def mouse_press(self, viewer, event):
-        pass
-
-    def mouse_move(self, viewer, event):
-        pass
-
-    def mouse_release(self, viewer, event):
-        pass
-
-    def mouse_double_click(self, viewer, event):
-        pass
-
-    def key_press(self, viewer, event):
-        pass
-
-    def tool_panel(self) -> QWidget | None:
-        raise NotImplementedError
-
-
-class Tool(AbstractTool):
+class BaseTool:
+    name = "BaseTool"
+    icon = None  # Optional
 
     def __init__(self) -> None:
         super().__init__()
-        self._name = "BaseTool"
 
-    @property
-    def name(self):
-        return self._name
+    def create_operator(self, viewer: ImageViewer) -> BaseOperator:
+        raise NotImplementedError
 
-    def tool_panel(self) -> QWidget | None:
+    def create_settings_widget(self) -> QWidget | None:
         return None
