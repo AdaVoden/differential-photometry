@@ -136,6 +136,11 @@ class ImageManager(QObject):
             x1, x0 = x0, x1
 
         data = self.active_image.get_stamp_from_points(x0, x1, y0, y1)
+        # Prevent error from having no area to search
+        h = data.shape[0]
+        w = data.shape[1]
+        if (h * w) <= 50:
+            return  # Not enough area
 
         centroids = self.find_centroids(data, threshold)
         if centroids is None:

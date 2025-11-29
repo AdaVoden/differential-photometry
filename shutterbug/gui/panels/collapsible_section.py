@@ -34,7 +34,7 @@ class CollapsibleSection(QWidget):
         # Content
         self.content_body = QWidget()
         self.content_body.setObjectName("collapsibleContentBody")
-        content_layout = QVBoxLayout(self)
+        content_layout = QVBoxLayout(self.content_body)
         self.content_layout = content_layout
         # Setup content layout
         content_layout.setContentsMargins(16, 8, 8, 8)

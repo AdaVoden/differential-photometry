@@ -1,18 +1,19 @@
 from PySide6.QtCore import Slot
-from PySide6.QtWidgets import QVBoxLayout, QWidget
+from PySide6.QtWidgets import QVBoxLayout
 from shutterbug.gui.controls.labeled_slider import LabeledSlider
-from shutterbug.gui.operators.operator_parameters import BoxSelectParameters
+from shutterbug.gui.operators.base_settings import BaseSettings
 
 
-class BoxSelectSettingsWidget(QWidget):
-    def __init__(self, params: BoxSelectParameters):
-        super().__init__()
-        self.params = params
-        self._build_ui()
+class BoxSelectOperatorSettingsWidget(BaseSettings):
+
+    name = "Box Select"
 
     def _build_ui(self):
         """Builds UI for settings"""
         layout = QVBoxLayout(self)
+        self.setLayout(layout)
+        layout.setSpacing(6)
+        layout.setContentsMargins(0, 0, 0, 0)
         self.threshold = LabeledSlider(
             "Threshold", 0, 5, self.params.threshold, "float", 3
         )
@@ -27,10 +28,9 @@ class BoxSelectSettingsWidget(QWidget):
         self.params.changed.emit()
 
 
-class BoxSelectToolSettingsWidget(QWidget):
-    def __init__(self, params: BoxSelectParameters):
-        super().__init__()
-        self._build_ui()
+class BoxSelectToolSettingsWidget(BaseSettings):
+
+    name = "Box Select"
 
     def _build_ui(self):
         return None

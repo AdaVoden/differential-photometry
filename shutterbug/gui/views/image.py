@@ -32,7 +32,10 @@ from shutterbug.gui.commands import (
     RemoveMeasurementCommand,
     SelectStarCommand,
 )
-from shutterbug.gui.controls.popover_panel import PopOverPanel
+from shutterbug.gui.operators.base_operator import BaseOperator
+from shutterbug.gui.panels.base_popover import BasePopOver
+from shutterbug.gui.panels.operator_panel import OperatorPanel
+from shutterbug.gui.panels.tool_panel import ToolPanel
 from shutterbug.gui.managers import ToolManager
 from shutterbug.gui.tools import BaseTool, SelectTool
 
@@ -88,7 +91,8 @@ class ImageViewer(QGraphicsView):
         self.setScene(scene)
 
         # Popover panel
-        self.popover = PopOverPanel(self)
+        self.popover = ToolPanel(self)
+        self.op_panel = OperatorPanel(self)
 
         # Add pixmap item to scene, blank for now
         self.pixmap_item = scene.addPixmap(QPixmap())
@@ -112,6 +116,7 @@ class ImageViewer(QGraphicsView):
         self.tool_manager.tool_settings_changed.connect(self.tool_settings_changed)
 
         self.popover.tool_selected.connect(self.tool_manager.set_tool)
+        self.tool_manager.operator_changed.connect(self._on_operator_changed)
 
         logging.debug("Image Viewer initialized")
 
@@ -134,6 +139,12 @@ class ImageViewer(QGraphicsView):
     def _on_tool_changed(self, tool: BaseTool):
         """Handles tool changing in Tool Manager"""
         self.tool_changed.emit(tool)
+
+    @Slot(BaseOperator)
+    def _on_operator_changed(self, operator: BaseOperator):
+        """Handles operator changing in Tool Manager"""
+        self.op_panel.set_panel(operator)
+        self._toggle_popover(self.op_panel)
 
     # Zoom properties for animation
     def get_zoom(self):
@@ -229,7 +240,7 @@ class ImageViewer(QGraphicsView):
     def keyPressEvent(self, event: QKeyEvent):
         """Handles keypress events"""
         if event.key() == Qt.Key.Key_N:
-            self._toggle_popover()
+            self._toggle_popover(self.popover)
         if event.key() == Qt.Key.Key_Escape:
             self.tool_manager.end_operation_cancel()
 
@@ -264,12 +275,12 @@ class ImageViewer(QGraphicsView):
         for star in stars:
             measure_star_magnitude(star, data=self.current_image.data)
 
-    def _toggle_popover(self):
+    def _toggle_popover(self, panel: BasePopOver):
         """Toggles popover panel"""
-        if self.popover.isVisible():
-            self.popover.hide()
+        if panel.isVisible():
+            panel.hide()
         else:
-            self.popover.show_at_corner()
+            panel.show_at_corner()
 
     def get_centroid_at_point(self, coordinates: QPoint):
         """Gets star, if any, under point"""

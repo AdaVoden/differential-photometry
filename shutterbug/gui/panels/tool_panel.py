@@ -1,26 +1,14 @@
 from PySide6.QtCore import Qt, Signal
-from PySide6.QtWidgets import QButtonGroup, QToolButton, QVBoxLayout, QWidget
-from shutterbug.gui.tools import BaseTool, SelectTool, BoxSelectTool
+from PySide6.QtWidgets import QButtonGroup, QToolButton, QWidget
+from shutterbug.gui.panels.base_popover import BasePopOver
+from shutterbug.gui.tools import BaseTool, BoxSelectTool, SelectTool
 
 
-class PopOverPanel(QWidget):
-    closed = Signal()
+class ToolPanel(BasePopOver):
     tool_selected = Signal(BaseTool)
 
     def __init__(self, parent: QWidget | None = None):
         super().__init__(parent)
-        # Remove window frame
-        self.setWindowFlags(Qt.WindowType.Widget | Qt.WindowType.FramelessWindowHint)
-        # Allow translucent background, don't draw native one
-        self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
-        # Styled our way not native way
-        self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
-
-        self.setObjectName("popover")
-
-        layout = QVBoxLayout(self)
-        layout.setContentsMargins(0, 0, 0, 0)
-        layout.setSpacing(0)
 
         # Button creation
         self.button_group = QButtonGroup(self)
@@ -29,8 +17,12 @@ class PopOverPanel(QWidget):
         self.select_btn = self._make_button("Select", SelectTool, checked=True)
         self.box_btn = self._make_button("Box Select", BoxSelectTool)
 
-        layout.addWidget(self.select_btn)
-        layout.addWidget(self.box_btn)
+        layout = self.layout()
+
+        # The things I do for typing
+        if layout is not None:
+            layout.addWidget(self.select_btn)
+            layout.addWidget(self.box_btn)
 
     def _make_button(self, text: str, tool: BaseTool, checked=False) -> QToolButton:
         """Makes a toggle-able button"""
@@ -38,7 +30,7 @@ class PopOverPanel(QWidget):
         btn.setText(text)
         btn.setCheckable(True)
         btn.setChecked(checked)
-        btn.clicked.connect(lambda checked, b=btn: self.tool_selected.emit(tool))
+        btn.clicked.connect(lambda: self.tool_selected.emit(tool))
         btn.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextOnly)
 
         # register in exclusive group

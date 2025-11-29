@@ -21,4 +21,5 @@ class BoxSelectTool(BaseTool):
         return BoxSelectOperator(viewer, self.params)
 
     def create_settings_widget(self):
-        return BoxSelectToolSettingsWidget(self.params)
+        # return BoxSelectToolSettingsWidget(self.params)
+        return None

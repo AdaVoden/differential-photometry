@@ -1,7 +1,7 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
 
-from shutterbug.gui.tools.box_select_settings import BoxSelectSettingsWidget
+from shutterbug.gui.tools.box_select_settings import BoxSelectOperatorSettingsWidget
 
 if TYPE_CHECKING:
     from shutterbug.gui.views.image import ImageViewer
@@ -28,8 +28,8 @@ class BoxSelectOperator(BaseOperator):
         self.rubber = None
         self.preview_items = []
 
-    def create_settings_widget(self) -> BoxSelectSettingsWidget:
-        return BoxSelectSettingsWidget(self.params)
+    def create_settings_widget(self) -> BoxSelectOperatorSettingsWidget:
+        return BoxSelectOperatorSettingsWidget(self.params)
 
     def start(self, event: QMouseEvent):
         """Begins selection box at point of click"""

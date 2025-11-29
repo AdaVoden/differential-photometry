@@ -3,7 +3,8 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from PySide6.QtGui import QMouseEvent, QUndoCommand
-from PySide6.QtWidgets import QWidget
+
+from shutterbug.gui.operators.base_settings import BaseSettings
 
 if TYPE_CHECKING:
     from shutterbug.gui.views.image import ImageViewer
@@ -16,12 +17,14 @@ class BaseOperator(QObject):
     finished = Signal(object)
     cancelled = Signal()
 
+    name = "Base Operator"
+
     def __init__(self, viewer: ImageViewer):
         super().__init__()
         self.viewer = viewer
         self.active = True
 
-    def create_settings_widget(self) -> QWidget | None:
+    def create_settings_widget(self) -> BaseSettings | None:
         raise NotImplementedError
 
     # Called on mouse press
