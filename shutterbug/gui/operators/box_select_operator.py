@@ -6,7 +6,7 @@ from shutterbug.gui.tools.box_select_settings import BoxSelectOperatorSettingsWi
 if TYPE_CHECKING:
     from shutterbug.gui.views.image import ImageViewer
 
-from PySide6.QtCore import QRect, QSize, Slot
+from PySide6.QtCore import QRect, QSize, QTimer, Slot
 from PySide6.QtGui import QMouseEvent, QPen, QColor
 from PySide6.QtWidgets import QRubberBand
 from shutterbug.gui.commands.star_commands import AddMeasurementsCommand
@@ -27,6 +27,11 @@ class BoxSelectOperator(BaseOperator):
         self.end_pos = None
         self.rubber = None
         self.preview_items = []
+
+        # Debounce timer
+        self.debounce_timer = QTimer()
+        self.debounce_timer.setSingleShot(True)
+        self.debounce_timer.timeout.connect(self._update_preview)
 
     def create_settings_widget(self) -> BoxSelectOperatorSettingsWidget:
         return BoxSelectOperatorSettingsWidget(self.params)
@@ -50,7 +55,8 @@ class BoxSelectOperator(BaseOperator):
 
             # Compute scene rect
             self.scene_rect = self.viewer.viewport_rect_to_scene(rect)
-            self._update_preview()
+            self.debounce_timer.stop()
+            self.debounce_timer.start(42)  # ~24 fps
 
     def build_command(self):
         """Builds command that adds star measurements to project"""
@@ -71,6 +77,10 @@ class BoxSelectOperator(BaseOperator):
             self.rubber.deleteLater()
             self.rubber.hide()
             self.rubber = None
+        # Clear old preview items
+        for item in self.preview_items:
+            item.scene().removeItem(item)
+        self.preview_items.clear()
 
     def _update_preview(self):
         """Updates preview of command"""
