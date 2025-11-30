@@ -46,6 +46,8 @@ class ImageManager(QObject):
     def add_image(self, image: FITSModel):
         """Add image to manager"""
         self.images[image.filename] = image
+        self.compute_stats(image)
+        self.build_base_preview(image)
         self.image_added.emit(image)
 
     def set_active_image(self, image: FITSModel | None):
@@ -165,3 +167,27 @@ class ImageManager(QObject):
         centroids = daofind(bg_subtracted)
 
         return centroids
+
+    def compute_stats(self, image: FITSModel):
+        """Computes the statistics of the image for display"""
+        data = image.data
+
+        image.data_min = float(np.min(data))
+        image.data_max = float(np.max(data))
+
+        #Percentiles
+        image.p_min, image.p_max = np.percentile(data, (0.5, 99.5))
+
+        # Histogram
+
+        image.histogram, image.bin_edges = np.histogram(
+            data,
+            bins=2048
+            range=(image.data_min, image.data_max)
+        )
+
+    def build_base_preview(self, image: FITSModel):
+        """Builds preview data of the image"""
+        scaled = (image.data - image.p_min) / (image.p_max - image.p_min)
+        scaled = np.clip(scaled, 0, 1)
+        image.display_data = scaled

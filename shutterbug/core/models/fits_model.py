@@ -5,6 +5,8 @@ from math import floor, ceil
 
 from .base_observable import ObservableQObject
 
+import numpy as np
+
 
 class FITSModel(ObservableQObject):
     """FITS image data and display class"""
@@ -31,6 +33,14 @@ class FITSModel(ObservableQObject):
 
         # Data for display
         self.display_data = None
+        self.data_min = 0.0
+        self.data_max = 0.0
+
+        self.p_min = 0
+        self.p_max = 0
+
+        self.histogram = np.array([])
+        self.bin_edges = np.array([])
 
         # Stamp variables
         self.stamp_padding = self.STAMP_PADDING_DEFAULT
