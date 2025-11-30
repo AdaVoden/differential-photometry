@@ -1,7 +1,6 @@
 import logging
 from typing import Tuple
 
-import numpy as np
 from PySide6.QtCore import (
     Property,
     QPoint,
@@ -24,7 +23,12 @@ from PySide6.QtGui import (
     QWheelEvent,
 )
 from PySide6.QtWidgets import QGraphicsScene, QGraphicsView, QMenu, QWidget
-from shutterbug.core.managers import ImageManager, SelectionManager, StarCatalog
+from shutterbug.core.managers import (
+    ImageManager,
+    SelectionManager,
+    StarCatalog,
+    StretchManager,
+)
 from shutterbug.core.models import FITSModel, StarIdentity, StarMeasurement
 from shutterbug.core.utility.photometry import measure_star_magnitude
 from shutterbug.gui.commands import (
@@ -69,6 +73,7 @@ class ImageViewer(QGraphicsView):
         self.catalog = StarCatalog()
         self.image_manager = ImageManager()
         self.tool_manager = ToolManager(self)
+        self.stretch_manager = StretchManager()
         self.tool_manager.set_tool(SelectTool)
 
         # Zoom settings
@@ -440,13 +445,13 @@ class ImageViewer(QGraphicsView):
         self.current_image = image
 
         # Get normalized information
-        display_data = self.get_normalized_data()
+        display_data = self.get_8bit_preview()
         if display_data is None:
             return  # No work to do!
         logging.debug(f"Data normalized, attempting to display")
         # Convert to QImage
         height, width = display_data.shape
-        qimage = QImage(display_data, width, height, QImage.Format.Format_Grayscale8)
+        qimage = QImage(display_data, width, height, QImage.Format.Format_Grayscale8)  # type: ignore
 
         # Display
         pixmap = QPixmap.fromImage(qimage)
@@ -491,32 +496,10 @@ class ImageViewer(QGraphicsView):
             self.pixmap_item.setPixmap(QPixmap())
             return
 
+        self.stretch_manager.brightness = self.current_image.brightness
+        self.stretch_manager.contrast = self.current_image.contrast
+        self.stretch_manager.update_lut()
         self._display_image(self.current_image)
-
-    def get_normalized_data(self):
-        """Normalize the FITS data to 0-255 for display"""
-        logging.debug(f"Normalizing data for display")
-        if self.current_image is None:
-            return None  # No image = no data
-
-        data = self.get_8bit_preview()
-
-        if data is None:
-            return None
-
-        data = data.astype(np.float32)
-
-        brightness = self.current_image.brightness
-        contrast = self.current_image.contrast
-        # apply brightness/contrast
-
-        data = data * contrast
-
-        data = data + brightness
-
-        data = np.clip(data, 0, 255).astype(np.uint8)
-
-        return data
 
     def get_8bit_preview(self):
         """Gets the 8bit display version of the image data"""
@@ -524,35 +507,8 @@ class ImageViewer(QGraphicsView):
         if image is None:
             return None
 
-        if image.display_data is not None:
-            return image.display_data
-
-        image.display_data = self._compute_8bit_preview(image)
-        return image.display_data
-
-    def _compute_8bit_preview(self, image: FITSModel):
-        """Computes the 8 bit display image from image data"""
-
-        bzero = image.bzero
-        bscale = image.bscale
-        # Get and scale data appropriately
-        data = bzero + (image.data * bscale)
-
-        # Handle NaNs and Infs
-        data = np.nan_to_num(data, nan=0.0, posinf=0.0, neginf=0.0)
-
-        # Simple fixed percentiel stretch
-        vmin, vmax = np.percentile(data, [1, 99])
-
-        # clip and normalize to 0-1
-        data = np.clip(data, vmin, vmax)
-        data = (data - vmin) / (vmax - vmin)
-
-        # clip and convert to 0-255
-        data = np.clip(data, 0, 1)
-        data = (data * 255).astype(np.uint8)
-
-        return data
+        display_data = self.stretch_manager.apply(image.display_data)
+        return display_data
 
     def viewport_rect_to_scene(self, rect: QRect) -> QRect:
         """Converts a rect to scene coordinates"""
