@@ -111,6 +111,8 @@ def load_images(image_paths: List[Path], image_manager: ImageManager):
     images = [load_fits_image(f) for f in image_paths]
     for image in images:
         image_manager.add_image(image)
+    if images:
+        image_manager.set_active_image(images[0])
 
 
 def remove_images(image_names: List[Path], image_manager: ImageManager):

@@ -105,6 +105,9 @@ class MainWindow(QMainWindow):
         # Handle Outliner signals
         self.sidebar.object_selected.connect(self.selection_manager.set_selected_object)
         self.image_manager.image_added.connect(self.outliner_model.add_image)
+        self.image_manager.active_image_changed.connect(
+            self.selection_manager.set_selected_object
+        )
         self.graph_manager.graph_added.connect(self.outliner_model.add_graph)
         self.star_catalog.star_added.connect(self.outliner_model.add_star)
 
