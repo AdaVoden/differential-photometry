@@ -221,6 +221,7 @@ class ImageViewer(QGraphicsView):
             super().mousePressEvent(fake_event)
         else:
             if event.button() == Qt.MouseButton.LeftButton:
+                self.tool_manager.end_operation_confirm()
                 self.tool_manager.begin_operation(event)
             super().mousePressEvent(event)
 

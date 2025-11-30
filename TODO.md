@@ -31,11 +31,11 @@
   - [ ] Hotkey management system
 - [ ] Control hints display in bottom toolbar (Like Blender)
 - [ ] Hover tooltips
-- [ ] Add focus system to end operators
+- [x] Add focus system to end operators
 - [ ] Improve display of outliner
   - [ ] Remove black part to left of entries
   - [ ] Add expansion arrows to trees
-- [ ] Have first image open on load
+- [x] Have first image open on load
 - [ ] Bug: extra rows added to spreadsheet on measurement update
 - [x] Bug: Star markers do not align with stars in different images
 - [x] Bug: image sliding on image selection
