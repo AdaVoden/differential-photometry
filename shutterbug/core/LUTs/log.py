@@ -5,7 +5,7 @@ from .registry import register_stretch
 
 @register_stretch("log")
 class LogStretch(BaseStretch):
-    def build_lut(self, low, high) -> np.ndarray:
+    def build_lut(self, low: float, high: float) -> np.ndarray:
         if high <= low:
             return np.arange(256, dtype=np.uint8)
 
@@ -16,4 +16,4 @@ class LogStretch(BaseStretch):
         # eps = 1e-6
         y = np.log1p(norm * 100) / np.log1p(100)
 
-        return (y * 255).astype(np.uint8)
+        return y

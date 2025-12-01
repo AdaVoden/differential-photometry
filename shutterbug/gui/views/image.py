@@ -136,9 +136,10 @@ class ImageViewer(QGraphicsView):
                 self.current_image.updated.disconnect(self.update_display)
 
             self.current_image = image
-            if image:
+            if image is not None:
                 image.updated.connect(self.update_display)
                 image.updated.connect(self.update_display)
+                self.stretch_manager.set_mode(image.stretch_type)
 
             self.update_display()
 
