@@ -99,8 +99,8 @@ class ImagePropertiesPanel(QWidget):
         layout.setSpacing(5)
 
         # Sliders
-        self.brightness_slider = LabeledSlider("Brightness", -100, 100, 0, "int")
-        self.contrast_slider = LabeledSlider("Contrast", 0, 2, 1, "float", 3)
+        self.brightness_slider = LabeledSlider("Brightness", -0.5, 0.5, 0, "float")
+        self.contrast_slider = LabeledSlider("Contrast", 0.5, 1.5, 1, "float", 3)
 
         # Panel
         self.settings_panel = CollapsibleSection(

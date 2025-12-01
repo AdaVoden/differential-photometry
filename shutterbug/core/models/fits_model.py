@@ -5,6 +5,8 @@ from math import floor, ceil
 
 from .base_observable import ObservableQObject
 
+import numpy as np
+
 
 class FITSModel(ObservableQObject):
     """FITS image data and display class"""
@@ -23,7 +25,7 @@ class FITSModel(ObservableQObject):
         self.filepath: Path = filepath
         self.filename: str = self.filepath.name
         self.observation_time: float = float(obs_time)
-        self.data = data
+        self._data = data
 
         # Image scaling
         self.bzero = bzero
@@ -31,7 +33,16 @@ class FITSModel(ObservableQObject):
 
         # Data for display
         self.display_data = None
+        self.data_min = 0.0
+        self.data_max = 0.0
 
+        self.p_min = 0
+        self.p_max = 0
+
+        self.histogram = np.array([])
+        self.bin_edges = np.array([])
+
+        self.stretch_type = "linear"
         # Stamp variables
         self.stamp_padding = self.STAMP_PADDING_DEFAULT
 
@@ -46,15 +57,23 @@ class FITSModel(ObservableQObject):
         # Star variables, computed
         self.background: float | None = None
 
+    def _scale_data(self, data):
+        return self.bzero + data * self.bscale
+
     def get_stamp(self, x: float, y: float, r: float):
         """Gets selected stamp of main data image"""
         r = r + self.stamp_padding
         x0, x1 = floor(x - r), ceil(x + r)
         y0, y1 = floor(y - r), ceil(y + r)
-        data = self.data[y0:y1, x0:x1]
-        data = self.bzero + data * self.bscale
+        data = self._data[y0:y1, x0:x1]
+        data = self._scale_data(data)
         return data
 
     def get_stamp_from_points(self, x0: int, x1: int, y0: int, y1: int):
-        data = self.data[y0:y1, x0:x1]
-        return self.bzero + data * self.bscale
+        data = self._data[y0:y1, x0:x1]
+        data = self._scale_data(data)
+        return data
+
+    @property
+    def data(self):
+        return self._scale_data(self._data)
