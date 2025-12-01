@@ -1,1 +1,18 @@
-#!/usr/bin/env python3
+from shutterbug.core.LUTs.base_stretch import BaseStretch
+from shutterbug.core.LUTs.registry import register_stretch
+
+import numpy as np
+
+
+@register_stretch("asinh")
+class AsinhStretch(BaseStretch):
+    def build_lut(self, low: float, high: float) -> np.ndarray:
+        if high <= low:
+            return np.arange(256)
+
+        x = np.linspace(0, 1, 256)
+        norm = np.clip((x - low) / (high - low), 0, 1)
+
+        y = np.arcsinh(norm * 5) / np.arcsinh(5)
+
+        return y
