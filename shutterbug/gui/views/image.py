@@ -23,6 +23,7 @@ from PySide6.QtGui import (
     QWheelEvent,
 )
 from PySide6.QtWidgets import QGraphicsScene, QGraphicsView, QMenu, QWidget
+from shutterbug.core.events import ChangeEvent, ImageChangeEvent
 from shutterbug.core.managers import (
     ImageManager,
     SelectionManager,
@@ -132,14 +133,27 @@ class ImageViewer(QGraphicsView):
         """Handles image manager active image changing"""
         if image != self.current_image:
             if self.current_image:
-                self.current_image.updated.disconnect(self.update_display)
+                self.current_image.updated.disconnect(self._on_image_changed)
 
             self.current_image = image
             if image is not None:
-                image.updated.connect(self.update_display)
-                self.stretch_manager.set_mode(image.stretch_type)
+                image.updated.connect(self._on_image_changed)
 
             self.update_display()
+
+    @Slot(ImageChangeEvent)
+    def _on_image_changed(self, event: ImageChangeEvent):
+        """Handles current image changing values"""
+        fields = event.changed_fields
+        image = event.source
+        if fields & {"brightness", "contrast"}:
+            self.stretch_manager.brightness = image.brightness
+            self.stretch_manager.contrast = image.contrast
+        if fields & {"stretch_type"}:
+            self.stretch_manager.set_mode(image.stretch_type)
+
+        self.stretch_manager.update_lut()
+        self.update_display()
 
     @Slot(BaseTool)
     def _on_tool_changed(self, tool: BaseTool):
@@ -488,17 +502,13 @@ class ImageViewer(QGraphicsView):
         for m in measurements:
             self.add_star_marker(m, colour="cyan")
 
-    @Slot()
+    @Slot(ChangeEvent)
     def update_display(self):
         """Updates image display"""
         if self.current_image is None:
             self.pixmap_item.setPixmap(QPixmap())
             return
 
-        self.stretch_manager.brightness = self.current_image.brightness
-        self.stretch_manager.contrast = self.current_image.contrast
-        self.stretch_manager.set_mode(self.current_image.stretch_type)
-        self.stretch_manager.update_lut()
         self._display_image(self.current_image)
 
     def get_8bit_preview(self):

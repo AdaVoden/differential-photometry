@@ -3,6 +3,10 @@ from uuid import uuid4
 
 from math import floor, ceil
 
+from PySide6.QtCore import Signal
+
+from shutterbug.core.events.change_event import ImageChangeEvent
+
 from .base_observable import ObservableQObject
 
 import numpy as np
@@ -15,6 +19,8 @@ class FITSModel(ObservableQObject):
     BRIGHTNESS_OFFSET_DEFAULT = 0
     CONTRAST_FACTOR_DEFAULT = 1
     STAMP_PADDING_DEFAULT = 50
+
+    updated = Signal(ImageChangeEvent)
 
     def __init__(
         self, filepath: Path, data, obs_time: str, bzero: float, bscale: float

@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from shutterbug.core.events.change_event import ImageChangeEvent
+
 if TYPE_CHECKING:
     from shutterbug.gui.main_window import MainWindow
 
@@ -119,26 +121,32 @@ class ImagePropertiesPanel(QWidget):
         self.brightness_slider.valueChanged.connect(self._on_brightness_changed)
         self.contrast_slider.valueChanged.connect(self._on_contrast_changed)
 
-        self.image_manager.active_image_changed.connect(self._on_image_changed)
+        self.image_manager.active_image_changed.connect(self._on_image_selected)
 
         logging.debug("Image properties panel initialized")
 
     @Slot(FITSModel)
-    def _on_image_changed(self, image: FITSModel):
+    def _on_image_selected(self, image: FITSModel):
         """Handles image changing in image manager"""
         if self.current_image:
             # There's a current image remove all previous subscriptions
-            self.current_image.updated.disconnect(self.set_brightness)
-            self.current_image.updated.disconnect(self.set_contrast)
+            self.current_image.updated.disconnect(self._on_image_changed)
 
         self.current_image = image
 
         if image:
             # Add new subscriptions and set the slider values
-            image.updated.connect(self.set_brightness)
-            image.updated.connect(self.set_contrast)
-            self.set_brightness(image)
-            self.set_contrast(image)
+            image.updated.connect(self._on_brightness_changed)
+
+    @Slot(ImageChangeEvent)
+    def _on_image_changed(self, event: ImageChangeEvent):
+        image = event.source
+        fields = event.changed_fields
+        if fields & {"brightness", "contrast"}:
+            self.brightness_slider.set_value(image.brightness)
+            self.contrast_slider.set_value(image.contrast)
+        if fields & {"stretch_type"}:
+            self.stretches.set_text(image.stretch_type)
 
     @Slot(int)
     def _on_brightness_changed(self, value: int):
@@ -149,16 +157,6 @@ class ImagePropertiesPanel(QWidget):
     def _on_contrast_changed(self, value: int):
         if self.current_image:
             self._undo_stack.push(SetContrastCommand(value, self.current_image))
-
-    @Slot(FITSModel)
-    def set_brightness(self, image: FITSModel):
-        value = image.brightness
-        self.brightness_slider.set_value(value)
-
-    @Slot(FITSModel)
-    def set_contrast(self, image: FITSModel):
-        value = image.contrast
-        self.contrast_slider.set_value(value)
 
     def get_state(self):
         state = {
