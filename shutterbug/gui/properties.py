@@ -98,6 +98,8 @@ class ImagePropertiesPanel(QWidget):
         layout.setContentsMargins(16, 8, 8, 8)
         layout.setSpacing(5)
 
+        # Stretch combo box
+
         # Sliders
         self.brightness_slider = LabeledSlider("Brightness", -0.5, 0.5, 0, "float")
         self.contrast_slider = LabeledSlider("Contrast", 0.5, 1.5, 1, "float", 3)

@@ -1,48 +1,36 @@
 import logging
 
-from PySide6.QtWidgets import QWidget, QHBoxLayout, QLabel
-from PySide6.QtCore import Qt, Signal
+from PySide6.QtCore import Signal
 
+from shutterbug.gui.controls.labeled_widget import LabeledWidget
 from shutterbug.gui.controls.scrubby_slider import ScrubbySlider
 
 
-class LabeledSlider(QWidget):
+class LabeledSlider(LabeledWidget):
     """Reusable labeled slider component"""
 
     valueChanged = Signal(float)
 
     def __init__(
         self,
-        name: str,
+        label: str,
         min: float,
         max: float,
         default: float,
         number_type: str = "int",
         decimal_places: int = 3,
     ):
-        super().__init__()
-        layout = QHBoxLayout()
-        self.setLayout(layout)
-        # Set up margins and spacing
-        layout.setContentsMargins(0, 0, 0, 0)
-        layout.setSpacing(5)
-        layout.addStretch(1)
-
-        # Qlabel for display
-        self.label = QLabel(name)
-        self.label.setAlignment(
-            Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter
-        )
-        layout.addWidget(self.label)
-
+        super().__init__(label)
         # Set up scrubby slider from inputs
         self.slider = ScrubbySlider(min, max, default, number_type, decimal_places)
-        layout.addWidget(self.slider)
+        layout = self.layout()
+        if layout is not None:
+            layout.addWidget(self.slider)
 
         # Attach slider's signal to custom signal
         self.slider.valueChanged.connect(self.valueChanged)
 
-        logging.debug(f"Initialized Labeled Slider: {name}")
+        logging.debug(f"Initialized Labeled Slider: {label}")
 
     def value(self):
         """Returns value of embedded slider"""
