@@ -16,9 +16,10 @@ from shutterbug.gui.commands.image_commands import (
     SetBrightnessCommand,
     SetContrastCommand,
 )
-from shutterbug.gui.controls.labeled_slider import LabeledSlider
+from shutterbug.gui.controls import LabeledSlider, LabeledComboBox
 from shutterbug.gui.tools.base_tool import BaseTool
 from shutterbug.gui.panels.collapsible_section import CollapsibleSection
+from shutterbug.core.LUTs.registry import STRETCH_REGISTRY
 
 
 class Properties(QWidget):
@@ -99,6 +100,7 @@ class ImagePropertiesPanel(QWidget):
         layout.setSpacing(5)
 
         # Stretch combo box
+        self.stretches = LabeledComboBox("Stretch", list(STRETCH_REGISTRY.keys()))
 
         # Sliders
         self.brightness_slider = LabeledSlider("Brightness", -0.5, 0.5, 0, "float")
@@ -106,7 +108,9 @@ class ImagePropertiesPanel(QWidget):
 
         # Panel
         self.settings_panel = CollapsibleSection(
-            "Image Settings", [self.brightness_slider, self.contrast_slider], self
+            "Image Settings",
+            [self.stretches, self.brightness_slider, self.contrast_slider],
+            self,
         )
 
         layout.addWidget(self.settings_panel)
@@ -149,12 +153,12 @@ class ImagePropertiesPanel(QWidget):
     @Slot(FITSModel)
     def set_brightness(self, image: FITSModel):
         value = image.brightness
-        self.brightness_slider.setValue(value)
+        self.brightness_slider.set_value(value)
 
     @Slot(FITSModel)
     def set_contrast(self, image: FITSModel):
         value = image.contrast
-        self.contrast_slider.setValue(value)
+        self.contrast_slider.set_value(value)
 
     def get_state(self):
         state = {

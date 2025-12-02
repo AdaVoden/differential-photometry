@@ -2,8 +2,8 @@ import logging
 
 from PySide6.QtCore import Signal
 
-from shutterbug.gui.controls.labeled_widget import LabeledWidget
-from shutterbug.gui.controls.scrubby_slider import ScrubbySlider
+from .labeled_widget import LabeledWidget
+from .scrubby_slider import ScrubbySlider
 
 
 class LabeledSlider(LabeledWidget):
@@ -36,6 +36,6 @@ class LabeledSlider(LabeledWidget):
         """Returns value of embedded slider"""
         return self.slider.value()
 
-    def setValue(self, value: float):
+    def set_value(self, value: float):
         """Sets value of embedded slider"""
         self.slider.setValue(value)

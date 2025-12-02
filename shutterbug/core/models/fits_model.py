@@ -42,7 +42,7 @@ class FITSModel(ObservableQObject):
         self.histogram = np.array([])
         self.bin_edges = np.array([])
 
-        self.stretch_type = "linear"
+        self.stretch_type: str = self._define_field("stretch_type", "linear")
         # Stamp variables
         self.stamp_padding = self.STAMP_PADDING_DEFAULT
 
