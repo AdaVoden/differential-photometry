@@ -67,6 +67,7 @@ class ImageViewer(QGraphicsView):
         # Initial variables
         self.setObjectName("viewer")
         self.current_image = None
+        self.selected_star = None
         self.markers = {}  # (x, y) -> marker
         self.main_window = main_window
 
@@ -119,6 +120,7 @@ class ImageViewer(QGraphicsView):
         self.main_window.image_selected.connect(self._on_image_selected)
         self.main_window.measurement_added.connect(self.add_star_marker)
         self.main_window.measurement_removed.connect(self.remove_star_marker)
+        self.main_window.star_selected.connect(self._on_star_selected)
 
         # Tool signals
         self.tool_manager.tool_changed.connect(self._on_tool_changed)
@@ -147,6 +149,24 @@ class ImageViewer(QGraphicsView):
                 self.stretch_manager.update_lut()
 
             self.update_display()
+
+    @Slot(StarIdentity)
+    def _on_star_selected(self, star: StarIdentity):
+        """Handles star being selected"""
+        if self.current_image is None:
+            return  # Need an image for this
+
+        if self.selected_star is not None:
+            # Add back in unselected star
+            self.remove_star_marker(self.selected_star)
+            self.add_star_marker(self.selected_star)
+
+        measurement = star.measurements.get(self.current_image.filename)
+        self.selected_star = measurement
+        if measurement is None:
+            return  # Image does not have this measurement
+        self.remove_star_marker(measurement)
+        self.add_star_marker(measurement, colour="gold")
 
     @Slot(ImageUpdateEvent)
     def _on_image_update_event(self, event: ImageUpdateEvent):
