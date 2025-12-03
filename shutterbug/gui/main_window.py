@@ -16,10 +16,15 @@ from shutterbug.core.managers import (
     SelectionManager,
     StarCatalog,
 )
-from shutterbug.core.models import FITSModel, StarMeasurement
-from shutterbug.core.models.graph_model import GraphDataModel
+from shutterbug.core.models import (
+    FITSModel,
+    StarMeasurement,
+    GraphDataModel,
+    StarIdentity,
+)
 from shutterbug.core.progress_bar_handler import ProgressHandler
 import shutterbug.core.utility.photometry as phot
+from shutterbug.gui.adapters.tabular_data_interface import TabularDataInterface
 from shutterbug.gui.tools.base_tool import BaseTool
 
 
@@ -31,8 +36,33 @@ from .views import MultiViewer
 
 class MainWindow(QMainWindow):
 
+    # Tool signals
     active_tool_changed = Signal(BaseTool)
     tool_settings_changed = Signal(QWidget)
+
+    # Selection signals
+    adapter_changed = Signal(TabularDataInterface)
+    image_selected = Signal(FITSModel)
+    graph_selected = Signal(GraphDataModel)
+    star_selected = Signal(StarIdentity)
+    measurement_selected = Signal(StarMeasurement)
+
+    # Measurement signals
+    measurement_added = Signal(object)
+    measurement_removed = Signal(object)
+    measurement_updated = Signal(object)
+
+    # Star signals
+    star_added = Signal(StarIdentity)
+    star_removed = Signal(StarIdentity)
+
+    # Graph Signals
+    graph_added = Signal(GraphDataModel)
+    graph_removed = Signal(GraphDataModel)
+
+    # Image Signals
+    image_added = Signal(FITSModel)
+    image_removed = Signal(FITSModel)
 
     def __init__(self):
         super().__init__()
@@ -54,9 +84,8 @@ class MainWindow(QMainWindow):
         self.project = ShutterbugProject()
 
         # Create sidebar and viewer
-        self.sidebar = Sidebar(self._undo_stack, self)
-        self.viewer = MultiViewer(self._undo_stack)
-        self.outliner_model = self.sidebar.outliner.model
+        self.sidebar = Sidebar(self)
+        self.viewer = MultiViewer(self)
 
         # Set up central widget with horizontal layout
         central = QWidget()
@@ -90,26 +119,37 @@ class MainWindow(QMainWindow):
         # Add to status bar
         self.status_bar.addPermanentWidget(self.progress_bar)
 
-        # Handle Selection Signals
-        self.selection_manager.image_selected.connect(
-            self.image_manager.set_active_image
-        )
-        self.selection_manager.star_selected.connect(self.star_catalog.set_active_star)
+        # Handle tool signals
+        self.viewer.tool_changed.connect(self.active_tool_changed)
+        self.viewer.tool_settings_changed.connect(self.tool_settings_changed)
+
+        # Handle Selection signals
+        self.selection_manager.adapter_changed.connect(self.adapter_changed)
+        self.selection_manager.image_selected.connect(self.image_selected)
+        self.selection_manager.graph_selected.connect(self.graph_selected)
+        self.selection_manager.star_selected.connect(self.star_selected)
+        self.selection_manager.measurement_selected.connect(self.measurement_selected)
+
+        # Handle Measurement signals
+        self.star_catalog.measurement_added.connect(self.measurement_added)
+        self.star_catalog.measurement_removed.connect(self.measurement_removed)
+        self.star_catalog.measurement_updated.connect(self.measurement_updated)
+
+        # Handle star signals
+        self.star_catalog.star_added.connect(self.star_added)
+        self.star_catalog.star_removed.connect(self.star_removed)
+
+        # Handle graph signals
+        self.graph_manager.graph_added.connect(self.graph_added)
+        self.graph_manager.graph_removed.connect(self.graph_removed)
+
+        # Handle image signals
+        self.image_manager.image_added.connect(self.image_added)
+        self.image_manager.image_removed.connect(self.image_removed)
 
         # Handle Viewer signals
         self.viewer.propagation_requested.connect(self.propagate_star_selection)
         self.viewer.batch_requested.connect(self.process_all_images)
-        self.viewer.tool_changed.connect(self.active_tool_changed)
-        self.viewer.tool_settings_changed.connect(self.tool_settings_changed)
-
-        # Handle Outliner signals
-        self.sidebar.object_selected.connect(self.selection_manager.set_selected_object)
-        self.image_manager.image_added.connect(self.outliner_model.add_image)
-        self.image_manager.active_image_changed.connect(
-            self.selection_manager.set_selected_object
-        )
-        self.graph_manager.graph_added.connect(self.outliner_model.add_graph)
-        self.star_catalog.star_added.connect(self.outliner_model.add_star)
 
         logging.debug("Main window initialized")
 

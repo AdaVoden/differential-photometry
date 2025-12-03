@@ -1,22 +1,27 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from shutterbug.gui.main_window import MainWindow
+
 import logging
 from typing import List
 from PySide6.QtWidgets import QVBoxLayout, QWidget, QTableView, QHeaderView
 from PySide6.QtGui import QStandardItem, QStandardItemModel
 from PySide6.QtCore import QModelIndex, Slot, Qt
 
-from shutterbug.core.managers.selection_manager import SelectionManager
 from shutterbug.gui.adapters.tabular_data_interface import TabularDataInterface
 
 
 class SpreadsheetViewer(QWidget):
     """Viewer for star data in spreadsheet format"""
 
-    def __init__(self):
+    def __init__(self, main_window: MainWindow):
         super().__init__()
         # Default variables
         self.adapter: TabularDataInterface | None = None
-        self.selection_manager = SelectionManager()
-
+        self.main_window = main_window
         # Layout without styling
         layout = QVBoxLayout()
         layout.setContentsMargins(0, 0, 0, 0)
@@ -37,7 +42,7 @@ class SpreadsheetViewer(QWidget):
         layout.addWidget(self.table_view)
 
         # Handle signals
-        self.selection_manager.adapter_changed.connect(self.set_adapter)
+        main_window.adapter_changed.connect(self.set_adapter)
 
         logging.debug("Spreadsheet viewer initialized")
 

@@ -8,7 +8,6 @@ if TYPE_CHECKING:
 import logging
 
 from PySide6.QtCore import Signal
-from PySide6.QtGui import QUndoStack
 from PySide6.QtWidgets import QVBoxLayout, QWidget
 from shutterbug.gui.outliner import Outliner
 from shutterbug.gui.properties import Properties
@@ -18,7 +17,7 @@ class Sidebar(QWidget):
 
     object_selected = Signal(object)
 
-    def __init__(self, undo_stack: QUndoStack, main_window: MainWindow):
+    def __init__(self, main_window: MainWindow):
         super().__init__()
         # Initialize sidebar components here
         self.setObjectName("sidebar")
@@ -28,8 +27,8 @@ class Sidebar(QWidget):
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(2)
         # Outliner on top, Settings below
-        self.outliner = Outliner(undo_stack)
-        self.settings = Properties(undo_stack, main_window)
+        self.outliner = Outliner(main_window)
+        self.settings = Properties(main_window)
 
         layout.addWidget(self.outliner, stretch=1)
         layout.addWidget(self.settings, stretch=3)

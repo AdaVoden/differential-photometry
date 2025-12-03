@@ -1,9 +1,14 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from shutterbug.gui.main_window import MainWindow
+
 import logging
 
 from PySide6.QtCore import QItemSelection, QPoint, Qt, Signal, Slot
-from PySide6.QtGui import QUndoStack
 from PySide6.QtWidgets import QMenu, QTreeView, QVBoxLayout, QWidget
-from shutterbug.core.managers import ImageManager, StarCatalog
 from shutterbug.core.models import OutlinerModel
 
 
@@ -11,15 +16,12 @@ class Outliner(QWidget):
 
     object_selected = Signal(object)
 
-    def __init__(self, undo_stack: QUndoStack):
+    def __init__(self, main_window: MainWindow):
         super().__init__()
         self.setObjectName("outliner")
 
-        self._undo_stack = undo_stack
-
-        # Keep track of images
-        self.image_manager = ImageManager()  # singleton
-        self.catalog = StarCatalog()
+        # Keep
+        self.main_window = main_window
 
         # Set layout
         layout = QVBoxLayout()
@@ -44,6 +46,11 @@ class Outliner(QWidget):
             self._on_selection_changed
         )
 
+        # Handle signals
+        self.main_window.image_added.connect(self.model.add_image)
+        self.main_window.graph_added.connect(self.model.add_graph)
+        self.main_window.star_added.connect(self.model.add_star)
+
         logging.debug("Outliner initialized")
 
     @Slot(QItemSelection, QItemSelection)
@@ -53,7 +60,9 @@ class Outliner(QWidget):
         s = selected.indexes()[0]
         # Data stored in item
         data = s.data(Qt.ItemDataRole.UserRole)
-        self.object_selected.emit(data)
+        if data is None:
+            return  # No need to do anything
+        self.main_window.selection_manager.set_selected_object(data)
 
     @Slot(QPoint)
     def show_context_menu(self, pos: QPoint):

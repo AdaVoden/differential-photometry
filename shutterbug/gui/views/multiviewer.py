@@ -1,3 +1,10 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from shutterbug.gui.main_window import MainWindow
+
 import logging
 from PySide6.QtWidgets import (
     QWidget,
@@ -6,7 +13,6 @@ from PySide6.QtWidgets import (
     QComboBox,
     QStackedWidget,
 )
-from PySide6.QtGui import QUndoStack
 from PySide6.QtCore import Signal, Slot
 
 from shutterbug.gui.tools.base_tool import BaseTool
@@ -21,7 +27,7 @@ class MultiViewer(QWidget):
     tool_changed = Signal(BaseTool)
     tool_settings_changed = Signal(QWidget)
 
-    def __init__(self, undo_stack: QUndoStack):
+    def __init__(self, main_window: MainWindow):
         super().__init__()
         self.setObjectName("multiviewer")
 
@@ -35,9 +41,9 @@ class MultiViewer(QWidget):
         top_bar.setObjectName("topbar")
 
         # Stacked views
-        self.image_viewer = ImageViewer(undo_stack)
-        self.graph_viewer = GraphViewer()  # Placeholder
-        self.table_viewer = SpreadsheetViewer()
+        self.image_viewer = ImageViewer(main_window)
+        self.graph_viewer = GraphViewer(main_window)  # Placeholder
+        self.table_viewer = SpreadsheetViewer(main_window)
 
         self.stack = QStackedWidget()
         self.stack.addWidget(self.image_viewer)

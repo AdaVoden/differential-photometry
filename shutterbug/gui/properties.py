@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from shutterbug.core.events.change_event import ImageChangeEvent
+from shutterbug.core.events.change_event import ImageUpdateEvent
 
 if TYPE_CHECKING:
     from shutterbug.gui.main_window import MainWindow
@@ -10,9 +10,7 @@ if TYPE_CHECKING:
 import logging
 
 from PySide6.QtCore import Qt, Slot
-from PySide6.QtGui import QUndoStack
 from PySide6.QtWidgets import QLabel, QTabWidget, QVBoxLayout, QWidget
-from shutterbug.core.managers import ImageManager
 from shutterbug.core.models import FITSModel
 from shutterbug.gui.commands.image_commands import (
     SetBrightnessCommand,
@@ -25,11 +23,11 @@ from shutterbug.core.LUTs.registry import STRETCH_REGISTRY
 
 
 class Properties(QWidget):
-    def __init__(self, undo_stack: QUndoStack, main_window: MainWindow):
+    def __init__(self, main_window: MainWindow):
         super().__init__()
         self.setObjectName("settings")
 
-        self._undo_stack = undo_stack
+        undo_stack = main_window._undo_stack
 
         layout = QVBoxLayout()
         self.setLayout(layout)
@@ -43,10 +41,10 @@ class Properties(QWidget):
         self.tabs.setTabPosition(QTabWidget.TabPosition.West)
 
         # Different property panels
-        self.tool_properties = ToolPropertiesPanel()
-        self.image_properties = ImagePropertiesPanel(undo_stack)
-        self.star_properties = StarPropertiesPanel(undo_stack)
-        self.general_properties = GeneralPropertiesPanel(undo_stack)
+        self.tool_properties = ToolPropertiesPanel(main_window)
+        self.image_properties = ImagePropertiesPanel(main_window)
+        self.star_properties = StarPropertiesPanel(main_window)
+        self.general_properties = GeneralPropertiesPanel(main_window)
 
         self.tabs.addTab(self.tool_properties, "Tool")
         self.tabs.addTab(self.general_properties, "Gen")
@@ -78,13 +76,12 @@ class Properties(QWidget):
 
 class ImagePropertiesPanel(QWidget):
 
-    def __init__(self, undo_stack: QUndoStack):
+    def __init__(self, main_window: MainWindow):
         super().__init__()
 
-        self._undo_stack = undo_stack
+        self._undo_stack = main_window._undo_stack
 
-        self.image_manager = ImageManager()
-        self.current_image = self.image_manager.active_image
+        self.current_image = None
 
         self.setObjectName("imageProperties")
         layout = QVBoxLayout()
@@ -115,7 +112,7 @@ class ImagePropertiesPanel(QWidget):
         self.brightness_slider.valueChanged.connect(self._on_brightness_changed)
         self.contrast_slider.valueChanged.connect(self._on_contrast_changed)
 
-        self.image_manager.active_image_changed.connect(self._on_image_selected)
+        main_window.image_selected.connect(self._on_image_selected)
 
         logging.debug("Image properties panel initialized")
 
@@ -135,8 +132,8 @@ class ImagePropertiesPanel(QWidget):
             self.contrast_slider.set_value(image.contrast)
             self.stretches.set_text(image.stretch_type)
 
-    @Slot(ImageChangeEvent)
-    def _on_image_changed(self, event: ImageChangeEvent):
+    @Slot(ImageUpdateEvent)
+    def _on_image_changed(self, event: ImageUpdateEvent):
         image = event.source
         fields = event.changed_fields
         if fields & {"brightness", "contrast"}:
@@ -157,7 +154,7 @@ class ImagePropertiesPanel(QWidget):
 
 
 class StarPropertiesPanel(QWidget):
-    def __init__(self, undo_stack: QUndoStack):
+    def __init__(self, main_window: MainWindow):
         super().__init__()
         self.setObjectName("starProperties")
         layout = QVBoxLayout()
@@ -188,7 +185,7 @@ class StarPropertiesPanel(QWidget):
 
 
 class GeneralPropertiesPanel(QWidget):
-    def __init__(self, undo_stack: QUndoStack):
+    def __init__(self, main_window: MainWindow):
         super().__init__()
         layout = QVBoxLayout()
         self.setLayout(layout)
@@ -197,7 +194,7 @@ class GeneralPropertiesPanel(QWidget):
 
 
 class ToolPropertiesPanel(QWidget):
-    def __init__(self):
+    def __init__(self, main_window: MainWindow):
         super().__init__()
         layout = QVBoxLayout()
         self.setLayout(layout)

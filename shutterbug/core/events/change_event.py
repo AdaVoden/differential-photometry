@@ -15,5 +15,5 @@ class ChangeEvent:
 
 
 @dataclass
-class ImageChangeEvent(ChangeEvent):
+class ImageUpdateEvent(ChangeEvent):
     source: FITSModel  # type: ignore

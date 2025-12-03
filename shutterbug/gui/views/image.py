@@ -1,3 +1,10 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from shutterbug.gui.main_window import MainWindow
+
 import logging
 from typing import Tuple
 
@@ -19,15 +26,11 @@ from PySide6.QtGui import (
     QMouseEvent,
     QPen,
     QPixmap,
-    QUndoStack,
     QWheelEvent,
 )
 from PySide6.QtWidgets import QGraphicsScene, QGraphicsView, QMenu, QWidget
-from shutterbug.core.events import ImageChangeEvent
+from shutterbug.core.events import ImageUpdateEvent
 from shutterbug.core.managers import (
-    ImageManager,
-    SelectionManager,
-    StarCatalog,
     StretchManager,
 )
 from shutterbug.core.models import FITSModel, StarIdentity, StarMeasurement
@@ -38,10 +41,8 @@ from shutterbug.gui.commands import (
     SelectStarCommand,
 )
 from shutterbug.gui.managers import ToolManager
-from shutterbug.gui.operators.base_operator import BaseOperator
-from shutterbug.gui.panels.base_popover import BasePopOver
-from shutterbug.gui.panels.operator_panel import OperatorPanel
-from shutterbug.gui.panels.tool_panel import ToolPanel
+from shutterbug.gui.operators import BaseOperator
+from shutterbug.gui.panels import BasePopOver, OperatorPanel, ToolPanel
 from shutterbug.gui.tools import BaseTool, SelectTool
 
 
@@ -61,18 +62,18 @@ class ImageViewer(QGraphicsView):
     MARKER_COLOUR_DEFAULT = "cyan"
     MARKER_RADIUS_DEFAULT = 20  # pixels
 
-    def __init__(self, undo_stack: QUndoStack):
+    def __init__(self, main_window: MainWindow):
         super().__init__()
         # Initial variables
         self.setObjectName("viewer")
         self.current_image = None
         self.markers = {}  # (x, y) -> marker
+        self.main_window = main_window
 
         # Manager setup
-        self._undo_stack = undo_stack
-        self.selection = SelectionManager()
-        self.catalog = StarCatalog()
-        self.image_manager = ImageManager()
+        self._undo_stack = main_window._undo_stack
+        self.catalog = main_window.star_catalog
+        self.image_manager = main_window.image_manager
         self.tool_manager = ToolManager(self)
         self.stretch_manager = StretchManager()
         self.tool_manager.set_tool(SelectTool)
@@ -114,17 +115,19 @@ class ImageViewer(QGraphicsView):
         self.setTransformationAnchor(QGraphicsView.ViewportAnchor.AnchorUnderMouse)
         self.setResizeAnchor(QGraphicsView.ViewportAnchor.AnchorUnderMouse)
 
-        # Set up signals
-        self.selection.image_selected.connect(self._on_image_selected)
-        self.catalog.measurement_added.connect(self.add_star_marker)
-        self.catalog.measurement_removed.connect(self.remove_star_marker)
+        # General signals
+        self.main_window.image_selected.connect(self._on_image_selected)
+        self.main_window.measurement_added.connect(self.add_star_marker)
+        self.main_window.measurement_removed.connect(self.remove_star_marker)
+
+        # Tool signals
         self.tool_manager.tool_changed.connect(self._on_tool_changed)
         self.tool_manager.tool_settings_changed.connect(self.tool_settings_changed)
-
-        self.popover.tool_selected.connect(self.tool_manager.set_tool)
         self.tool_manager.operator_changed.connect(self._on_operator_changed)
         self.tool_manager.operator_finished.connect(self._on_operator_finished)
         self.tool_manager.operator_cancelled.connect(self._on_operator_finished)
+
+        self.popover.tool_selected.connect(self.tool_manager.set_tool)
 
         logging.debug("Image Viewer initialized")
 
@@ -133,11 +136,11 @@ class ImageViewer(QGraphicsView):
         """Handles image manager active image changing"""
         if image != self.current_image:
             if self.current_image:
-                self.current_image.updated.disconnect(self._on_image_changed)
+                self.current_image.updated.disconnect(self._on_image_update_event)
 
             self.current_image = image
             if image is not None:
-                image.updated.connect(self._on_image_changed)
+                image.updated.connect(self._on_image_update_event)
                 self.stretch_manager.brightness = image.brightness
                 self.stretch_manager.contrast = image.contrast
                 self.stretch_manager.set_mode(image.stretch_type)
@@ -145,8 +148,8 @@ class ImageViewer(QGraphicsView):
 
             self.update_display()
 
-    @Slot(ImageChangeEvent)
-    def _on_image_changed(self, event: ImageChangeEvent):
+    @Slot(ImageUpdateEvent)
+    def _on_image_update_event(self, event: ImageUpdateEvent):
         """Handles current image changing values"""
         fields = event.changed_fields
         image = event.source

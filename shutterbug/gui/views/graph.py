@@ -1,16 +1,22 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from shutterbug.gui.main_window import MainWindow
+
 import logging
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 from PySide6.QtCore import Slot
 from PySide6.QtWidgets import QVBoxLayout, QWidget
-from shutterbug.core.managers import GraphManager
 from shutterbug.core.models import GraphDataModel
 
 
 class GraphViewer(QWidget):
     """Viewer for star data in spreadsheet format"""
 
-    def __init__(self):
+    def __init__(self, main_window: MainWindow):
         super().__init__()
         # Layout settings
         layout = QVBoxLayout()
@@ -18,7 +24,6 @@ class GraphViewer(QWidget):
         layout.setSpacing(0)
         self.setLayout(layout)
 
-        self.graph_manager = GraphManager()
         self.graph = None
         # Graph settings
         self.figure = Figure(figsize=(5, 4))
@@ -26,7 +31,7 @@ class GraphViewer(QWidget):
         self.ax = None
         layout.addWidget(self.canvas)
 
-        self.graph_manager.active_graph_changed.connect(self._on_active_graph_change)
+        main_window.graph_selected.connect(self._on_active_graph_change)
 
     def _clear(self):
         """Clears active graph and axes object"""

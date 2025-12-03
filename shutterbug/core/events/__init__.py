@@ -1,3 +1,3 @@
-from .change_event import ChangeEvent, ImageChangeEvent
+from .change_event import ChangeEvent, ImageUpdateEvent
 
-__all__ = ["ChangeEvent", "ImageChangeEvent"]
+__all__ = ["ChangeEvent", "ImageUpdateEvent"]
