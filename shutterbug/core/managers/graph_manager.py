@@ -1,33 +1,26 @@
 from typing import Dict
-from PySide6.QtCore import QObject, Signal
+from PySide6.QtCore import Signal
 
 from shutterbug.core.models.graph_model import GraphDataModel
 import logging
 
+from .base_manager import BaseManager
 
-class GraphManager(QObject):
+
+class GraphManager(BaseManager):
     """Keeps records of graph data and which is active at any given time"""
-
-    _instance = None
 
     graph_added = Signal(GraphDataModel)
     active_graph_changed = Signal(GraphDataModel)
     graph_removed = Signal(GraphDataModel)
 
-    def __init__(self):
-        if not hasattr(self, "_initialized"):
-            self._initialized = True
+    def __init__(self, parent=None):
 
-            super().__init__()
-            self.graphs: Dict[str, GraphDataModel] = {}
-            self.active_graph: GraphDataModel | None = None
+        super().__init__(parent)
+        self.graphs: Dict[str, GraphDataModel] = {}
+        self.active_graph: GraphDataModel | None = None
 
-    def __new__(cls):
-        if cls._instance is None:
-            logging.debug("Creating Graph Manager singleton")
-            cls._instance = super().__new__(cls)
-
-        return cls._instance
+        logging.debug("Graph Manager initialized")
 
     def add_graph(self, graph: GraphDataModel):
         self.graphs[graph.uid] = graph

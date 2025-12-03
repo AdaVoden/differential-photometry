@@ -21,19 +21,12 @@ class SelectionManager(QObject):
 
     _instance = None
 
-    def __init__(self):
-        if not hasattr(self, "_initialized"):
-            self._initialized = True
-            self.adapter_registry = AdapterRegistry()
-            self._current = None
-            super().__init__()
+    def __init__(self, parent=None):
 
-    def __new__(cls):
-        if cls._instance is None:
-            logging.debug("Creating Selection Manager singleton")
-            cls._instance = super().__new__(cls)
-
-        return cls._instance
+        super().__init__(None)
+        self.adapter_registry = AdapterRegistry()
+        self._current = None
+        logging.debug("Selection Manager initialized")
 
     @Slot(object)
     def set_selected_object(self, selected: Any):

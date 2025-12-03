@@ -1,10 +1,11 @@
 from __future__ import annotations
-from typing import TYPE_CHECKING
 
-from shutterbug.gui.tools.box_select_settings import BoxSelectOperatorSettingsWidget
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from shutterbug.gui.views.image import ImageViewer
+
+from shutterbug.gui.tools.box_select_settings import BoxSelectOperatorSettingsWidget
 
 from PySide6.QtCore import QRect, QSize, QTimer, Slot
 from PySide6.QtGui import QMouseEvent, QPen, QColor

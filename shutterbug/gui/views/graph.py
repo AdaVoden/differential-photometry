@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from shutterbug.gui.main_window import MainWindow
+    from shutterbug.core.app_controller import AppController
 
 import logging
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas
@@ -16,7 +16,7 @@ from shutterbug.core.models import GraphDataModel
 class GraphViewer(QWidget):
     """Viewer for star data in spreadsheet format"""
 
-    def __init__(self, main_window: MainWindow):
+    def __init__(self, controller: AppController):
         super().__init__()
         # Layout settings
         layout = QVBoxLayout()
@@ -31,7 +31,7 @@ class GraphViewer(QWidget):
         self.ax = None
         layout.addWidget(self.canvas)
 
-        main_window.graph_selected.connect(self._on_active_graph_change)
+        controller.graph_selected.connect(self._on_active_graph_change)
 
     def _clear(self):
         """Clears active graph and axes object"""

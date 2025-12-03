@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from shutterbug.gui.main_window import MainWindow
+    from shutterbug.core.app_controller import AppController
 
 import logging
 from typing import Tuple
@@ -30,9 +30,6 @@ from PySide6.QtGui import (
 )
 from PySide6.QtWidgets import QGraphicsScene, QGraphicsView, QMenu, QWidget
 from shutterbug.core.events import ImageUpdateEvent
-from shutterbug.core.managers import (
-    StretchManager,
-)
 from shutterbug.core.models import FITSModel, StarIdentity, StarMeasurement
 from shutterbug.core.utility.photometry import measure_star_magnitude
 from shutterbug.gui.commands import (
@@ -40,7 +37,6 @@ from shutterbug.gui.commands import (
     RemoveMeasurementCommand,
     SelectStarCommand,
 )
-from shutterbug.gui.managers import ToolManager
 from shutterbug.gui.operators import BaseOperator
 from shutterbug.gui.panels import BasePopOver, OperatorPanel, ToolPanel
 from shutterbug.gui.tools import BaseTool, SelectTool
@@ -62,21 +58,22 @@ class ImageViewer(QGraphicsView):
     MARKER_COLOUR_DEFAULT = "cyan"
     MARKER_RADIUS_DEFAULT = 20  # pixels
 
-    def __init__(self, main_window: MainWindow):
+    def __init__(self, controller: AppController):
         super().__init__()
         # Initial variables
         self.setObjectName("viewer")
         self.current_image = None
         self.selected_star = None
         self.markers = {}  # (x, y) -> marker
-        self.main_window = main_window
+        self.controller = controller
 
         # Manager setup
-        self._undo_stack = main_window._undo_stack
-        self.catalog = main_window.star_catalog
-        self.image_manager = main_window.image_manager
-        self.tool_manager = ToolManager(self)
-        self.stretch_manager = StretchManager()
+        self._undo_stack = controller._undo_stack
+        self.catalog = controller.stars
+        self.image_manager = controller.images
+        self.tool_manager = controller.tools
+        self.stretch_manager = controller.stretches
+
         self.tool_manager.set_tool(SelectTool)
 
         # Zoom settings
@@ -117,17 +114,17 @@ class ImageViewer(QGraphicsView):
         self.setResizeAnchor(QGraphicsView.ViewportAnchor.AnchorUnderMouse)
 
         # General signals
-        self.main_window.image_selected.connect(self._on_image_selected)
-        self.main_window.measurement_added.connect(self.add_star_marker)
-        self.main_window.measurement_removed.connect(self.remove_star_marker)
-        self.main_window.star_selected.connect(self._on_star_selected)
+        self.controller.image_selected.connect(self._on_image_selected)
+        self.controller.measurement_added.connect(self.add_star_marker)
+        self.controller.measurement_removed.connect(self.remove_star_marker)
+        self.controller.star_selected.connect(self._on_star_selected)
 
         # Tool signals
-        self.tool_manager.tool_changed.connect(self._on_tool_changed)
-        self.tool_manager.tool_settings_changed.connect(self.tool_settings_changed)
-        self.tool_manager.operator_changed.connect(self._on_operator_changed)
-        self.tool_manager.operator_finished.connect(self._on_operator_finished)
-        self.tool_manager.operator_cancelled.connect(self._on_operator_finished)
+        self.controller.active_tool_changed.connect(self._on_tool_changed)
+        self.controller.tool_settings_changed.connect(self.tool_settings_changed)
+        self.controller.operator_changed.connect(self._on_operator_changed)
+        self.controller.operator_finished.connect(self._on_operator_finished)
+        self.controller.operator_cancelled.connect(self._on_operator_finished)
 
         self.popover.tool_selected.connect(self.tool_manager.set_tool)
 
@@ -267,7 +264,7 @@ class ImageViewer(QGraphicsView):
         else:
             if event.button() == Qt.MouseButton.LeftButton:
                 self.tool_manager.end_operation_confirm()
-                self.tool_manager.begin_operation(event)
+                self.tool_manager.begin_operation(event, self)
             super().mousePressEvent(event)
 
     @Slot(QMouseEvent)

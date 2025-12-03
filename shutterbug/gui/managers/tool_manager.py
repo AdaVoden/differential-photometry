@@ -1,30 +1,24 @@
-from __future__ import annotations
-
-from typing import TYPE_CHECKING
-
-if TYPE_CHECKING:
-    from shutterbug.gui.views.image import ImageViewer
-
 import logging
-from PySide6.QtCore import QObject, Signal, Slot
+
+from PySide6.QtCore import Signal, Slot
 from PySide6.QtGui import QMouseEvent, QUndoCommand
 from PySide6.QtWidgets import QWidget
-
+from shutterbug.core.managers.base_manager import BaseManager
 from shutterbug.gui.operators.base_operator import BaseOperator
 from shutterbug.gui.tools.base_tool import BaseTool
+from shutterbug.gui.views.image import ImageViewer
 
 
-class ToolManager(QObject):
+class ToolManager(BaseManager):
     tool_changed = Signal(BaseTool)
     operator_changed = Signal(BaseOperator)
     tool_settings_changed = Signal(QWidget)
-    operator_finished = Signal()
+    operator_finished = Signal(QUndoCommand)
     operator_cancelled = Signal()
 
-    def __init__(self, viewer: ImageViewer):
-        super().__init__()
+    def __init__(self, parent=None):
+        super().__init__(parent)
         self._current_tool: BaseTool | None = None
-        self.viewer = viewer
         self.active_operator: BaseOperator | None = None
 
     @property
@@ -39,12 +33,12 @@ class ToolManager(QObject):
         self._current_tool = tool
         self.tool_changed.emit(tool)
 
-    def begin_operation(self, event: QMouseEvent):
+    def begin_operation(self, event: QMouseEvent, viewer: ImageViewer):
         """Creates operator and begins operation"""
         if not self._current_tool:
             return
 
-        op = self._current_tool.create_operator(self.viewer)
+        op = self._current_tool.create_operator(viewer)
         self.active_operator = op
 
         widget = op.create_settings_widget()
@@ -81,9 +75,7 @@ class ToolManager(QObject):
         """Finished current operation by pushing command to stack"""
         self.active_operator = None
         if cmd is not None:
-            print("Command is not none")
-            self.viewer._undo_stack.push(cmd)
-        self.operator_finished.emit()
+            self.operator_finished.emit(cmd)
 
     @Slot()
     def _operator_cancelled(self):

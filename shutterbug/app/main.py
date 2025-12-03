@@ -2,6 +2,7 @@ import sys
 import logging
 
 from PySide6.QtWidgets import QApplication
+from shutterbug.core.app_controller import AppController
 from shutterbug.core.models import StarIdentity, FITSModel
 from shutterbug.gui.adapters import (
     FITSModelAdapter,
@@ -43,7 +44,8 @@ def main():
     logging.basicConfig(level=logging.DEBUG)
     app = QApplication(sys.argv)
     register_adapters()
-    window = MainWindow()
+    controller = AppController()
+    window = MainWindow(controller)
 
     # Open and load qss file
     app.setStyleSheet(app.styleSheet() + "\n" + load_stylesheet())

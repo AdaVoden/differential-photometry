@@ -3,7 +3,6 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from shutterbug.gui.operators.operator_parameters import BoxSelectParameters
-from shutterbug.gui.tools.box_select_settings import BoxSelectToolSettingsWidget
 
 if TYPE_CHECKING:
     from shutterbug.gui.views.image import ImageViewer

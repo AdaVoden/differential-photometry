@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from shutterbug.gui.main_window import MainWindow
+    from shutterbug.core.app_controller import AppController
 
 import logging
 from PySide6.QtWidgets import (
@@ -27,7 +27,7 @@ class MultiViewer(QWidget):
     tool_changed = Signal(BaseTool)
     tool_settings_changed = Signal(QWidget)
 
-    def __init__(self, main_window: MainWindow):
+    def __init__(self, controller: AppController):
         super().__init__()
         self.setObjectName("multiviewer")
 
@@ -41,9 +41,9 @@ class MultiViewer(QWidget):
         top_bar.setObjectName("topbar")
 
         # Stacked views
-        self.image_viewer = ImageViewer(main_window)
-        self.graph_viewer = GraphViewer(main_window)  # Placeholder
-        self.table_viewer = SpreadsheetViewer(main_window)
+        self.image_viewer = ImageViewer(controller)
+        self.graph_viewer = GraphViewer(controller)  # Placeholder
+        self.table_viewer = SpreadsheetViewer(controller)
 
         self.stack = QStackedWidget()
         self.stack.addWidget(self.image_viewer)

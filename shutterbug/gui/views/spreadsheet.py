@@ -3,7 +3,8 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from shutterbug.gui.main_window import MainWindow
+    from shutterbug.core.app_controller import AppController
+
 
 import logging
 from typing import List
@@ -17,11 +18,11 @@ from shutterbug.gui.adapters.tabular_data_interface import TabularDataInterface
 class SpreadsheetViewer(QWidget):
     """Viewer for star data in spreadsheet format"""
 
-    def __init__(self, main_window: MainWindow):
+    def __init__(self, controller: AppController):
         super().__init__()
         # Default variables
         self.adapter: TabularDataInterface | None = None
-        self.main_window = main_window
+        self.controller = controller
         # Layout without styling
         layout = QVBoxLayout()
         layout.setContentsMargins(0, 0, 0, 0)
@@ -42,7 +43,7 @@ class SpreadsheetViewer(QWidget):
         layout.addWidget(self.table_view)
 
         # Handle signals
-        main_window.adapter_changed.connect(self.set_adapter)
+        controller.adapter_changed.connect(self.set_adapter)
 
         logging.debug("Spreadsheet viewer initialized")
 

@@ -1,7 +1,6 @@
 import logging
 
-from PySide6.QtCore import QCoreApplication, Slot, Signal
-from PySide6.QtGui import QUndoStack
+from PySide6.QtCore import QCoreApplication, Slot
 from PySide6.QtWidgets import (
     QFileDialog,
     QHBoxLayout,
@@ -10,22 +9,7 @@ from PySide6.QtWidgets import (
     QProgressBar,
     QWidget,
 )
-from shutterbug.core.managers import (
-    GraphManager,
-    ImageManager,
-    SelectionManager,
-    StarCatalog,
-)
-from shutterbug.core.models import (
-    FITSModel,
-    StarMeasurement,
-    GraphDataModel,
-    StarIdentity,
-)
-from shutterbug.core.progress_bar_handler import ProgressHandler
-import shutterbug.core.utility.photometry as phot
-from shutterbug.gui.adapters.tabular_data_interface import TabularDataInterface
-from shutterbug.gui.tools.base_tool import BaseTool
+from shutterbug.core.app_controller import AppController
 
 
 from .commands import LoadImagesCommand
@@ -36,56 +20,25 @@ from .views import MultiViewer
 
 class MainWindow(QMainWindow):
 
-    # Tool signals
-    active_tool_changed = Signal(BaseTool)
-    tool_settings_changed = Signal(QWidget)
-
-    # Selection signals
-    adapter_changed = Signal(TabularDataInterface)
-    image_selected = Signal(FITSModel)
-    graph_selected = Signal(GraphDataModel)
-    star_selected = Signal(StarIdentity)
-    measurement_selected = Signal(StarMeasurement)
-
-    # Measurement signals
-    measurement_added = Signal(object)
-    measurement_removed = Signal(object)
-    measurement_updated = Signal(object)
-
-    # Star signals
-    star_added = Signal(StarIdentity)
-    star_removed = Signal(StarIdentity)
-
-    # Graph Signals
-    graph_added = Signal(GraphDataModel)
-    graph_removed = Signal(GraphDataModel)
-
-    # Image Signals
-    image_added = Signal(FITSModel)
-    image_removed = Signal(FITSModel)
-
-    def __init__(self):
+    def __init__(self, controller: AppController):
         super().__init__()
         self.setObjectName("mainWindow")
         # Set window properties
         self.setWindowTitle("Shutterbug")
         self.setGeometry(100, 100, 1200, 800)
 
-        # Set up undo stack
-        self._undo_stack = QUndoStack()
+        # Managers
+        self.image_manager = controller.images
+        self.star_catalog = controller.stars
+        self.graph_manager = controller.graphs
 
-        # Instantiate singletons
-        self.image_manager = ImageManager()
-        self.star_catalog = StarCatalog()
-        self.graph_manager = GraphManager()
-        self.selection_manager = SelectionManager()
-
+        self.controller = controller
         # Set up save/load functionality
         self.project = ShutterbugProject()
 
         # Create sidebar and viewer
-        self.sidebar = Sidebar(self)
-        self.viewer = MultiViewer(self)
+        self.sidebar = Sidebar(controller)
+        self.viewer = MultiViewer(controller)
 
         # Set up central widget with horizontal layout
         central = QWidget()
@@ -114,42 +67,9 @@ class MainWindow(QMainWindow):
         self.progress_bar.setMaximumWidth(100)  # Pixels
         self.progress_bar.setVisible(False)
         # Handler for context handling
-        self.progress_handler = ProgressHandler(self.progress_bar, self.status_label)
 
         # Add to status bar
         self.status_bar.addPermanentWidget(self.progress_bar)
-
-        # Handle tool signals
-        self.viewer.tool_changed.connect(self.active_tool_changed)
-        self.viewer.tool_settings_changed.connect(self.tool_settings_changed)
-
-        # Handle Selection signals
-        self.selection_manager.adapter_changed.connect(self.adapter_changed)
-        self.selection_manager.image_selected.connect(self.image_selected)
-        self.selection_manager.graph_selected.connect(self.graph_selected)
-        self.selection_manager.star_selected.connect(self.star_selected)
-        self.selection_manager.measurement_selected.connect(self.measurement_selected)
-
-        # Handle Measurement signals
-        self.star_catalog.measurement_added.connect(self.measurement_added)
-        self.star_catalog.measurement_removed.connect(self.measurement_removed)
-        self.star_catalog.measurement_updated.connect(self.measurement_updated)
-
-        # Handle star signals
-        self.star_catalog.star_added.connect(self.star_added)
-        self.star_catalog.star_removed.connect(self.star_removed)
-
-        # Handle graph signals
-        self.graph_manager.graph_added.connect(self.graph_added)
-        self.graph_manager.graph_removed.connect(self.graph_removed)
-
-        # Handle image signals
-        self.image_manager.image_added.connect(self.image_added)
-        self.image_manager.image_removed.connect(self.image_removed)
-
-        # Handle Viewer signals
-        self.viewer.propagation_requested.connect(self.propagate_star_selection)
-        self.viewer.batch_requested.connect(self.process_all_images)
 
         logging.debug("Main window initialized")
 
@@ -175,37 +95,27 @@ class MainWindow(QMainWindow):
         # Edit menu
         edit_menu = menu_bar.addMenu("Edit")
         undo_action = edit_menu.addAction("Undo")
-        undo_action.triggered.connect(self.on_undo)
+        undo_action.triggered.connect(self.controller.on_undo)
 
         redo_action = edit_menu.addAction("Redo")
-        redo_action.triggered.connect(self.on_redo)
+        redo_action.triggered.connect(self.controller.on_redo)
 
         diff_menu = edit_menu.addMenu("Differential")
 
         image_action = diff_menu.addAction("Differential Photometry (image)")
-        image_action.triggered.connect(self.differential_image)
+        image_action.triggered.connect(self.controller.differential_image)
 
         all_action = diff_menu.addAction("Differential Photometry (all)")
-        all_action.triggered.connect(self.differential_all)
+        all_action.triggered.connect(self.controller.differential_all)
 
         graph_action = diff_menu.addAction("Graph selected star")
-        graph_action.triggered.connect(self.create_graph_from_selection)
+        graph_action.triggered.connect(self.controller.create_graph_from_selection)
 
         # Help menu
         # help_menu = menu_bar.addMenu("Help")
         # about_action = help_menu.addAction("About Shutterbug")
 
         logging.debug("Menu bar set up")
-
-    @Slot()
-    def on_redo(self):
-        if self._undo_stack.canRedo():
-            self._undo_stack.redo()
-
-    @Slot()
-    def on_undo(self):
-        if self._undo_stack.canUndo():
-            self._undo_stack.undo()
 
     @Slot()
     def open_fits(self):
@@ -218,8 +128,8 @@ class MainWindow(QMainWindow):
             "FITS Files (*.fits *.fit *.fts);;All Files (*)",
         )
 
-        load_command = LoadImagesCommand(filenames, self.image_manager)
-        self._undo_stack.push(load_command)
+        load_command = LoadImagesCommand(filenames, self.controller.images)
+        self.controller._undo_stack.push(load_command)
 
     @Slot()
     def save_project(self):
@@ -242,77 +152,3 @@ class MainWindow(QMainWindow):
     @Slot()
     def exit(self):
         QCoreApplication.quit()
-
-    @Slot()
-    def process_all_images(self):
-        """Generate light curve from all loaded images"""
-        current_image = self.image_manager.active_image
-
-        if current_image is None:
-            return  # No work required
-
-        self.propagate_star_selection(current_image)
-        for image in self.image_manager.get_all_images():
-            self.process_single_image(image)
-
-    def process_single_image(self, image: FITSModel):
-        """Process one image for differential photometry"""
-
-        for measurement in self.star_catalog.get_measurements_by_image(image.filename):
-            phot.measure_star_magnitude(measurement, data=image.data)
-
-    @Slot(FITSModel)
-    def propagate_star_selection(self, image: FITSModel):
-        """Propagates star selection across all images"""
-        image_manager = self.image_manager
-        stars = self.star_catalog.get_measurements_by_image(image.filename)
-
-        with self.progress_handler("Propagating stars..."):
-            for img in image_manager.get_all_images():
-                if img != image:
-                    # Propagate to all other images, ignore target
-
-                    for star in stars:
-                        with self.progress_handler("Finding stars in image..."):
-                            star_data = image_manager.find_nearest_centroid(
-                                img, star.x, star.y
-                            )
-
-                        if star_data:
-                            measurement = StarMeasurement(
-                                x=star_data["xcentroid"],
-                                y=star_data["ycentroid"],
-                                time=img.observation_time,
-                                image=img.filename,
-                            )
-                            self.star_catalog.register_measurement(measurement)
-
-    @Slot(str)
-    def differential_image(self, image_name: str | None = None):
-        """Calculates differential photometry on all measurements in image"""
-        if image_name is None:
-            if self.image_manager.active_image is None:
-                return  # No work to do
-            image_name = self.image_manager.active_image.filename
-
-        measurements = self.star_catalog.get_measurements_by_image(image_name)
-
-        for m in measurements:
-            # This could be a better algorithm
-            other_ms = [n for n in measurements if n != m]
-            phot.calculate_differential_magnitude(m, other_ms)
-
-    @Slot()
-    def differential_all(self):
-        """Calculates differential photometry on all images' measurements"""
-        for image in self.image_manager.get_all_images():
-            self.differential_image(image.filename)
-
-    @Slot()
-    def create_graph_from_selection(self):
-        star = self.star_catalog.active_star
-        logging.debug("Graph creation called")
-        if star is not None:
-            graph = GraphDataModel.from_star(star)
-            self.graph_manager.add_graph(graph)
-            self.graph_manager.set_active_graph(graph)

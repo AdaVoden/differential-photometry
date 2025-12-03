@@ -1,16 +1,18 @@
-from typing import Optional
-from PySide6.QtCore import QObject, Signal
-from shutterbug.core.LUTs import get_stretch, BaseStretch
-import numpy as np
-
 import logging
+from typing import Optional
+
+import numpy as np
+from PySide6.QtCore import Signal
+from shutterbug.core.LUTs import BaseStretch, get_stretch
+
+from .base_manager import BaseManager
 
 
-class StretchManager(QObject):
+class StretchManager(BaseManager):
     lut_changed = Signal()
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, parent=None):
+        super().__init__(parent)
         self.lut = np.arange(256, dtype=np.uint8)
         self.brightness = 0
         self.contrast = 1.0

@@ -1,15 +1,16 @@
 import logging
 from typing import Dict, List
 
-from PySide6.QtCore import QObject, Signal
+from PySide6.QtCore import Signal
 from scipy.spatial import KDTree
 from shutterbug.core.models import StarIdentity, StarMeasurement
 
+from .base_manager import BaseManager
 
-class StarCatalog(QObject):
+
+class StarCatalog(BaseManager):
     """Catalogues stars between images. Is a singleton."""
 
-    _instance = None
     star_added = Signal(StarIdentity)
     star_removed = Signal(StarIdentity)
     active_star_changed = Signal(StarIdentity)
@@ -20,28 +21,19 @@ class StarCatalog(QObject):
     measurement_removed = Signal(object)
     measurement_updated = Signal(object)
 
-    def __init__(self):
-        if not hasattr(self, "_initialized"):
-            self._initialized = True
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.stars: Dict[str, StarIdentity] = {}  # id -> StarIdentity
+        self.measurement_to_star: Dict[str, StarIdentity] = (
+            {}
+        )  # StarMeasurement.uid -> StarIdentity
+        self.active_star = None  # selected star
+        self._kdtree = None
+        self._coords = []  # Reference coordinates
+        self._ids = []  # Matching star IDs
+        self._dirty = False
 
-            super().__init__()
-            self.stars: Dict[str, StarIdentity] = {}  # id -> StarIdentity
-            self.measurement_to_star: Dict[str, StarIdentity] = (
-                {}
-            )  # StarMeasurement.uid -> StarIdentity
-            self.active_star = None  # selected star
-            self._kdtree = None
-            self._coords = []  # Reference coordinates
-            self._ids = []  # Matching star IDs
-            self._dirty = False
-
-    def __new__(cls):
-        if cls._instance is None:
-            logging.debug("Creating Star Catalog singleton")
-            cls._instance = super(StarCatalog, cls).__new__(cls)
-            # initial variables
-
-        return cls._instance
+        logging.debug("Star Catalog initialized")
 
     def _add_star(self, star_identity: StarIdentity, x: float, y: float):
         """Adds a star to the catalog"""

@@ -1,11 +1,5 @@
-from __future__ import annotations
-
-from typing import TYPE_CHECKING
-
+from shutterbug.core.app_controller import AppController
 from shutterbug.core.events.change_event import ImageUpdateEvent
-
-if TYPE_CHECKING:
-    from shutterbug.gui.main_window import MainWindow
 
 import logging
 
@@ -23,11 +17,11 @@ from shutterbug.core.LUTs.registry import STRETCH_REGISTRY
 
 
 class Properties(QWidget):
-    def __init__(self, main_window: MainWindow):
+    def __init__(self, controller: AppController):
         super().__init__()
         self.setObjectName("settings")
 
-        undo_stack = main_window._undo_stack
+        undo_stack = controller._undo_stack
 
         layout = QVBoxLayout()
         self.setLayout(layout)
@@ -41,10 +35,10 @@ class Properties(QWidget):
         self.tabs.setTabPosition(QTabWidget.TabPosition.West)
 
         # Different property panels
-        self.tool_properties = ToolPropertiesPanel(main_window)
-        self.image_properties = ImagePropertiesPanel(main_window)
-        self.star_properties = StarPropertiesPanel(main_window)
-        self.general_properties = GeneralPropertiesPanel(main_window)
+        self.tool_properties = ToolPropertiesPanel(controller)
+        self.image_properties = ImagePropertiesPanel(controller)
+        self.star_properties = StarPropertiesPanel(controller)
+        self.general_properties = GeneralPropertiesPanel(controller)
 
         self.tabs.addTab(self.tool_properties, "Tool")
         self.tabs.addTab(self.general_properties, "Gen")
@@ -54,7 +48,7 @@ class Properties(QWidget):
         self.show_image_properties()
 
         # Main Window signals
-        main_window.active_tool_changed.connect(self._on_active_tool_change)
+        controller.active_tool_changed.connect(self._on_active_tool_change)
 
         logging.debug("Tool settings initialized")
 
@@ -76,10 +70,10 @@ class Properties(QWidget):
 
 class ImagePropertiesPanel(QWidget):
 
-    def __init__(self, main_window: MainWindow):
+    def __init__(self, controller: AppController):
         super().__init__()
 
-        self._undo_stack = main_window._undo_stack
+        self._undo_stack = controller._undo_stack
 
         self.current_image = None
 
@@ -112,7 +106,7 @@ class ImagePropertiesPanel(QWidget):
         self.brightness_slider.valueChanged.connect(self._on_brightness_changed)
         self.contrast_slider.valueChanged.connect(self._on_contrast_changed)
 
-        main_window.image_selected.connect(self._on_image_selected)
+        controller.image_selected.connect(self._on_image_selected)
 
         logging.debug("Image properties panel initialized")
 
@@ -154,7 +148,7 @@ class ImagePropertiesPanel(QWidget):
 
 
 class StarPropertiesPanel(QWidget):
-    def __init__(self, main_window: MainWindow):
+    def __init__(self, controller: AppController):
         super().__init__()
         self.setObjectName("starProperties")
         layout = QVBoxLayout()
@@ -185,7 +179,7 @@ class StarPropertiesPanel(QWidget):
 
 
 class GeneralPropertiesPanel(QWidget):
-    def __init__(self, main_window: MainWindow):
+    def __init__(self, controller: AppController):
         super().__init__()
         layout = QVBoxLayout()
         self.setLayout(layout)
@@ -194,7 +188,7 @@ class GeneralPropertiesPanel(QWidget):
 
 
 class ToolPropertiesPanel(QWidget):
-    def __init__(self, main_window: MainWindow):
+    def __init__(self, controller: AppController):
         super().__init__()
         layout = QVBoxLayout()
         self.setLayout(layout)

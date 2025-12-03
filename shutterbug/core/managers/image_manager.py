@@ -4,14 +4,14 @@ from typing import Dict, List
 import numpy as np
 from astropy import stats
 from photutils.detection import DAOStarFinder
-from PySide6.QtCore import QObject, QPoint, Signal
+from PySide6.QtCore import QPoint, Signal
 from shutterbug.core.models import FITSModel
 
+from .base_manager import BaseManager
 
-class ImageManager(QObject):
+
+class ImageManager(BaseManager):
     """Manages multiple images and tracks which is active"""
-
-    _instance = None
 
     image_added = Signal(FITSModel)
     active_image_changed = Signal(FITSModel)
@@ -23,25 +23,18 @@ class ImageManager(QObject):
     FWHM_DEFAULT = 3.0
     THRESHOLD_DEFAULT = 5.0
 
-    def __init__(self):
-        if not hasattr(self, "_initialized"):
-            self._initialized = True
+    def __init__(self, parent=None):
 
-            super().__init__()
-            self.images: Dict[str, FITSModel] = {}
-            self.active_image: FITSModel | None = None
+        super().__init__(parent)
+        self.images: Dict[str, FITSModel] = {}
+        self.active_image: FITSModel | None = None
 
-            # photometry settings
-            self.fwhm: float = self.FWHM_DEFAULT
-            self.threshold: float = self.THRESHOLD_DEFAULT
-            self.sigma: float = self.SIGMA_DEFAULT
+        # photometry settings
+        self.fwhm: float = self.FWHM_DEFAULT
+        self.threshold: float = self.THRESHOLD_DEFAULT
+        self.sigma: float = self.SIGMA_DEFAULT
 
-    def __new__(cls):
-        if cls._instance is None:
-            logging.debug("Creating Image Manager singleton")
-            cls._instance = super().__new__(cls)
-
-        return cls._instance
+        logging.debug("Initialized Image Manager")
 
     def add_image(self, image: FITSModel):
         """Add image to manager"""
