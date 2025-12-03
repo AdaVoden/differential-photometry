@@ -23,7 +23,7 @@ from PySide6.QtGui import (
     QWheelEvent,
 )
 from PySide6.QtWidgets import QGraphicsScene, QGraphicsView, QMenu, QWidget
-from shutterbug.core.events import ChangeEvent, ImageChangeEvent
+from shutterbug.core.events import ImageChangeEvent
 from shutterbug.core.managers import (
     ImageManager,
     SelectionManager,
@@ -37,11 +37,11 @@ from shutterbug.gui.commands import (
     RemoveMeasurementCommand,
     SelectStarCommand,
 )
+from shutterbug.gui.managers import ToolManager
 from shutterbug.gui.operators.base_operator import BaseOperator
 from shutterbug.gui.panels.base_popover import BasePopOver
 from shutterbug.gui.panels.operator_panel import OperatorPanel
 from shutterbug.gui.panels.tool_panel import ToolPanel
-from shutterbug.gui.managers import ToolManager
 from shutterbug.gui.tools import BaseTool, SelectTool
 
 
@@ -138,6 +138,10 @@ class ImageViewer(QGraphicsView):
             self.current_image = image
             if image is not None:
                 image.updated.connect(self._on_image_changed)
+                self.stretch_manager.brightness = image.brightness
+                self.stretch_manager.contrast = image.contrast
+                self.stretch_manager.set_mode(image.stretch_type)
+                self.stretch_manager.update_lut()
 
             self.update_display()
 
@@ -502,7 +506,6 @@ class ImageViewer(QGraphicsView):
         for m in measurements:
             self.add_star_marker(m, colour="cyan")
 
-    @Slot(ChangeEvent)
     def update_display(self):
         """Updates image display"""
         if self.current_image is None:

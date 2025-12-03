@@ -71,12 +71,6 @@ class Properties(QWidget):
     def show_general_properties(self):
         self.tabs.setCurrentWidget(self.general_properties)
 
-    def get_state(self):
-        return {"image_properties": self.image_properties.get_state()}
-
-    def set_state(self, state):
-        self.image_properties.set_state(state["image_properties"])
-
     @Slot(BaseTool)
     def _on_active_tool_change(self, tool: BaseTool):
         self.tool_properties.set_panel(tool)
@@ -136,7 +130,10 @@ class ImagePropertiesPanel(QWidget):
 
         if image:
             # Add new subscriptions and set the slider values
-            image.updated.connect(self._on_brightness_changed)
+            image.updated.connect(self._on_image_changed)
+            self.brightness_slider.set_value(image.brightness)
+            self.contrast_slider.set_value(image.contrast)
+            self.stretches.set_text(image.stretch_type)
 
     @Slot(ImageChangeEvent)
     def _on_image_changed(self, event: ImageChangeEvent):
@@ -157,17 +154,6 @@ class ImagePropertiesPanel(QWidget):
     def _on_contrast_changed(self, value: int):
         if self.current_image:
             self._undo_stack.push(SetContrastCommand(value, self.current_image))
-
-    def get_state(self):
-        state = {
-            "brightness": self.brightness_slider.value(),
-            "contrast": self.contrast_slider.value(),
-        }
-        return state
-
-    def set_state(self, state):
-        self.set_brightness(state["brightness"])
-        self.set_contrast(state["contrast"])
 
 
 class StarPropertiesPanel(QWidget):
