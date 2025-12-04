@@ -1,29 +1,29 @@
-from __future__ import annotations
-
-from typing import TYPE_CHECKING
+from typing import Any, Optional
 
 
-if TYPE_CHECKING:
-    from shutterbug.core.models import FITSModel, StarMeasurement, ObservableQObject
-
+from enum import Enum
 from dataclasses import dataclass
 
 
-@dataclass
-class ChangeEvent:
-    changed_fields: set
+class EventDomain(Enum):
+    IMAGE = "image"
+    MEASUREMENT = "measurement"
+    GRAPH = "graph"
+    STAR = "star"
+    TOOL = "tool"
+    OPERATOR = "operator"
+    ADAPTER = "adapter"
 
 
 @dataclass
-class UpdateEvent(ChangeEvent):
-    source: ObservableQObject
+class Event:
+    domain: EventDomain
+    action: str
+    field: Optional[str] = None
+    data: Optional[Any] = None
 
-
-@dataclass
-class ImageUpdateEvent(ChangeEvent):
-    source: FITSModel
-
-
-@dataclass
-class MeasurementUpdateEvent(ChangeEvent):
-    source: StarMeasurement
+    @property
+    def key(self):
+        if self.field:
+            return f"{self.domain.value}.{self.action}.{self.field}"
+        return f"{self.domain.value}.{self.action}"

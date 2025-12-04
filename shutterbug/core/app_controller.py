@@ -1,6 +1,6 @@
 import logging
 
-from shutterbug.core.events.change_event import MeasurementUpdateEvent
+from shutterbug.core.events.change_event import Event
 import shutterbug.core.utility.photometry as phot
 from PySide6.QtCore import QObject, Signal, Slot
 from PySide6.QtGui import QUndoCommand, QUndoStack
@@ -28,6 +28,7 @@ ADAPTERS = [(FITSModel, FITSModelAdapter), (StarIdentity, StarIdentityAdapter)]
 
 
 class AppController(QObject):
+
     # Tool signals
     active_tool_changed = Signal(BaseTool)
     tool_settings_changed = Signal(QWidget)
@@ -42,25 +43,7 @@ class AppController(QObject):
     star_selected = Signal(StarIdentity)
     measurement_selected = Signal(StarMeasurement)
 
-    # Measurement signals
-    measurement_added = Signal(StarMeasurement)
-    measurement_removed = Signal(StarMeasurement)
-    measurement_updated = Signal(MeasurementUpdateEvent)
-
-    # Star signals
-    star_added = Signal(StarIdentity)
-    star_removed = Signal(StarIdentity)
-
-    # Graph Signals
-    graph_added = Signal(GraphDataModel)
-    graph_removed = Signal(GraphDataModel)
-
-    # Image Signals
-    image_added = Signal(FITSModel)
-    image_removed = Signal(FITSModel)
-
-    # Stretch Signals
-    lut_changed = Signal()
+    change_event = Signal(Event)
 
     def __init__(self):
         super().__init__()
@@ -85,23 +68,6 @@ class AppController(QObject):
         self.selections.star_selected.connect(self.star_selected)
         self.selections.measurement_selected.connect(self.measurement_selected)
 
-        # Handle Measurement signals
-        self.stars.measurement_added.connect(self.measurement_added)
-        self.stars.measurement_removed.connect(self.measurement_removed)
-        self.stars.measurement_updated.connect(self.measurement_updated)
-
-        # Handle star signals
-        self.stars.star_added.connect(self.star_added)
-        self.stars.star_removed.connect(self.star_removed)
-
-        # Handle graph signals
-        self.graphs.graph_added.connect(self.graph_added)
-        self.graphs.graph_removed.connect(self.graph_removed)
-
-        # Handle image signals
-        self.images.image_added.connect(self.image_added)
-        self.images.image_removed.connect(self.image_removed)
-
         # Handle tool signals
         self.tools.tool_changed.connect(self.active_tool_changed)
         self.tools.tool_settings_changed.connect(self.tool_settings_changed)
@@ -111,10 +77,28 @@ class AppController(QObject):
 
         self.tools.operator_finished.connect(self._on_operator_finished)
 
-        # Handle stretch signals
-        self.stretches.lut_changed.connect(self.lut_changed)
-
         logging.debug("App Controller initialized")
+
+    def dispatch(self, evt: Event):
+        """Dispatches generic events"""
+        logging.debug(f"EVENT: {evt.key}")
+        self.change_event.emit(evt)
+
+    def on(self, pattern: str, callback):
+        """Sets up callback for event, if match"""
+
+        def listener(evt):
+            if self._match(evt.key, pattern):
+                callback(evt)
+
+        self.change_event.connect(listener)
+        return listener
+
+    def _match(self, key, pattern):
+        """Matches event domain and action to pattern"""
+        if pattern.endwith(".*"):
+            return key.startswith(pattern[:-2])
+        return key == pattern
 
     @Slot()
     def on_redo(self):

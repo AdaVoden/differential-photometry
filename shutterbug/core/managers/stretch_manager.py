@@ -16,7 +16,6 @@ from .base_manager import BaseManager
 
 
 class StretchManager(BaseManager):
-    lut_changed = Signal()
 
     def __init__(self, controller: AppController, parent=None):
         super().__init__(controller, parent)
@@ -38,7 +37,6 @@ class StretchManager(BaseManager):
         y = np.clip(y * 255, 0, 255).astype(np.uint8)
 
         self.lut = y
-        self.lut_changed.emit()
 
     def apply(self, display_data):
         """Apply LUT to display data"""

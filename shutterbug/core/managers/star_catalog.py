@@ -2,7 +2,10 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from shutterbug.core.events.change_event import MeasurementUpdateEvent
+from shutterbug.core.events.change_event import (
+    Event,
+    EventDomain,
+)
 
 if TYPE_CHECKING:
     from shutterbug.core.app_controller import AppController
@@ -19,13 +22,6 @@ from .base_manager import BaseManager
 
 class StarCatalog(BaseManager):
     """Catalogues stars between images. Is a singleton."""
-
-    star_added = Signal(StarIdentity)
-    star_removed = Signal(StarIdentity)
-    active_star_changed = Signal(StarIdentity)
-    measurement_added = Signal(StarMeasurement)
-    measurement_removed = Signal(StarMeasurement)
-    measurement_updated = Signal(MeasurementUpdateEvent)
 
     def __init__(self, controller: AppController, parent=None):
         super().__init__(controller, parent)
@@ -47,7 +43,7 @@ class StarCatalog(BaseManager):
         self._coords.append((x, y))
         self._ids.append(star_identity.id)
         self._dirty = True
-        self.star_added.emit(star_identity)
+        self.controller.dispatch(Event(EventDomain.STAR, "created", data=star_identity))
         logging.debug(f"Added identity: {star_identity.id}")
 
     def _remove_star(self, star_identity: StarIdentity, x: float, y: float):
@@ -56,7 +52,7 @@ class StarCatalog(BaseManager):
         self._coords.remove((x, y))
         self._ids.remove(star_identity.id)
         self._dirty = True
-        self.star_removed.emit(star_identity)
+        self.controller.dispatch(Event(EventDomain.STAR, "removed", data=star_identity))
         logging.debug(f"Removed identity: {star_identity.id}")
 
     def _ensure_tree(self):
@@ -107,18 +103,20 @@ class StarCatalog(BaseManager):
             self._add_star(star, measurement.x, measurement.y)
         star.measurements[measurement.image] = measurement
         self.measurement_to_star[measurement.uid] = star
-        self.measurement_added.emit(measurement)
-        measurement.updated.connect(self.measurement_updated)
+        self.controller.dispatch(
+            Event(EventDomain.MEASUREMENT, "created", data=measurement)
+        )
         return star
 
     def unregister_measurement(self, measurement: StarMeasurement) -> None:
         """Removes measurement from star in catalog"""
         star = self.find_nearest(measurement.x, measurement.y)
         if star is not None:
-            self.measurement_removed.emit(measurement)
             star.measurements.pop(measurement.image)
             self.measurement_to_star.pop(measurement.uid)
-            measurement.updated.disconnect(self.measurement_updated)
+            self.controller.dispatch(
+                Event(EventDomain.MEASUREMENT, "removed", data=measurement)
+            )
             if len(star.measurements) == 0:
                 self._remove_star(star, measurement.x, measurement.y)
                 return
@@ -142,13 +140,3 @@ class StarCatalog(BaseManager):
     def get_all_stars(self) -> List[StarIdentity]:
         """Gets all stars currently registered"""
         return list(self.stars.values())
-
-    def set_active_star(self, star: StarIdentity | None):
-        """Sets active star"""
-        if self.active_star != star:
-            if star is None:
-                logging.debug(f"Setting active star to none")
-            else:
-                logging.debug(f"Setting star as active: {star.id}")
-            self.active_star = star
-            self.active_star_changed.emit(star)

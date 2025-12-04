@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from shutterbug.core.events.change_event import Event, EventDomain
+
 if TYPE_CHECKING:
     from shutterbug.core.app_controller import AppController
 
@@ -16,7 +18,6 @@ from shutterbug.core.models import (
     StarIdentity,
     StarMeasurement,
 )
-from shutterbug.gui.adapters.adapter_registry import AdapterRegistry
 from shutterbug.gui.adapters.tabular_data_interface import TabularDataInterface
 
 
@@ -44,16 +45,30 @@ class SelectionManager(BaseManager):
         adapter = self.adapter_registry.get_adapter_for(selected)
         if adapter is not None:
             logging.debug("Adapter found")
-            self.adapter_changed.emit(adapter)
+            self.controller.dispatch(
+                Event(EventDomain.ADAPTER, "selected", data=adapter)
+            )
         else:
             logging.error(f"Failed to find adapter for {type(selected).__name__}")
 
         # Still ought to be a better way
         if isinstance(selected, FITSModel):
-            self.image_selected.emit(selected)
+            self.controller.dispatch(
+                Event(EventDomain.IMAGE, "selected", data=selected)
+            )
         elif isinstance(selected, GraphDataModel):
+            self.controller.dispatch(
+                Event(EventDomain.GRAPH, "selected", data=selected)
+            )
+
             self.graph_selected.emit(selected)
         elif isinstance(selected, StarIdentity):
+            self.controller.dispatch(Event(EventDomain.STAR, "selected", data=selected))
+
             self.star_selected.emit(selected)
         elif isinstance(selected, StarMeasurement):
+            self.controller.dispatch(
+                Event(EventDomain.MEASUREMENT, "selected", data=selected)
+            )
+
             self.measurement_selected.emit(selected)
