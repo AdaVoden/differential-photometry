@@ -1,5 +1,9 @@
 from typing import Optional
 
+from PySide6.QtCore import Signal
+
+from shutterbug.core.events.change_event import MeasurementUpdateEvent
+
 from .base_observable import ObservableQObject
 
 from uuid import uuid4
@@ -7,6 +11,8 @@ from uuid import uuid4
 
 class StarMeasurement(ObservableQObject):
     """Measurement of a star within an image"""
+
+    updated = Signal(MeasurementUpdateEvent)
 
     def __init__(
         self,

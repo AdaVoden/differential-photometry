@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from shutterbug.core.events.change_event import ChangeEvent
+
 if TYPE_CHECKING:
     from shutterbug.core.app_controller import AppController
 
@@ -26,9 +28,9 @@ class FITSModelAdapter(TabularDataInterface):
         self._signals = AdapterSignals()
 
         # Set up signals
-        self.catalog.measurement_added.connect(self._on_measurement_added)
-        self.catalog.measurement_updated.connect(self._on_measurement_changed)
-        self.catalog.measurement_removed.connect(self._on_measurement_removed)
+        self.controller.measurement_added.connect(self._on_measurement_added)
+        self.controller.measurement_updated.connect(self._on_measurement_changed)
+        self.controller.measurement_removed.connect(self._on_measurement_removed)
 
     def get_column_headers(self) -> List[str]:
         """Gets column information for star measurements"""
@@ -90,10 +92,10 @@ class FITSModelAdapter(TabularDataInterface):
             return
         return self._data_to_row(measurement, star_id.id)
 
-    @Slot(StarMeasurement)
-    def _on_measurement_changed(self, measurement: StarMeasurement):
+    @Slot(ChangeEvent)
+    def _on_measurement_changed(self, event: ChangeEvent):
         """Handles measurement being changed"""
-        self.signals.item_updated.emit(self._get_row_from_measurement(measurement))
+        self.signals.item_updated.emit(self._get_row_from_measurement(event.source))
 
     @Slot(StarMeasurement)
     def _on_measurement_added(self, measurement: StarMeasurement):

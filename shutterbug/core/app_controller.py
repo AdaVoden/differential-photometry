@@ -1,5 +1,6 @@
 import logging
 
+from shutterbug.core.events.change_event import MeasurementUpdateEvent
 import shutterbug.core.utility.photometry as phot
 from PySide6.QtCore import QObject, Signal, Slot
 from PySide6.QtGui import QUndoCommand, QUndoStack
@@ -42,9 +43,9 @@ class AppController(QObject):
     measurement_selected = Signal(StarMeasurement)
 
     # Measurement signals
-    measurement_added = Signal(object)
-    measurement_removed = Signal(object)
-    measurement_updated = Signal(object)
+    measurement_added = Signal(StarMeasurement)
+    measurement_removed = Signal(StarMeasurement)
+    measurement_updated = Signal(MeasurementUpdateEvent)
 
     # Star signals
     star_added = Signal(StarIdentity)

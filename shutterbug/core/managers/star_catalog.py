@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from shutterbug.core.events.change_event import MeasurementUpdateEvent
+
 if TYPE_CHECKING:
     from shutterbug.core.app_controller import AppController
 
@@ -21,12 +23,9 @@ class StarCatalog(BaseManager):
     star_added = Signal(StarIdentity)
     star_removed = Signal(StarIdentity)
     active_star_changed = Signal(StarIdentity)
-    # Object because StarMeasurements are QObservableObjects
-    # And those emit the object type.
-    # I need to fix.
-    measurement_added = Signal(object)
-    measurement_removed = Signal(object)
-    measurement_updated = Signal(object)
+    measurement_added = Signal(StarMeasurement)
+    measurement_removed = Signal(StarMeasurement)
+    measurement_updated = Signal(MeasurementUpdateEvent)
 
     def __init__(self, controller: AppController, parent=None):
         super().__init__(controller, parent)
