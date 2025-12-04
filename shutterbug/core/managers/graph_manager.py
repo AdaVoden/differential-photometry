@@ -1,3 +1,10 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from shutterbug.core.app_controller import AppController
+
 from typing import Dict
 from PySide6.QtCore import Signal
 
@@ -14,9 +21,9 @@ class GraphManager(BaseManager):
     active_graph_changed = Signal(GraphDataModel)
     graph_removed = Signal(GraphDataModel)
 
-    def __init__(self, parent=None):
+    def __init__(self, controller: AppController, parent=None):
 
-        super().__init__(parent)
+        super().__init__(controller, parent)
         self.graphs: Dict[str, GraphDataModel] = {}
         self.active_graph: GraphDataModel | None = None
 

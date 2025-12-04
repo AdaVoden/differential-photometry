@@ -4,7 +4,12 @@ import shutterbug.core.utility.photometry as phot
 from PySide6.QtCore import QObject, Signal, Slot
 from PySide6.QtGui import QUndoCommand, QUndoStack
 from PySide6.QtWidgets import QWidget
-from shutterbug.gui.adapters import TabularDataInterface
+from shutterbug.gui.adapters import (
+    TabularDataInterface,
+    FITSModelAdapter,
+    StarIdentityAdapter,
+)
+from shutterbug.gui.adapters.adapter_registry import AdapterRegistry
 from shutterbug.gui.managers import ToolManager
 from shutterbug.gui.operators.base_operator import BaseOperator
 from shutterbug.gui.tools import BaseTool
@@ -17,6 +22,8 @@ from .managers import (
     StretchManager,
 )
 from .models import FITSModel, GraphDataModel, StarIdentity, StarMeasurement
+
+ADAPTERS = [(FITSModel, FITSModelAdapter), (StarIdentity, StarIdentityAdapter)]
 
 
 class AppController(QObject):
@@ -61,10 +68,12 @@ class AppController(QObject):
         self.images = ImageManager(self)
         self.stars = StarCatalog(self)
         self.graphs = GraphManager(self)
-        self.selections = SelectionManager(self)
         self.stretches = StretchManager(self)
+        self.adapters = AdapterRegistry(self)
+        self.selections = SelectionManager(self)
         self.tools = ToolManager(self)
 
+        self.register_adapters()
         # Undo stack
         self._undo_stack = QUndoStack()
 
@@ -98,6 +107,8 @@ class AppController(QObject):
         self.tools.operator_changed.connect(self.operator_changed)
         self.tools.operator_finished.connect(self.operator_finished)
         self.tools.operator_cancelled.connect(self.operator_cancelled)
+
+        self.tools.operator_finished.connect(self._on_operator_finished)
 
         # Handle stretch signals
         self.stretches.lut_changed.connect(self.lut_changed)
@@ -183,3 +194,13 @@ class AppController(QObject):
             graph = GraphDataModel.from_star(star)
             self.graphs.add_graph(graph)
             self.graphs.set_active_graph(graph)
+
+    @Slot(QUndoCommand)
+    def _on_operator_finished(self, cmd: QUndoCommand):
+        self._undo_stack.push(cmd)
+
+    def register_adapters(self):
+        registry = self.adapters
+        for cls, adapter in ADAPTERS:
+            registry.register_adapter(cls, adapter)
+            logging.debug(f"Registered {cls.__name__} adapter")

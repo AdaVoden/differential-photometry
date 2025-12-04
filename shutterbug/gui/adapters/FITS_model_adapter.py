@@ -1,12 +1,16 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from shutterbug.core.app_controller import AppController
+
 import logging
 from typing import List
 
 from PySide6.QtCore import Slot
 from PySide6.QtGui import QStandardItem
 from shutterbug.core.models import FITSModel, StarMeasurement
-from shutterbug.core.managers import (
-    StarCatalog,
-)
 from shutterbug.gui.adapters.tabular_data_interface import (
     AdapterSignals,
     TabularDataInterface,
@@ -15,12 +19,10 @@ from shutterbug.gui.adapters.tabular_data_interface import (
 
 class FITSModelAdapter(TabularDataInterface):
 
-    def __init__(
-        self,
-        image: FITSModel,
-    ):
+    def __init__(self, image: FITSModel, controller: AppController):
         self.image = image
-        self.catalog = StarCatalog()
+        self.controller = controller
+        self.catalog = controller.stars
         self._signals = AdapterSignals()
 
         # Set up signals

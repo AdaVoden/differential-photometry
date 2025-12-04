@@ -1,3 +1,10 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from shutterbug.core.app_controller import AppController
+
 import logging
 
 from PySide6.QtCore import Signal, Slot
@@ -16,8 +23,8 @@ class ToolManager(BaseManager):
     operator_finished = Signal(QUndoCommand)
     operator_cancelled = Signal()
 
-    def __init__(self, parent=None):
-        super().__init__(parent)
+    def __init__(self, controller: AppController, parent=None):
+        super().__init__(controller, parent)
         self._current_tool: BaseTool | None = None
         self.active_operator: BaseOperator | None = None
 
@@ -33,12 +40,16 @@ class ToolManager(BaseManager):
         self._current_tool = tool
         self.tool_changed.emit(tool)
 
-    def begin_operation(self, event: QMouseEvent, viewer: ImageViewer):
+    def begin_operation(
+        self,
+        event: QMouseEvent,
+        viewer: ImageViewer,
+    ):
         """Creates operator and begins operation"""
         if not self._current_tool:
             return
 
-        op = self._current_tool.create_operator(viewer)
+        op = self._current_tool.create_operator(viewer, self.controller)
         self.active_operator = op
 
         widget = op.create_settings_widget()

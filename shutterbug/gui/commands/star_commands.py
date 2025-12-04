@@ -1,7 +1,13 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from shutterbug.core.app_controller import AppController
+
 import logging
 from typing import List
 from PySide6.QtGui import QUndoCommand
-from shutterbug.core.managers.star_catalog import StarCatalog
 from shutterbug.core.models import FITSModel, StarMeasurement
 from shutterbug.core.models.star_identity import StarIdentity
 
@@ -9,12 +15,12 @@ from shutterbug.core.models.star_identity import StarIdentity
 class AddMeasurementsCommand(QUndoCommand):
     """Command to select a star"""
 
-    def __init__(self, stars: List, image: FITSModel):
+    def __init__(self, stars: List, image: FITSModel, controller: AppController):
         super().__init__()
         self.stars = stars
         self.image = image
         self.time = image.observation_time
-        self.catalog = StarCatalog()
+        self.catalog = controller.stars
         self.measurements = []
 
     def redo(self):
@@ -42,10 +48,10 @@ class AddMeasurementsCommand(QUndoCommand):
 class RemoveMeasurementCommand(QUndoCommand):
     """Command to deselect a star"""
 
-    def __init__(self, measurement: StarMeasurement):
+    def __init__(self, measurement: StarMeasurement, controller: AppController):
         super().__init__()
         self.measurement = measurement
-        self.catalog = StarCatalog()
+        self.catalog = controller.stars
 
     def redo(self):
         m = self.measurement
@@ -64,10 +70,10 @@ class RemoveMeasurementCommand(QUndoCommand):
 
 class SelectStarCommand(QUndoCommand):
 
-    def __init__(self, identity: StarIdentity):
+    def __init__(self, identity: StarIdentity, controller: AppController):
         super().__init__()
         self.identity = identity
-        self.catalog = StarCatalog()
+        self.catalog = controller.stars
         self.old_identity = self.catalog.active_star
 
     def redo(self):
@@ -81,9 +87,9 @@ class SelectStarCommand(QUndoCommand):
 
 class DeselectStarCommand(QUndoCommand):
 
-    def __init__(self):
+    def __init__(self, controller: AppController):
         super().__init__()
-        self.catalog = StarCatalog()
+        self.catalog = controller.stars
         self.old_identity = self.catalog.active_star
 
     def redo(self):

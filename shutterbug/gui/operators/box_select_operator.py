@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from shutterbug.gui.views.image import ImageViewer
+    from shutterbug.core.app_controller import AppController
 
 from shutterbug.gui.tools.box_select_settings import BoxSelectOperatorSettingsWidget
 
@@ -17,8 +18,13 @@ from shutterbug.gui.operators.operator_parameters import BoxSelectParameters
 
 class BoxSelectOperator(BaseOperator):
 
-    def __init__(self, viewer: ImageViewer, params: BoxSelectParameters):
-        super().__init__(viewer)
+    def __init__(
+        self,
+        viewer: ImageViewer,
+        params: BoxSelectParameters,
+        controller: AppController,
+    ):
+        super().__init__(viewer, controller)
         # Parameters live here
         self.params = params
         self.params.changed.connect(self._on_params_changed)
@@ -74,7 +80,7 @@ class BoxSelectOperator(BaseOperator):
         if not stars or self.viewer.current_image is None:
             return None  # Things have gone wrong
 
-        return AddMeasurementsCommand(stars, self.viewer.current_image)
+        return AddMeasurementsCommand(stars, self.viewer.current_image, self.controller)
 
     def cleanup_preview(self):
         """Cleans preview"""

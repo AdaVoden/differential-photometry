@@ -6,6 +6,7 @@ from shutterbug.gui.operators.operator_parameters import BoxSelectParameters
 
 if TYPE_CHECKING:
     from shutterbug.gui.views.image import ImageViewer
+    from shutterbug.core.app_controller import AppController
 
 from shutterbug.gui.operators.box_select_operator import BoxSelectOperator
 from shutterbug.gui.tools.base_tool import BaseTool
@@ -16,8 +17,8 @@ class BoxSelectTool(BaseTool):
 
     params = BoxSelectParameters()
 
-    def create_operator(self, viewer: ImageViewer):
-        return BoxSelectOperator(viewer, self.params)
+    def create_operator(self, viewer: ImageViewer, controller: AppController):
+        return BoxSelectOperator(viewer, self.params, controller)
 
     def create_settings_widget(self):
         # return BoxSelectToolSettingsWidget(self.params)

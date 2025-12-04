@@ -1,3 +1,10 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from shutterbug.core.app_controller import AppController
+
 import logging
 from typing import Dict, List
 
@@ -23,9 +30,9 @@ class ImageManager(BaseManager):
     FWHM_DEFAULT = 3.0
     THRESHOLD_DEFAULT = 5.0
 
-    def __init__(self, parent=None):
+    def __init__(self, controller: AppController, parent=None):
 
-        super().__init__(parent)
+        super().__init__(controller, parent)
         self.images: Dict[str, FITSModel] = {}
         self.active_image: FITSModel | None = None
 

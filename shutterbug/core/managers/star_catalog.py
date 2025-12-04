@@ -1,3 +1,10 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from shutterbug.core.app_controller import AppController
+
 import logging
 from typing import Dict, List
 
@@ -21,8 +28,8 @@ class StarCatalog(BaseManager):
     measurement_removed = Signal(object)
     measurement_updated = Signal(object)
 
-    def __init__(self, parent=None):
-        super().__init__(parent)
+    def __init__(self, controller: AppController, parent=None):
+        super().__init__(controller, parent)
         self.stars: Dict[str, StarIdentity] = {}  # id -> StarIdentity
         self.measurement_to_star: Dict[str, StarIdentity] = (
             {}

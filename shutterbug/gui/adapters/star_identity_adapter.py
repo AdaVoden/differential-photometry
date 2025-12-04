@@ -15,9 +15,9 @@ from shutterbug.gui.adapters.tabular_data_interface import (
 
 
 class StarIdentityAdapter(TabularDataInterface):
-    def __init__(self, star: StarIdentity):
+    def __init__(self, star: StarIdentity, catalog: StarCatalog):
         self.star = star
-        self.catalog = StarCatalog()
+        self.catalog = catalog
         self._signals = AdapterSignals()
 
         # Set up signals

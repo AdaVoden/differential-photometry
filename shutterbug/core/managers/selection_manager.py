@@ -1,7 +1,15 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from shutterbug.core.app_controller import AppController
+
 import logging
 from typing import Any
 
-from PySide6.QtCore import QObject, Signal, Slot
+from PySide6.QtCore import Signal, Slot
+from shutterbug.core.managers.base_manager import BaseManager
 from shutterbug.core.models import (
     FITSModel,
     GraphDataModel,
@@ -12,7 +20,7 @@ from shutterbug.gui.adapters.adapter_registry import AdapterRegistry
 from shutterbug.gui.adapters.tabular_data_interface import TabularDataInterface
 
 
-class SelectionManager(QObject):
+class SelectionManager(BaseManager):
     adapter_changed = Signal(TabularDataInterface)
     image_selected = Signal(FITSModel)
     graph_selected = Signal(GraphDataModel)
@@ -21,10 +29,10 @@ class SelectionManager(QObject):
 
     _instance = None
 
-    def __init__(self, parent=None):
+    def __init__(self, controller: AppController, parent=None):
 
-        super().__init__(None)
-        self.adapter_registry = AdapterRegistry()
+        super().__init__(controller, parent)
+        self.adapter_registry = controller.adapters
         self._current = None
         logging.debug("Selection Manager initialized")
 

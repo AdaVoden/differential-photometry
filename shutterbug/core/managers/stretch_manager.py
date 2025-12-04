@@ -1,3 +1,10 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from shutterbug.core.app_controller import AppController
+
 import logging
 from typing import Optional
 
@@ -11,8 +18,8 @@ from .base_manager import BaseManager
 class StretchManager(BaseManager):
     lut_changed = Signal()
 
-    def __init__(self, parent=None):
-        super().__init__(parent)
+    def __init__(self, controller: AppController, parent=None):
+        super().__init__(controller, parent)
         self.lut = np.arange(256, dtype=np.uint8)
         self.brightness = 0
         self.contrast = 1.0
