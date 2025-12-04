@@ -41,9 +41,9 @@ class Outliner(QWidget):
         )
 
         # Handle signals
-        self.controller.image_added.connect(self.model.add_image)
-        self.controller.graph_added.connect(self.model.add_graph)
-        self.controller.star_added.connect(self.model.add_star)
+        controller.on("image.created", self.model.add_image)
+        controller.on("graph.created", self.model.add_graph)
+        controller.on("star.created", self.model.add_star)
 
         logging.debug("Outliner initialized")
 

@@ -6,7 +6,6 @@ from PySide6.QtCore import QObject, Signal, Slot
 from PySide6.QtGui import QUndoCommand, QUndoStack
 from PySide6.QtWidgets import QWidget
 from shutterbug.gui.adapters import (
-    TabularDataInterface,
     FITSModelAdapter,
     StarIdentityAdapter,
 )
@@ -36,13 +35,6 @@ class AppController(QObject):
     operator_finished = Signal(QUndoCommand)
     operator_cancelled = Signal()
 
-    # Selection signals
-    adapter_changed = Signal(TabularDataInterface)
-    image_selected = Signal(FITSModel)
-    graph_selected = Signal(GraphDataModel)
-    star_selected = Signal(StarIdentity)
-    measurement_selected = Signal(StarMeasurement)
-
     change_event = Signal(Event)
 
     def __init__(self):
@@ -60,13 +52,6 @@ class AppController(QObject):
         self.register_adapters()
         # Undo stack
         self._undo_stack = QUndoStack()
-
-        # Handle Selection signals
-        self.selections.adapter_changed.connect(self.adapter_changed)
-        self.selections.image_selected.connect(self.image_selected)
-        self.selections.graph_selected.connect(self.graph_selected)
-        self.selections.star_selected.connect(self.star_selected)
-        self.selections.measurement_selected.connect(self.measurement_selected)
 
         # Handle tool signals
         self.tools.tool_changed.connect(self.active_tool_changed)

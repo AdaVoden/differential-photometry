@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from shutterbug.core.events.change_event import ChangeEvent
+from shutterbug.core.events.change_event import Event
 
 if TYPE_CHECKING:
     from shutterbug.core.app_controller import AppController
@@ -28,9 +28,9 @@ class FITSModelAdapter(TabularDataInterface):
         self._signals = AdapterSignals()
 
         # Set up signals
-        self.controller.measurement_added.connect(self._on_measurement_added)
-        self.controller.measurement_updated.connect(self._on_measurement_changed)
-        self.controller.measurement_removed.connect(self._on_measurement_removed)
+        controller.on("measurement.created", self._on_measurement_added)
+        controller.on("measurement.updated.*", self._on_measurement_changed)
+        controller.on("measurement.removed", self._on_measurement_removed)
 
     def get_column_headers(self) -> List[str]:
         """Gets column information for star measurements"""
@@ -92,17 +92,17 @@ class FITSModelAdapter(TabularDataInterface):
             return
         return self._data_to_row(measurement, star_id.id)
 
-    @Slot(ChangeEvent)
-    def _on_measurement_changed(self, event: ChangeEvent):
+    @Slot(Event)
+    def _on_measurement_changed(self, event: Event):
         """Handles measurement being changed"""
         self.signals.item_updated.emit(self._get_row_from_measurement(event.source))
 
-    @Slot(StarMeasurement)
-    def _on_measurement_added(self, measurement: StarMeasurement):
+    @Slot(Event)
+    def _on_measurement_added(self, event: Event):
         """Handles measurement being added to image"""
         self.signals.item_added.emit(self._get_row_from_measurement(measurement))
 
-    @Slot(StarMeasurement)
-    def _on_measurement_removed(self, measurement: StarMeasurement):
+    @Slot(Event)
+    def _on_measurement_removed(self, event: Event):
         """Handles measurement being removed from image"""
         self.signals.item_removed.emit(self._get_row_from_measurement(measurement))

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+
 if TYPE_CHECKING:
     from shutterbug.core.app_controller import AppController
 
@@ -10,7 +11,8 @@ from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 from PySide6.QtCore import Slot
 from PySide6.QtWidgets import QVBoxLayout, QWidget
-from shutterbug.core.models import GraphDataModel
+
+from shutterbug.core.events.change_event import Event
 
 
 class GraphViewer(QWidget):
@@ -31,7 +33,7 @@ class GraphViewer(QWidget):
         self.ax = None
         layout.addWidget(self.canvas)
 
-        controller.graph_selected.connect(self._on_active_graph_change)
+        controller.on("graph.selected", self._on_active_graph_change)
 
     def _clear(self):
         """Clears active graph and axes object"""
@@ -42,8 +44,9 @@ class GraphViewer(QWidget):
         self.figure.clear()
         self.ax = None
 
-    @Slot(GraphDataModel)
-    def _on_active_graph_change(self, graph_data: GraphDataModel | None):
+    @Slot(Event)
+    def _on_active_graph_change(self, event: Event):
+        graph_data = event.data
         if graph_data is None:
             logging.debug(f"Graph viewer clearing graph, no graph selected")
             self._clear()

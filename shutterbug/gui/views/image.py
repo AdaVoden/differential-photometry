@@ -29,9 +29,10 @@ from PySide6.QtGui import (
     QWheelEvent,
 )
 from PySide6.QtWidgets import QGraphicsScene, QGraphicsView, QMenu, QWidget
-from shutterbug.core.events import ImageUpdateEvent
+
 from shutterbug.core.models import FITSModel, StarIdentity, StarMeasurement
 from shutterbug.core.utility.photometry import measure_star_magnitude
+from shutterbug.core.events.change_event import Event
 from shutterbug.gui.commands import (
     AddMeasurementsCommand,
     RemoveMeasurementCommand,
@@ -114,10 +115,10 @@ class ImageViewer(QGraphicsView):
         self.setResizeAnchor(QGraphicsView.ViewportAnchor.AnchorUnderMouse)
 
         # General signals
-        self.controller.image_selected.connect(self._on_image_selected)
-        self.controller.measurement_added.connect(self.add_star_marker)
-        self.controller.measurement_removed.connect(self.remove_star_marker)
-        self.controller.star_selected.connect(self._on_star_selected)
+        self.controller.on("image.selected", self._on_image_selected)
+        self.controller.on("measurement.created", self.add_star_marker)
+        self.controller.on("measurement.removed", self.remove_star_marker)
+        self.controller.on("star.selected", self._on_star_selected)
 
         # Tool signals
         self.controller.active_tool_changed.connect(self._on_tool_changed)
@@ -130,9 +131,10 @@ class ImageViewer(QGraphicsView):
 
         logging.debug("Image Viewer initialized")
 
-    @Slot(FITSModel)
-    def _on_image_selected(self, image: FITSModel):
+    @Slot(Event)
+    def _on_image_selected(self, event: Event):
         """Handles image manager active image changing"""
+        image = event.data
         if image != self.current_image:
             if self.current_image:
                 self.current_image.updated.disconnect(self._on_image_update_event)
@@ -147,9 +149,12 @@ class ImageViewer(QGraphicsView):
 
             self.update_display()
 
-    @Slot(StarIdentity)
-    def _on_star_selected(self, star: StarIdentity):
+    @Slot(Event)
+    def _on_star_selected(self, event: Event):
         """Handles star being selected"""
+        star = event.data
+        if star is None:
+            return
         if self.current_image is None:
             return  # Need an image for this
 
@@ -165,19 +170,11 @@ class ImageViewer(QGraphicsView):
         self.remove_star_marker(measurement)
         self.add_star_marker(measurement, colour="gold")
 
-    @Slot(ImageUpdateEvent)
-    def _on_image_update_event(self, event: ImageUpdateEvent):
+    @Slot(Event)
+    def _on_image_update_event(self, event: Event):
         """Handles current image changing values"""
-        fields = event.changed_fields
-        image = event.source
-        if fields & {"brightness", "contrast"}:
-            self.stretch_manager.brightness = image.brightness
-            self.stretch_manager.contrast = image.contrast
-        if fields & {"stretch_type"}:
-            self.stretch_manager.set_mode(image.stretch_type)
-
-        self.stretch_manager.update_lut()
-        self.update_display()
+        if event.data == self.current_image:
+            self.update_display()
 
     @Slot(BaseTool)
     def _on_tool_changed(self, tool: BaseTool):
@@ -335,7 +332,7 @@ class ImageViewer(QGraphicsView):
 
     def get_centroid_at_point(self, coordinates: QPoint):
         """Gets star, if any, under point"""
-        image = self.image_manager.active_image
+        image = self.current_image
         if image is None:
             # No work to do
             return None
@@ -350,7 +347,7 @@ class ImageViewer(QGraphicsView):
     def get_registered_measurement(self, coordinates: QPoint) -> StarIdentity | None:
         """Gets already registered measurement at point, if any"""
         catalog = self.catalog
-        image = self.image_manager.active_image
+        image = self.current_image
         if image is None:
             return None  # No work to do
 
@@ -379,7 +376,7 @@ class ImageViewer(QGraphicsView):
 
     def select_star(self, coordinates: QPoint):
         """Creates the select star command and pushes command to the stack"""
-        current_image = self.image_manager.active_image
+        current_image = self.current_image
         if current_image is None:
             return  # Nothing to do
 
@@ -390,13 +387,15 @@ class ImageViewer(QGraphicsView):
             )
             return  # No work to do
         if isinstance(star, StarIdentity):
-            self._undo_stack.push(SelectStarCommand(star))
+            self._undo_stack.push(SelectStarCommand(star, self.controller))
         else:
-            self._undo_stack.push(AddMeasurementsCommand([star], current_image))
+            self._undo_stack.push(
+                AddMeasurementsCommand([star], current_image, self.controller)
+            )
 
     def deselect_star(self, coordinates: QPoint):
         """Creates the deselect star command and pushes command to the stack"""
-        current_image = self.image_manager.active_image
+        current_image = self.current_image
         if current_image is None:
             return  # Nothing to do
         logging.debug(
@@ -413,7 +412,9 @@ class ImageViewer(QGraphicsView):
         logging.debug("Star found, creating command")
         measurement = star.measurements.get(current_image.filename)
         if measurement is not None:
-            self._undo_stack.push(RemoveMeasurementCommand(measurement))
+            self._undo_stack.push(
+                RemoveMeasurementCommand(measurement, self.controller)
+            )
 
     @Slot()
     def _on_propagate_requested(self):

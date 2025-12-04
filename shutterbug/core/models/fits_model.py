@@ -1,11 +1,14 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from shutterbug.core.app_controller import AppController
+
 from pathlib import Path
 from uuid import uuid4
 
 from math import floor, ceil
-
-from PySide6.QtCore import Signal
-
-from shutterbug.core.events.change_event import ImageUpdateEvent
 
 from .base_observable import ObservableQObject
 
@@ -19,13 +22,18 @@ class FITSModel(ObservableQObject):
     BRIGHTNESS_OFFSET_DEFAULT = 0
     CONTRAST_FACTOR_DEFAULT = 1
     STAMP_PADDING_DEFAULT = 50
-
-    updated = Signal(ImageUpdateEvent)
+    type = "image"
 
     def __init__(
-        self, filepath: Path, data, obs_time: str, bzero: float, bscale: float
+        self,
+        controller: AppController,
+        filepath: Path,
+        data,
+        obs_time: str,
+        bzero: float,
+        bscale: float,
     ) -> None:
-        super().__init__()
+        super().__init__(controller)
         self.uid = uuid4().hex
         # File data
         self.filepath: Path = filepath

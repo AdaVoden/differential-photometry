@@ -1,11 +1,9 @@
 from shutterbug.core.app_controller import AppController
-from shutterbug.core.events.change_event import ImageUpdateEvent
-
+from shutterbug.core.events.change_event import Event
 import logging
 
 from PySide6.QtCore import Qt, Slot
 from PySide6.QtWidgets import QLabel, QTabWidget, QVBoxLayout, QWidget
-from shutterbug.core.models import FITSModel
 from shutterbug.gui.commands.image_commands import (
     SetBrightnessCommand,
     SetContrastCommand,
@@ -20,8 +18,6 @@ class Properties(QWidget):
     def __init__(self, controller: AppController):
         super().__init__()
         self.setObjectName("settings")
-
-        undo_stack = controller._undo_stack
 
         layout = QVBoxLayout()
         self.setLayout(layout)
@@ -106,34 +102,30 @@ class ImagePropertiesPanel(QWidget):
         self.brightness_slider.valueChanged.connect(self._on_brightness_changed)
         self.contrast_slider.valueChanged.connect(self._on_contrast_changed)
 
-        controller.image_selected.connect(self._on_image_selected)
+        controller.on("image.selected", self._on_image_selected)
+        controller.on(
+            "image.updated.brightness",
+            lambda evt: self.brightness_slider.set_value(evt.data),
+        )
+        controller.on(
+            "image.updated.contrast",
+            lambda evt: self.contrast_slider.set_value(evt.data),
+        )
+        controller.on(
+            "image.updated.stretch_type", lambda evt: self.stretches.set_text(evt.data)
+        )
 
         logging.debug("Image properties panel initialized")
 
-    @Slot(FITSModel)
-    def _on_image_selected(self, image: FITSModel):
+    @Slot(Event)
+    def _on_image_selected(self, event: Event):
         """Handles image changing in image manager"""
-        if self.current_image:
-            # There's a current image remove all previous subscriptions
-            self.current_image.updated.disconnect(self._on_image_changed)
-
-        self.current_image = image
+        image = event.data
 
         if image:
             # Add new subscriptions and set the slider values
-            image.updated.connect(self._on_image_changed)
             self.brightness_slider.set_value(image.brightness)
             self.contrast_slider.set_value(image.contrast)
-            self.stretches.set_text(image.stretch_type)
-
-    @Slot(ImageUpdateEvent)
-    def _on_image_changed(self, event: ImageUpdateEvent):
-        image = event.source
-        fields = event.changed_fields
-        if fields & {"brightness", "contrast"}:
-            self.brightness_slider.set_value(image.brightness)
-            self.contrast_slider.set_value(image.contrast)
-        if fields & {"stretch_type"}:
             self.stretches.set_text(image.stretch_type)
 
     @Slot(int)

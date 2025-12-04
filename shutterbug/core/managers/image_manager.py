@@ -13,7 +13,7 @@ from typing import Dict, List
 import numpy as np
 from astropy import stats
 from photutils.detection import DAOStarFinder
-from PySide6.QtCore import QPoint, Signal
+from PySide6.QtCore import QPoint
 from shutterbug.core.models import FITSModel
 
 from .base_manager import BaseManager

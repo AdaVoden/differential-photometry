@@ -43,7 +43,7 @@ class SpreadsheetViewer(QWidget):
         layout.addWidget(self.table_view)
 
         # Handle signals
-        controller.adapter_changed.connect(self.set_adapter)
+        controller.on("adapter.selected", self.set_adapter)
 
         logging.debug("Spreadsheet viewer initialized")
 

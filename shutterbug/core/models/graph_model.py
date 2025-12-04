@@ -1,3 +1,10 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from shutterbug.core.app_controller import AppController
+
 from typing import List, Optional
 
 from shutterbug.core.models import StarIdentity
@@ -11,6 +18,7 @@ class GraphDataModel(ObservableQObject):
 
     def __init__(
         self,
+        controller: AppController,
         measurements: List[StarMeasurement],
         title: Optional[str] = None,
         x_label: Optional[str] = None,
@@ -18,7 +26,7 @@ class GraphDataModel(ObservableQObject):
         xlim: Optional[float] = None,
         ylim: Optional[float] = None,
     ):
-        super().__init__()
+        super().__init__(controller)
         self.uid = uuid4().hex
         self.measurements = sorted(measurements, key=lambda m: m.time)
         self.title = self._define_field("title", title)
