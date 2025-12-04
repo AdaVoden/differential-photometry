@@ -7,6 +7,7 @@ if TYPE_CHECKING:
 
 
 import logging
+from shutterbug.core.events import Event
 from typing import List
 from PySide6.QtWidgets import QVBoxLayout, QWidget, QTableView, QHeaderView
 from PySide6.QtGui import QStandardItem, QStandardItemModel
@@ -72,9 +73,10 @@ class SpreadsheetViewer(QWidget):
         for row in data_rows:
             self.model.appendRow(row)
 
-    @Slot(TabularDataInterface)
-    def set_adapter(self, adapter: TabularDataInterface):
+    @Slot(Event)
+    def set_adapter(self, event: Event):
         """Sets the data adapter for the spreadsheet"""
+        adapter = event.data
         if self.adapter != adapter:
             if self.adapter is not None:
                 logging.debug(f"Removing adapter {type(adapter).__name__}")

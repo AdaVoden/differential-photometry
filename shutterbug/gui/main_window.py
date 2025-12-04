@@ -128,7 +128,7 @@ class MainWindow(QMainWindow):
             "FITS Files (*.fits *.fit *.fts);;All Files (*)",
         )
 
-        load_command = LoadImagesCommand(filenames, self.controller.images)
+        load_command = LoadImagesCommand(filenames, self.controller)
         self.controller._undo_stack.push(load_command)
 
     @Slot()

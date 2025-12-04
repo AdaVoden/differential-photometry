@@ -1,9 +1,11 @@
 import logging
+from shutterbug.core.events import Event
 
 from PySide6.QtCore import QItemSelection, QPoint, Qt, Signal, Slot
 from PySide6.QtWidgets import QMenu, QTreeView, QVBoxLayout, QWidget
 from shutterbug.core.app_controller import AppController
 from shutterbug.core.models import OutlinerModel
+from shutterbug.core.models.fits_model import FITSModel
 
 
 class Outliner(QWidget):
@@ -41,9 +43,9 @@ class Outliner(QWidget):
         )
 
         # Handle signals
-        controller.on("image.created", self.model.add_image)
-        controller.on("graph.created", self.model.add_graph)
-        controller.on("star.created", self.model.add_star)
+        controller.on("image.created", lambda evt: self.model.add_image(evt.data))
+        controller.on("graph.created", lambda evt: self.model.add_graph(evt.data))
+        controller.on("star.created", lambda evt: self.model.add_star(evt.data))
 
         logging.debug("Outliner initialized")
 

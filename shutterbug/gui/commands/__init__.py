@@ -1,4 +1,4 @@
-from .file_commands import LoadImagesCommand, RemoveImagesCommand, SelectFileCommand
+from .file_commands import LoadImagesCommand, SelectFileCommand
 from .image_commands import SetBrightnessCommand, SetContrastCommand
 from .star_commands import (
     AddMeasurementsCommand,
@@ -10,7 +10,6 @@ from .graph_commands import SelectGraphCommand, DeselectGraphCommand
 
 __all__ = [
     "LoadImagesCommand",
-    "RemoveImagesCommand",
     "SelectFileCommand",
     "SetBrightnessCommand",
     "SetContrastCommand",

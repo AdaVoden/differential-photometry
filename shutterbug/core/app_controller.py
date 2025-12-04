@@ -15,6 +15,7 @@ from shutterbug.gui.operators.base_operator import BaseOperator
 from shutterbug.gui.tools import BaseTool
 
 from .managers import (
+    FileManager,
     GraphManager,
     ImageManager,
     SelectionManager,
@@ -41,6 +42,7 @@ class AppController(QObject):
         super().__init__()
 
         # Instantiate managers
+        self.files = FileManager(self)
         self.images = ImageManager(self)
         self.stars = StarCatalog(self)
         self.graphs = GraphManager(self)
@@ -65,7 +67,7 @@ class AppController(QObject):
         logging.debug("App Controller initialized")
 
     def dispatch(self, evt: Event):
-        """Dispatches generic events"""
+        """Dispatches events"""
         logging.debug(f"EVENT: {evt.key}")
         self.change_event.emit(evt)
 
@@ -81,7 +83,7 @@ class AppController(QObject):
 
     def _match(self, key, pattern):
         """Matches event domain and action to pattern"""
-        if pattern.endwith(".*"):
+        if pattern.endswith(".*"):
             return key.startswith(pattern[:-2])
         return key == pattern
 
