@@ -1,3 +1,12 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+from shutterbug.core.events.change_event import Event
+
+if TYPE_CHECKING:
+    from shutterbug.core.app_controller import AppController
+
 import logging
 
 from typing import List
@@ -5,7 +14,6 @@ from typing import List
 from PySide6.QtCore import Slot
 from PySide6.QtGui import QStandardItem
 
-from shutterbug.core.managers import StarCatalog
 from shutterbug.core.models import StarIdentity
 from shutterbug.core.models.star_measurement import StarMeasurement
 from shutterbug.gui.adapters.tabular_data_interface import (
@@ -15,15 +23,28 @@ from shutterbug.gui.adapters.tabular_data_interface import (
 
 
 class StarIdentityAdapter(TabularDataInterface):
-    def __init__(self, star: StarIdentity, catalog: StarCatalog):
+
+    # Map field name to column
+    mapping = {
+        "x": 1,
+        "y": 2,
+        "flux": 3,
+        "flux_error": 4,
+        "mag": 5,
+        "mag_error": 6,
+        "diff_mag": 7,
+        "diff_err": 8,
+    }
+
+    def __init__(self, star: StarIdentity, controller: AppController):
         self.star = star
-        self.catalog = catalog
+        self.controller = controller
         self._signals = AdapterSignals()
 
         # Set up signals
-        self.catalog.measurement_added.connect(self._on_measurement_added)
-        self.catalog.measurement_updated.connect(self._on_measurement_changed)
-        self.catalog.measurement_removed.connect(self._on_measurement_removed)
+        self.controller.on("measurement.created", self._on_measurement_added)
+        self.controller.on("measurement.updated.*", self._on_measurement_changed)
+        self.controller.on("measurement.removed", self._on_measurement_removed)
 
     def get_column_headers(self) -> List[str]:
         """Gets column information for star measurements"""
@@ -74,17 +95,38 @@ class StarIdentityAdapter(TabularDataInterface):
     def _float_to_str(self, item: float | None) -> str:
         return "" if item is None else f"{item:.2f}"
 
-    @Slot(StarMeasurement)
-    def _on_measurement_changed(self, measurement: StarMeasurement):
+    @Slot(Event)
+    def _on_measurement_changed(self, event: Event):
         """Handles measurement being changed"""
-        self.signals.item_updated.emit(self._data_to_row(measurement))
+        measurement = event.data
+        if measurement is None or event.field is None:
+            return
+        if measurement not in self.star.measurements:
+            return  # It's a measurement we don't care about
 
-    @Slot(StarMeasurement)
-    def _on_measurement_added(self, measurement: StarMeasurement):
+        self.signals.item_updated.emit(
+            measurement.image,
+            self.mapping[event.field],
+            getattr(measurement, event.field),
+        )
+
+    @Slot(Event)
+    def _on_measurement_added(self, event: Event):
         """Handles measurement being added to image"""
+        measurement = event.data
+        if measurement is None:
+            return
+        if measurement not in self.star.measurements:
+            return  # It's a measurement we don't care about
         self.signals.item_added.emit(self._data_to_row(measurement))
 
-    @Slot(StarMeasurement)
-    def _on_measurement_removed(self, measurement: StarMeasurement):
+    @Slot(Event)
+    def _on_measurement_removed(self, event: Event):
         """Handles measurement being removed from image"""
-        self.signals.item_removed.emit(self._data_to_row(measurement))
+        measurement = event.data
+        if measurement is None:
+            return
+        if measurement not in self.star.measurements:
+            return  # It's a measurement we don't care about
+
+        self.signals.item_removed.emit(measurement.image)

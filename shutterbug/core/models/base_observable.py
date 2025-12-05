@@ -32,7 +32,7 @@ class ObservableQObject(QObject):
             if value != getattr(self, private_name):
                 setattr(self, private_name, value)
                 self.controller.dispatch(
-                    Event(EventDomain[self.type], "updated", name, data=self)
+                    Event(EventDomain(self.type), "updated", name, data=self)
                 )
 
         setattr(self.__class__, name, property(getter, setter))

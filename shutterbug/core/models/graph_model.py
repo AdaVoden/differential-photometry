@@ -16,6 +16,8 @@ from uuid import uuid4
 
 class GraphDataModel(ObservableQObject):
 
+    type = "graph"
+
     def __init__(
         self,
         controller: AppController,
@@ -54,5 +56,5 @@ class GraphDataModel(ObservableQObject):
         return [m.diff_err for m in self.measurements if m.diff_err]
 
     @classmethod
-    def from_star(cls, star: StarIdentity):
-        return cls(measurements=list(star.measurements.values()))
+    def from_star(cls, controller: AppController, star: StarIdentity):
+        return cls(controller, measurements=list(star.measurements.values()))

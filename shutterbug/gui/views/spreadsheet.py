@@ -10,7 +10,7 @@ import logging
 from shutterbug.core.events import Event
 from PySide6.QtWidgets import QVBoxLayout, QWidget, QTableView, QHeaderView
 from PySide6.QtGui import QStandardItem, QStandardItemModel
-from PySide6.QtCore import Slot
+from PySide6.QtCore import Slot, Qt
 
 from shutterbug.gui.adapters.tabular_data_interface import TabularDataInterface
 
@@ -102,8 +102,8 @@ class SpreadsheetViewer(QWidget):
         if row is None:
             return
         logging.debug(f"Refreshing row {row}, column {column} in spreadsheet")
-        index = self.model.index(row, column)
-        self.model.setData(index, value)
+        item = self.model.item(row, column)
+        item.setText(value)
 
     @Slot(list)
     def _add_row(self, row: List[QStandardItem]):

@@ -15,6 +15,8 @@ from uuid import uuid4
 class StarMeasurement(ObservableQObject):
     """Measurement of a star within an image"""
 
+    type = "measurement"
+
     def __init__(
         self,
         controller: AppController,

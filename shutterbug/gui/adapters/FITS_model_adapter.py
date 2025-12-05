@@ -112,10 +112,8 @@ class FITSModelAdapter(TabularDataInterface):
         star = self.controller.stars.get_by_measurement(event.data)
         if star is None:
             return
-
-        self.signals.item_updated.emit(
-            star.id, self.mapping[event.field], getattr(event.data, event.field)
-        )
+        value = self._float_to_str(getattr(event.data, event.field))
+        self.signals.item_updated.emit(star.id, self.mapping[event.field], value)
 
     @Slot(Event)
     def _on_measurement_added(self, event: Event):

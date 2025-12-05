@@ -51,7 +51,6 @@ class AppController(QObject):
         self.selections = SelectionManager(self)
         self.tools = ToolManager(self)
 
-        self.register_adapters()
         # Undo stack
         self._undo_stack = QUndoStack()
 
@@ -63,6 +62,8 @@ class AppController(QObject):
         self.tools.operator_cancelled.connect(self.operator_cancelled)
 
         self.tools.operator_finished.connect(self._on_operator_finished)
+
+        self.register_adapters()
 
         logging.debug("App Controller initialized")
 
@@ -163,9 +164,8 @@ class AppController(QObject):
         star = self.stars.active_star
         logging.debug("Graph creation called")
         if star is not None:
-            graph = GraphDataModel.from_star(star)
+            graph = GraphDataModel.from_star(self, star)
             self.graphs.add_graph(graph)
-            self.graphs.set_active_graph(graph)
 
     @Slot(QUndoCommand)
     def _on_operator_finished(self, cmd: QUndoCommand):
