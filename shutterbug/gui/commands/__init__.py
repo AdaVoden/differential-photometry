@@ -3,9 +3,8 @@ from .image_commands import SetBrightnessCommand, SetContrastCommand
 from .star_commands import (
     AddMeasurementsCommand,
     RemoveMeasurementCommand,
-    SelectStarCommand,
-    DeselectStarCommand,
 )
+from .select_commands import SelectCommand, DeselectCommand
 from .graph_commands import SelectGraphCommand, DeselectGraphCommand
 
 __all__ = [
@@ -15,8 +14,8 @@ __all__ = [
     "SetContrastCommand",
     "AddMeasurementsCommand",
     "RemoveMeasurementCommand",
-    "SelectStarCommand",
-    "DeselectStarCommand",
+    "SelectCommand",
+    "DeselectCommand",
     "SelectGraphCommand",
     "DeselectGraphCommand",
 ]

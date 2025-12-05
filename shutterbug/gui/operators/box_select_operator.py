@@ -123,10 +123,12 @@ class BoxSelectOperator(BaseOperator):
         """Finds stars in a rectangle"""
         upper_left = scene_rect.topLeft()
         bottom_right = scene_rect.bottomRight()
+        image = self.viewer.current_image
+        if image is None:
+            return
 
-        image_manager = self.viewer.image_manager
-        centroids = image_manager.find_centroids_from_points(
-            upper_left, bottom_right, threshold=self.params.threshold
+        centroids = self.controller.images.find_centroids_from_points(
+            image, upper_left, bottom_right, threshold=self.params.threshold
         )
 
         return centroids

@@ -30,13 +30,13 @@ from PySide6.QtGui import (
 )
 from PySide6.QtWidgets import QGraphicsScene, QGraphicsView, QMenu, QWidget
 
-from shutterbug.core.models import FITSModel, StarIdentity, StarMeasurement
+from shutterbug.core.models import FITSModel, StarIdentity
 from shutterbug.core.utility.photometry import measure_star_magnitude
 from shutterbug.core.events.change_event import Event
 from shutterbug.gui.commands import (
     AddMeasurementsCommand,
     RemoveMeasurementCommand,
-    SelectStarCommand,
+    SelectCommand,
 )
 from shutterbug.gui.operators import BaseOperator
 from shutterbug.gui.panels import BasePopOver, OperatorPanel, ToolPanel
@@ -116,8 +116,8 @@ class ImageViewer(QGraphicsView):
 
         # General signals
         self.controller.on("image.selected", self._on_image_selected)
-        self.controller.on("measurement.created", self.add_star_marker)
-        self.controller.on("measurement.removed", self.remove_star_marker)
+        self.controller.on("measurement.created", self._on_measurement_created)
+        self.controller.on("measurement.removed", self._on_measurement_removed)
         self.controller.on("star.selected", self._on_star_selected)
 
         # Tool signals
@@ -160,15 +160,16 @@ class ImageViewer(QGraphicsView):
 
         if self.selected_star is not None:
             # Add back in unselected star
-            self.remove_star_marker(self.selected_star)
-            self.add_star_marker(self.selected_star)
+            s_star = self.selected_star
+            self.remove_star_marker(s_star.x, s_star.y)
+            self.add_star_marker(s_star.x, s_star.y)
 
         measurement = star.measurements.get(self.current_image.filename)
         self.selected_star = measurement
         if measurement is None:
             return  # Image does not have this measurement
-        self.remove_star_marker(measurement)
-        self.add_star_marker(measurement, colour="gold")
+        self.remove_star_marker(measurement.x, measurement.y)
+        self.add_star_marker(measurement.x, measurement.y, colour="gold")
 
     @Slot(Event)
     def _on_image_update_event(self, event: Event):
@@ -191,6 +192,23 @@ class ImageViewer(QGraphicsView):
     def _on_operator_finished(self):
         """Handles operator being finished or cancelled"""
         self.op_panel.hide()
+
+    @Slot(Event)
+    def _on_measurement_created(self, event: Event):
+        measurement = event.data
+        if measurement is None or self.current_image is None:
+            return
+        if measurement.image != self.current_image.filename:
+            return
+
+        self.add_star_marker(measurement.x, measurement.y)
+
+    def _on_measurement_removed(self, event: Event):
+        measurement = event.data
+        if measurement is None or self.current_image is None:
+            return
+
+        self.remove_star_marker(measurement.x, measurement.y)
 
     # Zoom properties for animation
     def get_zoom(self):
@@ -387,7 +405,7 @@ class ImageViewer(QGraphicsView):
             )
             return  # No work to do
         if isinstance(star, StarIdentity):
-            self._undo_stack.push(SelectStarCommand(star, self.controller))
+            self._undo_stack.push(SelectCommand(star, self.controller))
         else:
             self._undo_stack.push(
                 AddMeasurementsCommand([star], current_image, self.controller)
@@ -433,36 +451,35 @@ class ImageViewer(QGraphicsView):
 
     def add_star_marker(
         self,
-        star: StarMeasurement,
+        x: float,
+        y: float,
         radius: int = MARKER_RADIUS_DEFAULT,
         colour: str = MARKER_COLOUR_DEFAULT,
     ):
         """Add a circular marker at image coordinates x, y"""
-        logging.debug(
-            f"Adding marker at position ({star.x:.1f},{star.y:.1f}), colour: {colour}"
-        )
+        logging.debug(f"Adding marker at position ({x:.1f},{y:.1f}), colour: {colour}")
         # Create circle
         pen = QPen(QColor(colour))
         pen.setWidth(2)
 
         circle = self.scene().addEllipse(
-            star.x - radius,
-            star.y - radius,  # top-left corner of circle
+            x - radius,
+            y - radius,  # top-left corner of circle
             radius * 2,
             radius * 2,  # Width, height
             pen,
         )
 
-        self.markers[(star.x, star.y)] = circle
+        self.markers[(x, y)] = circle
 
         return circle
 
-    def remove_star_marker(self, star: StarMeasurement):
+    def remove_star_marker(self, x: float, y: float):
         """Remove a circular marker at image coordinates x, y"""
-        logging.debug(f"Removing marker at position ({star.x:.1f},{star.y:.1f})")
+        logging.debug(f"Removing marker at position ({x:.1f},{y:.1f})")
 
-        if (star.x, star.y) in self.markers:
-            marker = self.markers.pop((star.x, star.y))
+        if (x, y) in self.markers:
+            marker = self.markers.pop((x, y))
             self.scene().removeItem(marker)
 
     def _clear_markers(self):
@@ -525,7 +542,7 @@ class ImageViewer(QGraphicsView):
             if m is not None:
                 measurements.append(m)
         for m in measurements:
-            self.add_star_marker(m, colour="cyan")
+            self.add_star_marker(m.x, m.y, colour="cyan")
 
     def update_display(self):
         """Updates image display"""

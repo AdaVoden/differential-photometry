@@ -99,7 +99,7 @@ class StarCatalog(BaseManager):
         star = self.find_nearest(measurement.x, measurement.y)
         if star is None:
             star_id = f"Star_{self._new_id()}"
-            star = StarIdentity(id=star_id)
+            star = StarIdentity(controller=self.controller, id=star_id)
             self._add_star(star, measurement.x, measurement.y)
         star.measurements[measurement.image] = measurement
         self.measurement_to_star[measurement.uid] = star

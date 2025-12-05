@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, List
 
 if TYPE_CHECKING:
     from shutterbug.core.app_controller import AppController
@@ -8,10 +8,9 @@ if TYPE_CHECKING:
 
 import logging
 from shutterbug.core.events import Event
-from typing import List
 from PySide6.QtWidgets import QVBoxLayout, QWidget, QTableView, QHeaderView
 from PySide6.QtGui import QStandardItem, QStandardItemModel
-from PySide6.QtCore import QModelIndex, Slot, Qt
+from PySide6.QtCore import Slot
 
 from shutterbug.gui.adapters.tabular_data_interface import TabularDataInterface
 
@@ -48,12 +47,12 @@ class SpreadsheetViewer(QWidget):
 
         logging.debug("Spreadsheet viewer initialized")
 
-    def _idx_from_id(self, id: str) -> QModelIndex | None:
+    def _row_from_id(self, id: str) -> int | None:
         """Finds index associated with id"""
         row = self.model.findItems(id, column=0)
         if row:
             idx = self.model.indexFromItem(row[0])
-            return idx
+            return idx.row()
         return None
 
     def _clear_all(self):
@@ -96,29 +95,26 @@ class SpreadsheetViewer(QWidget):
         else:
             logging.debug("Adapter failed to update in spreadsheet")
 
-    @Slot(object)
-    def _refresh_row(self, row: List[QStandardItem]):
+    @Slot(str, int, object)
+    def _refresh_row(self, id: str, column: int, value: Any):
         """Updates all information in the row"""
-        id = row[0].data(Qt.ItemDataRole.DisplayRole)
-        idx = self._idx_from_id(id)
-        if idx is None:
+        row = self._row_from_id(id)
+        if row is None:
             return
-        logging.debug(f"Refreshing row {idx.row()} in spreadsheet")
-        cols = self.model.columnCount()
-        for col in range(0, cols):
-            self.model.setItem(idx.row(), col, row[col])
+        logging.debug(f"Refreshing row {row}, column {column} in spreadsheet")
+        index = self.model.index(row, column)
+        self.model.setData(index, value)
 
-    @Slot(object)
+    @Slot(list)
     def _add_row(self, row: List[QStandardItem]):
         """Adds row to model"""
         self.model.appendRow(row)
 
-    @Slot(object)
-    def _remove_row(self, row: List[QStandardItem]):
+    @Slot(str)
+    def _remove_row(self, id: str):
         """Removes row from model"""
-        id = row[0].data(Qt.ItemDataRole.DisplayRole)
-        idx = self._idx_from_id(id)
-        if idx is None:
+        row = self._row_from_id(id)
+        if row is None:
             return
-        logging.debug(f"Removing row {idx.row()} in spreadsheet")
-        self.model.removeRow(idx.row())
+        logging.debug(f"Removing row {row} in spreadsheet")
+        self.model.removeRow(row)

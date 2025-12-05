@@ -20,29 +20,29 @@ class AddMeasurementsCommand(QUndoCommand):
         self.stars = stars
         self.image = image
         self.time = image.observation_time
-        self.catalog = controller.stars
+        self.controller = controller
         self.measurements = []
 
     def redo(self):
         logging.debug(f"COMMAND: Adding {len(self.stars)} measurements")
         for star in self.stars:
             measurement = StarMeasurement(
+                controller=self.controller,
                 x=star["xcentroid"],
                 y=star["ycentroid"],
                 time=self.time,
                 image=self.image.filename,
             )
 
-            m = measurement
-            self.catalog.register_measurement(m)
-            self.measurements.append(m)
+            self.controller.stars.register_measurement(measurement)
+            self.measurements.append(measurement)
 
     def undo(self):
         logging.debug(f"COMMAND: undoing addition of {len(self.stars)} measurements")
 
         for m in self.measurements:
 
-            self.catalog.unregister_measurement(m)
+            self.controller.stars.unregister_measurement(m)
 
 
 class RemoveMeasurementCommand(QUndoCommand):
@@ -68,34 +68,34 @@ class RemoveMeasurementCommand(QUndoCommand):
         self.catalog.register_measurement(m)
 
 
-class SelectStarCommand(QUndoCommand):
+class SelectCommand(QUndoCommand):
 
     def __init__(self, identity: StarIdentity, controller: AppController):
         super().__init__()
         self.identity = identity
-        self.catalog = controller.stars
-        self.old_identity = self.catalog.active_star
+        self.controller = controller
+        self.old_identity = self.controller.selections._current
 
     def redo(self):
         logging.debug(f"COMMAND: Setting active star to {self.identity.id}")
-        self.catalog.set_active_star(self.identity)
+        self.controller.selections.set_selected_object(self.identity)
 
     def undo(self):
         logging.debug(f"COMMAND: undoing selection of active star {self.identity.id}")
-        self.catalog.set_active_star(self.old_identity)
+        self.controller.selections.set_selected_object(self.old_identity)
 
 
-class DeselectStarCommand(QUndoCommand):
+class DeselectCommand(QUndoCommand):
 
     def __init__(self, controller: AppController):
         super().__init__()
-        self.catalog = controller.stars
-        self.old_identity = self.catalog.active_star
+        self.controller = controller
+        self.old_identity = self.controller.selections._current
 
     def redo(self):
         logging.debug(f"COMMAND: removing active star selection")
-        self.catalog.set_active_star(None)
+        self.controller.selections.set_selected_object(None)
 
     def undo(self):
         logging.debug(f"COMMAND: undoing removal of active star")
-        self.catalog.set_active_star(self.old_identity)
+        self.controller.selections.set_selected_object(self.old_identity)
