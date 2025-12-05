@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from shutterbug.core.app_controller import AppController
+    from shutterbug.gui.views.image import ImageViewer
 
 import logging
 
@@ -13,7 +14,6 @@ from PySide6.QtWidgets import QWidget
 from shutterbug.core.managers.base_manager import BaseManager
 from shutterbug.gui.operators.base_operator import BaseOperator
 from shutterbug.gui.tools.base_tool import BaseTool
-from shutterbug.gui.views.image import ImageViewer
 
 
 class ToolManager(BaseManager):

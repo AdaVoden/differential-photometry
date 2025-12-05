@@ -7,6 +7,7 @@ from PySide6.QtWidgets import QLabel, QTabWidget, QVBoxLayout, QWidget
 from shutterbug.gui.commands.image_commands import (
     SetBrightnessCommand,
     SetContrastCommand,
+    SetImageValueCommand,
 )
 from shutterbug.gui.controls import LabeledSlider, LabeledComboBox
 from shutterbug.gui.tools.base_tool import BaseTool
@@ -101,18 +102,20 @@ class ImagePropertiesPanel(QWidget):
         # Signals to slots
         self.brightness_slider.valueChanged.connect(self._on_brightness_changed)
         self.contrast_slider.valueChanged.connect(self._on_contrast_changed)
+        self.stretches.activated.connect(self._on_stretch_changed)
 
         controller.on("image.selected", self._on_image_selected)
         controller.on(
             "image.updated.brightness",
-            lambda evt: self.brightness_slider.set_value(evt.data),
+            lambda evt: self.brightness_slider.set_value(evt.data.brightness),
         )
         controller.on(
             "image.updated.contrast",
-            lambda evt: self.contrast_slider.set_value(evt.data),
+            lambda evt: self.contrast_slider.set_value(evt.data.contrast),
         )
         controller.on(
-            "image.updated.stretch_type", lambda evt: self.stretches.set_text(evt.data)
+            "image.updated.stretch_type",
+            lambda evt: self.stretches.set_text(evt.data.stretch_type),
         )
 
         logging.debug("Image properties panel initialized")
@@ -124,6 +127,7 @@ class ImagePropertiesPanel(QWidget):
 
         if image:
             # Add new subscriptions and set the slider values
+            self.current_image = image
             self.brightness_slider.set_value(image.brightness)
             self.contrast_slider.set_value(image.contrast)
             self.stretches.set_text(image.stretch_type)
@@ -137,6 +141,13 @@ class ImagePropertiesPanel(QWidget):
     def _on_contrast_changed(self, value: int):
         if self.current_image:
             self._undo_stack.push(SetContrastCommand(value, self.current_image))
+
+    @Slot(str)
+    def _on_stretch_changed(self, value: str):
+        if self.current_image:
+            self._undo_stack.push(
+                SetImageValueCommand("stretch_type", value, self.current_image)
+            )
 
 
 class StarPropertiesPanel(QWidget):

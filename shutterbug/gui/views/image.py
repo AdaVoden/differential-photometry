@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+
 if TYPE_CHECKING:
     from shutterbug.core.app_controller import AppController
 
@@ -33,6 +34,7 @@ from PySide6.QtWidgets import QGraphicsScene, QGraphicsView, QMenu, QWidget
 from shutterbug.core.models import FITSModel, StarIdentity
 from shutterbug.core.utility.photometry import measure_star_magnitude
 from shutterbug.core.events.change_event import Event
+from shutterbug.core.managers import StretchManager
 from shutterbug.gui.commands import (
     AddMeasurementsCommand,
     RemoveMeasurementCommand,
@@ -41,6 +43,7 @@ from shutterbug.gui.commands import (
 from shutterbug.gui.operators import BaseOperator
 from shutterbug.gui.panels import BasePopOver, OperatorPanel, ToolPanel
 from shutterbug.gui.tools import BaseTool, SelectTool
+from shutterbug.gui.managers import ToolManager
 
 
 class ImageViewer(QGraphicsView):
@@ -72,8 +75,8 @@ class ImageViewer(QGraphicsView):
         self._undo_stack = controller._undo_stack
         self.catalog = controller.stars
         self.image_manager = controller.images
-        self.tool_manager = controller.tools
-        self.stretch_manager = controller.stretches
+        self.tool_manager = ToolManager(controller)
+        self.stretch_manager = StretchManager(controller)
 
         self.tool_manager.set_tool(SelectTool)
 
@@ -116,6 +119,7 @@ class ImageViewer(QGraphicsView):
 
         # General signals
         self.controller.on("image.selected", self._on_image_selected)
+        self.controller.on("image.updated.*", self._on_image_update_event)
         self.controller.on("measurement.created", self._on_measurement_created)
         self.controller.on("measurement.removed", self._on_measurement_removed)
         self.controller.on("star.selected", self._on_star_selected)
@@ -174,7 +178,14 @@ class ImageViewer(QGraphicsView):
     @Slot(Event)
     def _on_image_update_event(self, event: Event):
         """Handles current image changing values"""
-        if event.data == self.current_image:
+        image = event.data
+        if image is None:
+            return
+        if image == self.current_image:
+            self.stretch_manager.brightness = image.brightness
+            self.stretch_manager.contrast = image.contrast
+            self.stretch_manager.set_mode(image.stretch_type)
+            self.stretch_manager.update_lut()
             self.update_display()
 
     @Slot(BaseTool)
@@ -203,6 +214,7 @@ class ImageViewer(QGraphicsView):
 
         self.add_star_marker(measurement.x, measurement.y)
 
+    @Slot(Event)
     def _on_measurement_removed(self, event: Event):
         measurement = event.data
         if measurement is None or self.current_image is None:

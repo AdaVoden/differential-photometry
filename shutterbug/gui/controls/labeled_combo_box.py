@@ -29,7 +29,6 @@ class LabeledComboBox(LabeledWidget):
     def _on_activated(self, index: int):
         """Handles index return on user activation"""
         text = self.combo.itemText(index)
-        print(text)
         if text is not None:
             self.activated.emit(text)
 
