@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from shutterbug.core.events.change_event import Event, EventDomain
+
 if TYPE_CHECKING:
     from shutterbug.core.app_controller import AppController
     from shutterbug.gui.views.image import ImageViewer
@@ -17,11 +19,7 @@ from shutterbug.gui.tools.base_tool import BaseTool
 
 
 class ToolManager(BaseManager):
-    tool_changed = Signal(BaseTool)
-    operator_changed = Signal(BaseOperator)
     tool_settings_changed = Signal(QWidget)
-    operator_finished = Signal(QUndoCommand)
-    operator_cancelled = Signal()
 
     def __init__(self, controller: AppController, parent=None):
         super().__init__(controller, parent)
@@ -38,7 +36,7 @@ class ToolManager(BaseManager):
         logging.debug(f"Setting current tool to: {tool_cls.__name__}")
         tool = tool_cls()
         self._current_tool = tool
-        self.tool_changed.emit(tool)
+        self.controller.dispatch(Event(EventDomain.TOOL, "selected", data=tool))
 
     def begin_operation(
         self,
@@ -58,7 +56,7 @@ class ToolManager(BaseManager):
         op.finished.connect(self._operator_finished)
         op.cancelled.connect(self._operator_cancelled)
 
-        self.operator_changed.emit(op)
+        self.controller.dispatch(Event(EventDomain.OPERATOR, "selected", data=op))
         op.start(event)
 
     def update_operation(self, event: QMouseEvent):
@@ -86,10 +84,11 @@ class ToolManager(BaseManager):
         """Finished current operation by pushing command to stack"""
         self.active_operator = None
         if cmd is not None:
-            self.operator_finished.emit(cmd)
+            self.controller._undo_stack.push(cmd)
+            self.controller.dispatch(Event(EventDomain.OPERATOR, "finished"))
 
     @Slot()
     def _operator_cancelled(self):
         """Cancels current operation"""
         self.active_operator = None
-        self.operator_cancelled.emit()
+        self.controller.dispatch(Event(EventDomain.OPERATOR, "cancelled"))

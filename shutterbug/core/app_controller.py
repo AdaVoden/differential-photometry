@@ -29,13 +29,6 @@ ADAPTERS = [(FITSModel, FITSModelAdapter), (StarIdentity, StarIdentityAdapter)]
 
 class AppController(QObject):
 
-    # Tool signals
-    active_tool_changed = Signal(BaseTool)
-    tool_settings_changed = Signal(QWidget)
-    operator_changed = Signal(BaseOperator)
-    operator_finished = Signal(QUndoCommand)
-    operator_cancelled = Signal()
-
     change_event = Signal(Event)
 
     def __init__(self):
@@ -46,22 +39,11 @@ class AppController(QObject):
         self.images = ImageManager(self)
         self.stars = StarCatalog(self)
         self.graphs = GraphManager(self)
-        self.stretches = StretchManager(self)
         self.adapters = AdapterRegistry(self)
         self.selections = SelectionManager(self)
-        self.tools = ToolManager(self)
 
         # Undo stack
         self._undo_stack = QUndoStack()
-
-        # Handle tool signals
-        self.tools.tool_changed.connect(self.active_tool_changed)
-        self.tools.tool_settings_changed.connect(self.tool_settings_changed)
-        self.tools.operator_changed.connect(self.operator_changed)
-        self.tools.operator_finished.connect(self.operator_finished)
-        self.tools.operator_cancelled.connect(self.operator_cancelled)
-
-        self.tools.operator_finished.connect(self._on_operator_finished)
 
         self.register_adapters()
 

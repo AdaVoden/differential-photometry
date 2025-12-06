@@ -27,6 +27,7 @@ from PySide6.QtGui import (
     QMouseEvent,
     QPen,
     QPixmap,
+    QUndoCommand,
     QWheelEvent,
 )
 from PySide6.QtWidgets import QGraphicsScene, QGraphicsView, QMenu, QWidget
@@ -50,7 +51,8 @@ class ImageViewer(QGraphicsView):
 
     propagation_requested = Signal(FITSModel)
     batch_requested = Signal()
-    tool_changed = Signal(BaseTool)
+
+    # Tool signals
     tool_settings_changed = Signal(QWidget)
 
     # Zoom defaults
@@ -75,10 +77,10 @@ class ImageViewer(QGraphicsView):
         self._undo_stack = controller._undo_stack
         self.catalog = controller.stars
         self.image_manager = controller.images
-        self.tool_manager = ToolManager(controller)
-        self.stretch_manager = StretchManager(controller)
+        self.tools = ToolManager(controller)
+        self.stretchs = StretchManager(controller)
 
-        self.tool_manager.set_tool(SelectTool)
+        self.tools.set_tool(SelectTool)
 
         # Zoom settings
         self.zoom_factor = self.ZOOM_FACTOR_DEFAULT
@@ -125,13 +127,13 @@ class ImageViewer(QGraphicsView):
         self.controller.on("star.selected", self._on_star_selected)
 
         # Tool signals
-        self.controller.active_tool_changed.connect(self._on_tool_changed)
-        self.controller.tool_settings_changed.connect(self.tool_settings_changed)
-        self.controller.operator_changed.connect(self._on_operator_changed)
-        self.controller.operator_finished.connect(self._on_operator_finished)
-        self.controller.operator_cancelled.connect(self._on_operator_finished)
+        self.controller.on("operator.selected", self._on_operator_changed)
+        self.controller.on("operator.finished", self._on_operator_finished)
+        self.controller.on("operator.cancelled", self._on_operator_finished)
 
-        self.popover.tool_selected.connect(self.tool_manager.set_tool)
+        self.tools.tool_settings_changed.connect(self.tool_settings_changed)
+
+        self.popover.tool_selected.connect(self.tools.set_tool)
 
         logging.debug("Image Viewer initialized")
 
@@ -146,10 +148,10 @@ class ImageViewer(QGraphicsView):
             self.current_image = image
             if image is not None:
                 image.updated.connect(self._on_image_update_event)
-                self.stretch_manager.brightness = image.brightness
-                self.stretch_manager.contrast = image.contrast
-                self.stretch_manager.set_mode(image.stretch_type)
-                self.stretch_manager.update_lut()
+                self.stretchs.brightness = image.brightness
+                self.stretchs.contrast = image.contrast
+                self.stretchs.set_mode(image.stretch_type)
+                self.stretchs.update_lut()
 
             self.update_display()
 
@@ -182,25 +184,24 @@ class ImageViewer(QGraphicsView):
         if image is None:
             return
         if image == self.current_image:
-            self.stretch_manager.brightness = image.brightness
-            self.stretch_manager.contrast = image.contrast
-            self.stretch_manager.set_mode(image.stretch_type)
-            self.stretch_manager.update_lut()
+            self.stretchs.brightness = image.brightness
+            self.stretchs.contrast = image.contrast
+            self.stretchs.set_mode(image.stretch_type)
+            self.stretchs.update_lut()
             self.update_display()
 
-    @Slot(BaseTool)
-    def _on_tool_changed(self, tool: BaseTool):
-        """Handles tool changing in Tool Manager"""
-        self.tool_changed.emit(tool)
-
-    @Slot(BaseOperator)
-    def _on_operator_changed(self, operator: BaseOperator):
+    @Slot(Event)
+    def _on_operator_changed(self, event: Event):
         """Handles operator changing in Tool Manager"""
+        operator = event.data
+        if operator is None:
+            logging.debug("No operator given on change")
+            return
         self.op_panel.set_panel(operator)
         self._toggle_popover(self.op_panel)
 
-    @Slot()
-    def _on_operator_finished(self):
+    @Slot(Event)
+    def _on_operator_finished(self, _: Event):
         """Handles operator being finished or cancelled"""
         self.op_panel.hide()
 
@@ -290,8 +291,8 @@ class ImageViewer(QGraphicsView):
             super().mousePressEvent(fake_event)
         else:
             if event.button() == Qt.MouseButton.LeftButton:
-                self.tool_manager.end_operation_confirm()
-                self.tool_manager.begin_operation(event, self)
+                self.tools.end_operation_confirm()
+                self.tools.begin_operation(event, self)
             super().mousePressEvent(event)
 
     @Slot(QMouseEvent)
@@ -302,14 +303,14 @@ class ImageViewer(QGraphicsView):
             # Stop panning
             self.setDragMode(QGraphicsView.DragMode.NoDrag)
         if event.button() == Qt.MouseButton.LeftButton:
-            self.tool_manager.end_operation_interaction()
+            self.tools.end_operation_interaction()
         super().mouseReleaseEvent(event)
 
     @Slot(QMouseEvent)
     def mouseMoveEvent(self, event: QMouseEvent) -> None:
         if self.current_image is None:
             return None
-        self.tool_manager.update_operation(event)
+        self.tools.update_operation(event)
 
         super().mouseMoveEvent(event)
 
@@ -319,10 +320,10 @@ class ImageViewer(QGraphicsView):
         if event.key() == Qt.Key.Key_N:
             self._toggle_popover(self.popover)
         if event.key() == Qt.Key.Key_Escape:
-            self.tool_manager.end_operation_cancel()
+            self.tools.end_operation_cancel()
 
         if event.key() == Qt.Key.Key_Enter:
-            self.tool_manager.end_operation_confirm()
+            self.tools.end_operation_confirm()
 
     def contextMenuEvent(self, event: QContextMenuEvent) -> None:
         menu = QMenu()
@@ -570,7 +571,7 @@ class ImageViewer(QGraphicsView):
         if image is None:
             return None
 
-        display_data = self.stretch_manager.apply(image.display_data)
+        display_data = self.stretchs.apply(image.display_data)
         return display_data
 
     def viewport_rect_to_scene(self, rect: QRect) -> QRect:

@@ -24,8 +24,6 @@ class MultiViewer(QWidget):
 
     propagation_requested = Signal()
     batch_requested = Signal()
-    tool_changed = Signal(BaseTool)
-    tool_settings_changed = Signal(QWidget)
 
     def __init__(self, controller: AppController):
         super().__init__()
@@ -64,8 +62,6 @@ class MultiViewer(QWidget):
         self.mode_selector.currentIndexChanged.connect(self.change_mode)
         self.image_viewer.propagation_requested.connect(self.propagation_requested)
         self.image_viewer.batch_requested.connect(self.batch_requested)
-        self.image_viewer.tool_changed.connect(self.tool_changed)
-        self.image_viewer.tool_settings_changed.connect(self.tool_settings_changed)
 
         logging.debug("Multiviewer intialized")
 

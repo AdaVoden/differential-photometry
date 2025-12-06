@@ -45,7 +45,7 @@ class Properties(QWidget):
         self.show_image_properties()
 
         # Main Window signals
-        controller.active_tool_changed.connect(self._on_active_tool_change)
+        controller.on("tool.selected", self._on_active_tool_change)
 
         logging.debug("Tool settings initialized")
 
@@ -60,8 +60,9 @@ class Properties(QWidget):
     def show_general_properties(self):
         self.tabs.setCurrentWidget(self.general_properties)
 
-    @Slot(BaseTool)
-    def _on_active_tool_change(self, tool: BaseTool):
+    @Slot(Event)
+    def _on_active_tool_change(self, event: Event):
+        tool = event.data
         self.tool_properties.set_panel(tool)
 
 
