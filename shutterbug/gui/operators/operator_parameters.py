@@ -10,4 +10,8 @@ class BoxSelectParameters(OperatorParameters):
 
 
 class PhotometryParameters(OperatorParameters):
-    pass
+    mode = "all"
+    aperture_radius = 10
+    annulus_inner_radius = 15
+    annulus_outer_radius = 20
+    buffer = 1  # Pixel
