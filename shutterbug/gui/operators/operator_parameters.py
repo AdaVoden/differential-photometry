@@ -7,3 +7,7 @@ class OperatorParameters(QObject):
 
 class BoxSelectParameters(OperatorParameters):
     threshold = 3.0
+
+
+class PhotometryParameters(OperatorParameters):
+    pass

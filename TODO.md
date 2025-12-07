@@ -3,10 +3,10 @@
 - [x] Undo/Redo
 - [ ] Unbreak Save project/load project
 - [ ] Add About Shutterbug
-- [ ] Add controls to Viewer
+- [x] Add controls to Viewer
     - [x] Add star select
     - [x] Add box select
-    - [ ] Add marker select
+    - [x] Add marker select
 - [x] Reduce brightness/contrast processing time
 - [x] Improve ScrubbySlider with debounce
 - [x] Graph view

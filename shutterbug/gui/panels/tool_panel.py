@@ -1,7 +1,7 @@
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import QButtonGroup, QToolButton, QWidget
 from shutterbug.gui.panels.base_popover import BasePopOver
-from shutterbug.gui.tools import BaseTool, BoxSelectTool, SelectTool
+from shutterbug.gui.tools import BaseTool, BoxSelectTool, SelectTool, PhotometryTool
 
 
 class ToolPanel(BasePopOver):
@@ -16,6 +16,7 @@ class ToolPanel(BasePopOver):
 
         self.select_btn = self._make_button("Select", SelectTool, checked=True)
         self.box_btn = self._make_button("Box Select", BoxSelectTool)
+        self.phot_btn = self._make_button("Photometry", PhotometryTool)
 
         layout = self.layout()
 
@@ -23,6 +24,7 @@ class ToolPanel(BasePopOver):
         if layout is not None:
             layout.addWidget(self.select_btn)
             layout.addWidget(self.box_btn)
+            layout.addWidget(self.phot_btn)
 
     def _make_button(self, text: str, tool: BaseTool, checked=False) -> QToolButton:
         """Makes a toggle-able button"""

@@ -15,7 +15,7 @@ from PySide6.QtCore import QObject, Signal
 
 class BaseOperator(QObject):
     # Notify the UI that things have changed
-    finished = Signal(object)
+    finished = Signal(QUndoCommand)
     cancelled = Signal()
 
     name = "Base Operator"
