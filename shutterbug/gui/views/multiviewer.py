@@ -40,7 +40,7 @@ class MultiViewer(QWidget):
 
         # Stacked views
         self.image_viewer = ImageViewer(controller)
-        self.graph_viewer = GraphViewer(controller)  # Placeholder
+        self.graph_viewer = GraphViewer(controller)
         self.table_viewer = SpreadsheetViewer(controller)
 
         self.stack = QStackedWidget()

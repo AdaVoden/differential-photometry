@@ -4,15 +4,11 @@ from shutterbug.core.events.change_event import Event
 import shutterbug.core.utility.photometry as phot
 from PySide6.QtCore import QObject, Signal, Slot
 from PySide6.QtGui import QUndoCommand, QUndoStack
-from PySide6.QtWidgets import QWidget
 from shutterbug.gui.adapters import (
     FITSModelAdapter,
     StarIdentityAdapter,
 )
 from shutterbug.gui.adapters.adapter_registry import AdapterRegistry
-from shutterbug.gui.managers import ToolManager
-from shutterbug.gui.operators.base_operator import BaseOperator
-from shutterbug.gui.tools import BaseTool
 
 from .managers import (
     FileManager,
@@ -20,7 +16,6 @@ from .managers import (
     ImageManager,
     SelectionManager,
     StarCatalog,
-    StretchManager,
 )
 from .models import FITSModel, GraphDataModel, StarIdentity, StarMeasurement
 

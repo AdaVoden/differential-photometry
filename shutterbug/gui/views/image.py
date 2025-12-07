@@ -27,7 +27,6 @@ from PySide6.QtGui import (
     QMouseEvent,
     QPen,
     QPixmap,
-    QUndoCommand,
     QWheelEvent,
 )
 from PySide6.QtWidgets import QGraphicsScene, QGraphicsView, QMenu, QWidget
@@ -41,9 +40,8 @@ from shutterbug.gui.commands import (
     RemoveMeasurementCommand,
     SelectCommand,
 )
-from shutterbug.gui.operators import BaseOperator
 from shutterbug.gui.panels import BasePopOver, OperatorPanel, ToolPanel
-from shutterbug.gui.tools import BaseTool, SelectTool
+from shutterbug.gui.tools import SelectTool
 from shutterbug.gui.managers import ToolManager
 
 
@@ -61,8 +59,8 @@ class ImageViewer(QGraphicsView):
     ZOOM_MINIMUM_DEFAULT = 0.5
 
     # Marker defaults
-    MARKER_COLOUR_DEFAULT = "cyan"
-    MARKER_RADIUS_DEFAULT = 20  # pixels
+    MARKER_COLOUR_DEFAULT = "magenta"
+    MARKER_RADIUS_DEFAULT = 10  # pixels
 
     def __init__(self, controller: AppController):
         super().__init__()
@@ -371,9 +369,9 @@ class ImageViewer(QGraphicsView):
         x, y = self._convert_to_image_coordinates(coordinates)
         logging.debug(f"Attempting to select centroid at {x}/{y}")
 
-        star = self.image_manager.find_nearest_centroid(image, x, y)
+        centroid = self.image_manager.find_nearest_centroid(image, x, y)
 
-        return star
+        return centroid
 
     def get_registered_measurement(self, coordinates: QPoint) -> StarIdentity | None:
         """Gets already registered measurement at point, if any"""

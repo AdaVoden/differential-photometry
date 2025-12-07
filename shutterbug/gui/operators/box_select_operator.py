@@ -9,7 +9,7 @@ if TYPE_CHECKING:
 from shutterbug.gui.tools.box_select_settings import BoxSelectOperatorSettingsWidget
 
 from PySide6.QtCore import QRect, QSize, QTimer, Slot
-from PySide6.QtGui import QMouseEvent, QPen, QColor
+from PySide6.QtGui import QMouseEvent
 from PySide6.QtWidgets import QRubberBand
 from shutterbug.gui.commands.star_commands import AddMeasurementsCommand
 from shutterbug.gui.operators.base_operator import BaseOperator
@@ -90,14 +90,14 @@ class BoxSelectOperator(BaseOperator):
             self.rubber = None
         # Clear old preview items
         for item in self.preview_items:
-            item.scene().removeItem(item)
+            self.viewer.remove_star_marker(item.x(), item.y())
         self.preview_items.clear()
 
     def _update_preview(self):
         """Updates preview of command"""
         # Clear old preview
         for item in self.preview_items:
-            item.scene().removeItem(item)
+            self.viewer.remove_star_marker(item.x(), item.y())
 
         self.preview_items.clear()
 
@@ -111,12 +111,7 @@ class BoxSelectOperator(BaseOperator):
 
         # Build the preview
         for star in stars:
-            pen = QPen(QColor("cyan"))
-            pen.setWidth(2)
-
-            circle = self.viewer.scene().addEllipse(
-                star["xcentroid"] - 20, star["ycentroid"] - 20, 40, 40, pen
-            )
+            circle = self.viewer.add_star_marker(star["xcentroid"], star["ycentroid"])
             self.preview_items.append(circle)
 
     def _find_stars_in(self, scene_rect: QRect):
