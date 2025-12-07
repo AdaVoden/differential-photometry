@@ -32,6 +32,7 @@ class LabeledSlider(LabeledWidget):
 
         logging.debug(f"Initialized Labeled Slider: {label}")
 
+    @property
     def value(self):
         """Returns value of embedded slider"""
         return self.slider.value()

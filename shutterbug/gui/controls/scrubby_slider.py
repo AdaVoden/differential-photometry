@@ -97,10 +97,11 @@ class ScrubbySlider(QWidget):
         if self.dragging:
 
             self.debounce_timer.stop()
-            self.debounce_timer.start(84)  # ~12 FPS
+            self.debounce_timer.start(20)
             delta = event.globalPosition().toPoint().x() - self.drag_start_pos.x()
             # adjust sensitivity: 1 pixel = 1 unit
             self.new_value = self.drag_start_val + (delta * self.decimal_mulitplier)
+            self.new_value = max(self.min_val, min(self.max_val, self.new_value))
             self.set_text_value(self.new_value)
             event.accept()
         else:
@@ -158,3 +159,23 @@ class ScrubbySlider(QWidget):
     def commit_update(self):
         """Commits the change to the slider by emitting it"""
         self.setValue(self.new_value)
+
+    def set_maximum(self, value: float):
+        if self.number_type == "int":
+            value = int(value)
+        if value >= self.min_val:
+            value = self.min_val + self.decimal_places
+        if value < self.current_val:
+            self.current_val = value
+            self.set_text_value(value)
+        self.max_val = value
+
+    def set_minimum(self, value: float):
+        if self.number_type == "int":
+            value = int(value)
+        if value >= self.max_val:
+            value = self.max_val - self.decimal_places
+        if value > self.current_val:
+            self.current_val = value
+            self.set_text_value(value)
+        self.min_val = value

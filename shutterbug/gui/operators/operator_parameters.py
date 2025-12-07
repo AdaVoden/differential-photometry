@@ -14,4 +14,6 @@ class PhotometryParameters(OperatorParameters):
     aperture_radius = 10
     annulus_inner_radius = 15
     annulus_outer_radius = 20
-    buffer = 1  # Pixel
+    number_type = "float"
+    decimal_places = 1
+    buffer = 0.01  # Pixel
