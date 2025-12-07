@@ -32,6 +32,7 @@ class ImageManager(BaseManager):
 
         super().__init__(controller, parent)
         self.images: Dict[str, FITSModel] = {}
+        self.first_image = True
 
         # photometry settings
         self.fwhm: float = self.FWHM_DEFAULT
@@ -46,12 +47,17 @@ class ImageManager(BaseManager):
         self.compute_stats(image)
         self.build_base_preview(image)
         self.controller.dispatch(Event(EventDomain.IMAGE, "created", data=image))
+        if self.first_image:
+            self.controller.dispatch(Event(EventDomain.IMAGE, "selected", data=image))
+            self.first_image = False
 
     def remove_image(self, image: FITSModel):
         """Removes image from manager"""
         if image.filename in self.images.keys():
             self.images.pop(image.filename)
             self.controller.dispatch(Event(EventDomain.IMAGE, "removed", data=image))
+        if len(self.images) == 0:
+            self.first_image = True
 
     def get_image(self, image_name: str) -> FITSModel | None:
         """Returns image from manager"""

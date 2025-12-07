@@ -9,7 +9,6 @@ if TYPE_CHECKING:
     from shutterbug.gui.views.image import ImageViewer
     from shutterbug.core.app_controller import AppController
 
-from PySide6.QtCore import Qt
 from PySide6.QtGui import QMouseEvent, QUndoCommand
 from shutterbug.gui.operators.base_operator import BaseOperator
 

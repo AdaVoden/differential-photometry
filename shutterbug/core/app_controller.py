@@ -3,7 +3,7 @@ import logging
 from shutterbug.core.events.change_event import Event
 import shutterbug.core.utility.photometry as phot
 from PySide6.QtCore import QObject, Signal, Slot
-from PySide6.QtGui import QUndoCommand, QUndoStack
+from PySide6.QtGui import QUndoStack
 from shutterbug.gui.adapters import (
     FITSModelAdapter,
     StarIdentityAdapter,
@@ -75,15 +75,11 @@ class AppController(QObject):
         if self._undo_stack.canUndo():
             self._undo_stack.undo()
 
-    @Slot()
-    def process_all_images(self):
+    @Slot(FITSModel)
+    def process_all_images(self, image: FITSModel):
         """Generate light curve from all loaded images"""
-        current_image = self.images.active_image
 
-        if current_image is None:
-            return  # No work required
-
-        self.propagate_star_selection(current_image)
+        self.propagate_star_selection(image)
         for image in self.images.get_all_images():
             self.process_single_image(image)
 
@@ -108,6 +104,7 @@ class AppController(QObject):
 
                     if star_data:
                         measurement = StarMeasurement(
+                            controller=self,
                             x=star_data["xcentroid"],
                             y=star_data["ycentroid"],
                             time=img.observation_time,
@@ -116,12 +113,8 @@ class AppController(QObject):
                         self.stars.register_measurement(measurement)
 
     @Slot(str)
-    def differential_image(self, image_name: str | None = None):
+    def differential_image(self, image_name: str):
         """Calculates differential photometry on all measurements in image"""
-        if image_name is None:
-            if self.images.active_image is None:
-                return  # No work to do
-            image_name = self.images.active_image.filename
 
         measurements = self.stars.get_measurements_by_image(image_name)
 
@@ -143,10 +136,6 @@ class AppController(QObject):
         if star is not None:
             graph = GraphDataModel.from_star(self, star)
             self.graphs.add_graph(graph)
-
-    @Slot(QUndoCommand)
-    def _on_operator_finished(self, cmd: QUndoCommand):
-        self._undo_stack.push(cmd)
 
     def register_adapters(self):
         registry = self.adapters

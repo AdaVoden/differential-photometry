@@ -31,15 +31,10 @@ from PySide6.QtGui import (
 )
 from PySide6.QtWidgets import QGraphicsScene, QGraphicsView, QMenu, QWidget
 
-from shutterbug.core.models import FITSModel, StarIdentity
+from shutterbug.core.models import FITSModel
 from shutterbug.core.utility.photometry import measure_star_magnitude
 from shutterbug.core.events.change_event import Event
 from shutterbug.core.managers import StretchManager
-from shutterbug.gui.commands import (
-    AddMeasurementsCommand,
-    RemoveMeasurementCommand,
-    SelectCommand,
-)
 from shutterbug.gui.panels import BasePopOver, OperatorPanel, ToolPanel
 from shutterbug.gui.tools import SelectTool
 from shutterbug.gui.managers import ToolManager
@@ -372,78 +367,6 @@ class ImageViewer(QGraphicsView):
         centroid = self.image_manager.find_nearest_centroid(image, x, y)
 
         return centroid
-
-    def get_registered_measurement(self, coordinates: QPoint) -> StarIdentity | None:
-        """Gets already registered measurement at point, if any"""
-        catalog = self.catalog
-        image = self.current_image
-        if image is None:
-            return None  # No work to do
-
-        x, y = self._convert_to_image_coordinates(coordinates)
-
-        star = catalog.find_nearest(x, y)
-        if star is None:
-            return None
-
-        return star
-
-    def get_star_at_point(self, coordinates: QPoint):
-        """Grabs star at selected point"""
-        # First check to see if we have any registered at point
-        star = self.get_registered_measurement(coordinates)
-        if star:
-            return star  # Success
-
-        # Second, check if there's a centroid at point
-        centroid = self.get_centroid_at_point(coordinates)
-        if centroid:
-            return centroid
-
-        # Found nothing
-        return None
-
-    def select_star(self, coordinates: QPoint):
-        """Creates the select star command and pushes command to the stack"""
-        current_image = self.current_image
-        if current_image is None:
-            return  # Nothing to do
-
-        star = self.get_star_at_point(coordinates)
-        if star is None:
-            logging.debug(
-                f"No star found under click at point ({coordinates.x()}, {coordinates.y()})"
-            )
-            return  # No work to do
-        if isinstance(star, StarIdentity):
-            self._undo_stack.push(SelectCommand(star, self.controller))
-        else:
-            self._undo_stack.push(
-                AddMeasurementsCommand([star], current_image, self.controller)
-            )
-
-    def deselect_star(self, coordinates: QPoint):
-        """Creates the deselect star command and pushes command to the stack"""
-        current_image = self.current_image
-        if current_image is None:
-            return  # Nothing to do
-        logging.debug(
-            f"Attempting to deselect star at {coordinates.x()}/{coordinates.y()}"
-        )
-        star = self.get_registered_measurement(coordinates)
-
-        if star is None:
-            logging.debug(
-                f"No star found under click at point ({coordinates.x()}, {coordinates.y()})"
-            )
-            return  # No work to do
-
-        logging.debug("Star found, creating command")
-        measurement = star.measurements.get(current_image.filename)
-        if measurement is not None:
-            self._undo_stack.push(
-                RemoveMeasurementCommand(measurement, self.controller)
-            )
 
     @Slot()
     def _on_propagate_requested(self):
