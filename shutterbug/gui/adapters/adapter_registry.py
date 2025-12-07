@@ -1,23 +1,20 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from shutterbug.core.app_controller import AppController
 import logging
 from typing import Any
 
 
 class AdapterRegistry:
 
-    _instance = None
+    def __init__(self, controller: AppController) -> None:
+        super().__init__()
 
-    def __init__(self) -> None:
-        if not hasattr(self, "_initialized"):
-            self._initialized = True
-            super().__init__()
-
-            self._registry = {}
-
-    def __new__(cls):
-        if cls._instance is None:
-            cls._instance = super().__new__(cls)
-
-        return cls._instance
+        self.controller = controller
+        self._registry = {}
 
     def register_adapter(self, cls: Any, adapter_factory):
         """Registers class to specific adapter factory"""
@@ -30,5 +27,5 @@ class AdapterRegistry:
         """Retreives adapter factory for given object"""
         for cls, factory in self._registry.items():
             if isinstance(obj, cls):
-                return factory(obj)
+                return factory(obj, self.controller)
         return None

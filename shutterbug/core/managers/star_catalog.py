@@ -1,47 +1,41 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+from shutterbug.core.events.change_event import (
+    Event,
+    EventDomain,
+)
+
+if TYPE_CHECKING:
+    from shutterbug.core.app_controller import AppController
+
 import logging
 from typing import Dict, List
 
-from PySide6.QtCore import QObject, Signal
+from PySide6.QtCore import Signal
 from scipy.spatial import KDTree
 from shutterbug.core.models import StarIdentity, StarMeasurement
 
+from .base_manager import BaseManager
 
-class StarCatalog(QObject):
+
+class StarCatalog(BaseManager):
     """Catalogues stars between images. Is a singleton."""
 
-    _instance = None
-    star_added = Signal(StarIdentity)
-    star_removed = Signal(StarIdentity)
-    active_star_changed = Signal(StarIdentity)
-    # Object because StarMeasurements are QObservableObjects
-    # And those emit the object type.
-    # I need to fix.
-    measurement_added = Signal(object)
-    measurement_removed = Signal(object)
-    measurement_updated = Signal(object)
+    def __init__(self, controller: AppController, parent=None):
+        super().__init__(controller, parent)
+        self.stars: Dict[str, StarIdentity] = {}  # id -> StarIdentity
+        self.measurement_to_star: Dict[str, StarIdentity] = (
+            {}
+        )  # StarMeasurement.uid -> StarIdentity
+        self.active_star = None  # selected star
+        self._kdtree = None
+        self._coords = []  # Reference coordinates
+        self._ids = []  # Matching star IDs
+        self._dirty = False
 
-    def __init__(self):
-        if not hasattr(self, "_initialized"):
-            self._initialized = True
-
-            super().__init__()
-            self.stars: Dict[str, StarIdentity] = {}  # id -> StarIdentity
-            self.measurement_to_star: Dict[str, StarIdentity] = (
-                {}
-            )  # StarMeasurement.uid -> StarIdentity
-            self.active_star = None  # selected star
-            self._kdtree = None
-            self._coords = []  # Reference coordinates
-            self._ids = []  # Matching star IDs
-            self._dirty = False
-
-    def __new__(cls):
-        if cls._instance is None:
-            logging.debug("Creating Star Catalog singleton")
-            cls._instance = super(StarCatalog, cls).__new__(cls)
-            # initial variables
-
-        return cls._instance
+        logging.debug("Star Catalog initialized")
 
     def _add_star(self, star_identity: StarIdentity, x: float, y: float):
         """Adds a star to the catalog"""
@@ -49,7 +43,7 @@ class StarCatalog(QObject):
         self._coords.append((x, y))
         self._ids.append(star_identity.id)
         self._dirty = True
-        self.star_added.emit(star_identity)
+        self.controller.dispatch(Event(EventDomain.STAR, "created", data=star_identity))
         logging.debug(f"Added identity: {star_identity.id}")
 
     def _remove_star(self, star_identity: StarIdentity, x: float, y: float):
@@ -58,7 +52,7 @@ class StarCatalog(QObject):
         self._coords.remove((x, y))
         self._ids.remove(star_identity.id)
         self._dirty = True
-        self.star_removed.emit(star_identity)
+        self.controller.dispatch(Event(EventDomain.STAR, "removed", data=star_identity))
         logging.debug(f"Removed identity: {star_identity.id}")
 
     def _ensure_tree(self):
@@ -105,22 +99,24 @@ class StarCatalog(QObject):
         star = self.find_nearest(measurement.x, measurement.y)
         if star is None:
             star_id = f"Star_{self._new_id()}"
-            star = StarIdentity(id=star_id)
+            star = StarIdentity(controller=self.controller, id=star_id)
             self._add_star(star, measurement.x, measurement.y)
         star.measurements[measurement.image] = measurement
         self.measurement_to_star[measurement.uid] = star
-        self.measurement_added.emit(measurement)
-        measurement.updated.connect(self.measurement_updated)
+        self.controller.dispatch(
+            Event(EventDomain.MEASUREMENT, "created", data=measurement)
+        )
         return star
 
     def unregister_measurement(self, measurement: StarMeasurement) -> None:
         """Removes measurement from star in catalog"""
         star = self.find_nearest(measurement.x, measurement.y)
         if star is not None:
-            self.measurement_removed.emit(measurement)
             star.measurements.pop(measurement.image)
             self.measurement_to_star.pop(measurement.uid)
-            measurement.updated.disconnect(self.measurement_updated)
+            self.controller.dispatch(
+                Event(EventDomain.MEASUREMENT, "removed", data=measurement)
+            )
             if len(star.measurements) == 0:
                 self._remove_star(star, measurement.x, measurement.y)
                 return
@@ -144,13 +140,3 @@ class StarCatalog(QObject):
     def get_all_stars(self) -> List[StarIdentity]:
         """Gets all stars currently registered"""
         return list(self.stars.values())
-
-    def set_active_star(self, star: StarIdentity | None):
-        """Sets active star"""
-        if self.active_star != star:
-            if star is None:
-                logging.debug(f"Setting active star to none")
-            else:
-                logging.debug(f"Setting star as active: {star.id}")
-            self.active_star = star
-            self.active_star_changed.emit(star)

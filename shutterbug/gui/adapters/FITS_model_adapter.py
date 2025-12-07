@@ -1,12 +1,18 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+from shutterbug.core.events.change_event import Event
+
+if TYPE_CHECKING:
+    from shutterbug.core.app_controller import AppController
+
 import logging
 from typing import List
 
 from PySide6.QtCore import Slot
 from PySide6.QtGui import QStandardItem
 from shutterbug.core.models import FITSModel, StarMeasurement
-from shutterbug.core.managers import (
-    StarCatalog,
-)
 from shutterbug.gui.adapters.tabular_data_interface import (
     AdapterSignals,
     TabularDataInterface,
@@ -14,19 +20,27 @@ from shutterbug.gui.adapters.tabular_data_interface import (
 
 
 class FITSModelAdapter(TabularDataInterface):
+    # Map field name to column
+    mapping = {
+        "x": 1,
+        "y": 2,
+        "flux": 3,
+        "flux_error": 4,
+        "mag": 5,
+        "mag_error": 6,
+        "diff_mag": 7,
+        "diff_err": 8,
+    }
 
-    def __init__(
-        self,
-        image: FITSModel,
-    ):
+    def __init__(self, image: FITSModel, controller: AppController):
         self.image = image
-        self.catalog = StarCatalog()
+        self.controller = controller
         self._signals = AdapterSignals()
 
         # Set up signals
-        self.catalog.measurement_added.connect(self._on_measurement_added)
-        self.catalog.measurement_updated.connect(self._on_measurement_changed)
-        self.catalog.measurement_removed.connect(self._on_measurement_removed)
+        controller.on("measurement.created", self._on_measurement_added)
+        controller.on("measurement.updated.*", self._on_measurement_changed)
+        controller.on("measurement.removed", self._on_measurement_removed)
 
     def get_column_headers(self) -> List[str]:
         """Gets column information for star measurements"""
@@ -54,7 +68,7 @@ class FITSModelAdapter(TabularDataInterface):
     def _load_all_stars(self):
         """Loads all stars from the Star Catalog into table"""
         rows = []
-        for star in self.catalog.get_all_stars():
+        for star in self.controller.stars.get_all_stars():
             measurement = star.measurements.get(self.image.filename)
             if measurement is not None:
                 row = self._get_row_from_measurement(measurement)
@@ -82,23 +96,40 @@ class FITSModelAdapter(TabularDataInterface):
 
     def _get_row_from_measurement(self, measurement: StarMeasurement):
         """Gets ID from catalog and returns the row"""
-        star_id = self.catalog.get_by_measurement(measurement)
+        star_id = self.controller.stars.get_by_measurement(measurement)
         if star_id is None:
             logging.error("Adapter unable to get catalog star id from measurement")
             return
         return self._data_to_row(measurement, star_id.id)
 
-    @Slot(StarMeasurement)
-    def _on_measurement_changed(self, measurement: StarMeasurement):
+    @Slot(Event)
+    def _on_measurement_changed(self, event: Event):
         """Handles measurement being changed"""
-        self.signals.item_updated.emit(self._get_row_from_measurement(measurement))
+        if event.data is None or event.field is None:
+            return
+        if event.data.image != self.image.filename:
+            return
+        star = self.controller.stars.get_by_measurement(event.data)
+        if star is None:
+            return
+        value = self._float_to_str(getattr(event.data, event.field))
+        self.signals.item_updated.emit(star.id, self.mapping[event.field], value)
 
-    @Slot(StarMeasurement)
-    def _on_measurement_added(self, measurement: StarMeasurement):
+    @Slot(Event)
+    def _on_measurement_added(self, event: Event):
         """Handles measurement being added to image"""
-        self.signals.item_added.emit(self._get_row_from_measurement(measurement))
+        if event.data is None:
+            return
 
-    @Slot(StarMeasurement)
-    def _on_measurement_removed(self, measurement: StarMeasurement):
+        self.signals.item_added.emit(self._get_row_from_measurement(event.data))
+
+    @Slot(Event)
+    def _on_measurement_removed(self, event: Event):
         """Handles measurement being removed from image"""
-        self.signals.item_removed.emit(self._get_row_from_measurement(measurement))
+        if event.data is None:
+            return
+        star = self.controller.stars.get_by_measurement(event.data)
+        if star is None:
+            return
+
+        self.signals.item_removed.emit(star.id)

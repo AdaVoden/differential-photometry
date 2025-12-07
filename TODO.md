@@ -15,8 +15,8 @@
 - [x] Spreadsheet view
 - [x] Only search for stars in a small region around click
 - [ ] Select star in spreadsheet view to select star in image
-- [ ] Create Singleton class for managers to inherit
-- [ ] Create Manager class for managers, since they're all very similar
+- [x] Create Singleton class for managers to inherit
+- [x] Create Manager class for managers, since they're all very similar
 - [x] Set image storage to only store 8 bit version of image
 - [x] Retrieve small chunks of data image for processing
 - [x] Overlay manager for tools
@@ -36,6 +36,6 @@
   - [ ] Remove black part to left of entries
   - [ ] Add expansion arrows to trees
 - [x] Have first image open on load
-- [ ] Bug: extra rows added to spreadsheet on measurement update
+- [x] Bug: extra rows added to spreadsheet on measurement update
 - [x] Bug: Star markers do not align with stars in different images
 - [x] Bug: image sliding on image selection

@@ -1,13 +1,15 @@
 from __future__ import annotations
-from typing import TYPE_CHECKING
 
-from shutterbug.gui.tools.box_select_settings import BoxSelectOperatorSettingsWidget
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from shutterbug.gui.views.image import ImageViewer
+    from shutterbug.core.app_controller import AppController
+
+from shutterbug.gui.tools.box_select_settings import BoxSelectOperatorSettingsWidget
 
 from PySide6.QtCore import QRect, QSize, QTimer, Slot
-from PySide6.QtGui import QMouseEvent, QPen, QColor
+from PySide6.QtGui import QMouseEvent
 from PySide6.QtWidgets import QRubberBand
 from shutterbug.gui.commands.star_commands import AddMeasurementsCommand
 from shutterbug.gui.operators.base_operator import BaseOperator
@@ -16,8 +18,13 @@ from shutterbug.gui.operators.operator_parameters import BoxSelectParameters
 
 class BoxSelectOperator(BaseOperator):
 
-    def __init__(self, viewer: ImageViewer, params: BoxSelectParameters):
-        super().__init__(viewer)
+    def __init__(
+        self,
+        viewer: ImageViewer,
+        params: BoxSelectParameters,
+        controller: AppController,
+    ):
+        super().__init__(viewer, controller)
         # Parameters live here
         self.params = params
         self.params.changed.connect(self._on_params_changed)
@@ -73,7 +80,7 @@ class BoxSelectOperator(BaseOperator):
         if not stars or self.viewer.current_image is None:
             return None  # Things have gone wrong
 
-        return AddMeasurementsCommand(stars, self.viewer.current_image)
+        return AddMeasurementsCommand(stars, self.viewer.current_image, self.controller)
 
     def cleanup_preview(self):
         """Cleans preview"""
@@ -83,14 +90,14 @@ class BoxSelectOperator(BaseOperator):
             self.rubber = None
         # Clear old preview items
         for item in self.preview_items:
-            item.scene().removeItem(item)
+            self.viewer.remove_star_marker(item.x(), item.y())
         self.preview_items.clear()
 
     def _update_preview(self):
         """Updates preview of command"""
         # Clear old preview
         for item in self.preview_items:
-            item.scene().removeItem(item)
+            self.viewer.remove_star_marker(item.x(), item.y())
 
         self.preview_items.clear()
 
@@ -104,22 +111,19 @@ class BoxSelectOperator(BaseOperator):
 
         # Build the preview
         for star in stars:
-            pen = QPen(QColor("cyan"))
-            pen.setWidth(2)
-
-            circle = self.viewer.scene().addEllipse(
-                star["xcentroid"] - 20, star["ycentroid"] - 20, 40, 40, pen
-            )
+            circle = self.viewer.add_star_marker(star["xcentroid"], star["ycentroid"])
             self.preview_items.append(circle)
 
     def _find_stars_in(self, scene_rect: QRect):
         """Finds stars in a rectangle"""
         upper_left = scene_rect.topLeft()
         bottom_right = scene_rect.bottomRight()
+        image = self.viewer.current_image
+        if image is None:
+            return
 
-        image_manager = self.viewer.image_manager
-        centroids = image_manager.find_centroids_from_points(
-            upper_left, bottom_right, threshold=self.params.threshold
+        centroids = self.controller.images.find_centroids_from_points(
+            image, upper_left, bottom_right, threshold=self.params.threshold
         )
 
         return centroids

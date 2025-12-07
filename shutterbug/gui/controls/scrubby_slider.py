@@ -117,17 +117,14 @@ class ScrubbySlider(QWidget):
 
     def set_text_value(self, value: float):
         """Sets the text value to input"""
-        self.line_edit.blockSignals(True)
         self.line_edit.setText(f"{value:.{self.decimal_places}f}")
-        self.line_edit.blockSignals(False)
 
     @Slot()
     def on_text_changed(self):
         """Handles line edit text being modified"""
         try:
             value = float(self.line_edit.text())
-            if value != self.current_val:
-                self.valueChanged.emit(value)
+            self.setValue(value)
         except ValueError:
             self.set_text_value(self.current_val)
 
@@ -136,10 +133,12 @@ class ScrubbySlider(QWidget):
         """Sets value of scrubby slider"""
         if self.number_type == "int":
             value = int(value)
+        value = round(value, self.decimal_places)
         value = max(self.min_val, min(self.max_val, value))
         if value != self.current_val:
             self.current_val = value
             self.set_text_value(self.current_val)
+            self.valueChanged.emit(self.current_val)
 
     def value(self):
         """Returns the current value of the slider"""
@@ -155,7 +154,7 @@ class ScrubbySlider(QWidget):
         """Decrements slider by 1"""
         self.valueChanged.emit(self.current_val - 1 * self.decimal_mulitplier)
 
-    @Slot(float)
+    @Slot()
     def commit_update(self):
         """Commits the change to the slider by emitting it"""
-        self.valueChanged.emit(self.new_value)
+        self.setValue(self.new_value)

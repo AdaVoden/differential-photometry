@@ -6,9 +6,10 @@ from PySide6.QtCore import QObject, Signal
 
 
 class AdapterSignals(QObject):
-    item_updated = Signal(object)
-    item_removed = Signal(object)
-    item_added = Signal(object)
+    # ID, column, value
+    item_updated = Signal(str, int, object)
+    item_removed = Signal(str)
+    item_added = Signal(list)
 
 
 class TabularDataInterface(ABC):

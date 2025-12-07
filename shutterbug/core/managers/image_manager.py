@@ -1,21 +1,26 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+from shutterbug.core.events.change_event import Event, EventDomain
+
+if TYPE_CHECKING:
+    from shutterbug.core.app_controller import AppController
+
 import logging
 from typing import Dict, List
 
 import numpy as np
 from astropy import stats
 from photutils.detection import DAOStarFinder
-from PySide6.QtCore import QObject, QPoint, Signal
+from PySide6.QtCore import QPoint
 from shutterbug.core.models import FITSModel
 
+from .base_manager import BaseManager
 
-class ImageManager(QObject):
+
+class ImageManager(BaseManager):
     """Manages multiple images and tracks which is active"""
-
-    _instance = None
-
-    image_added = Signal(FITSModel)
-    active_image_changed = Signal(FITSModel)
-    image_removed = Signal(FITSModel)
 
     # Star Finding defaults
     MAX_DISTANCE_DEFAULT = 20  # pixels
@@ -23,52 +28,36 @@ class ImageManager(QObject):
     FWHM_DEFAULT = 3.0
     THRESHOLD_DEFAULT = 5.0
 
-    def __init__(self):
-        if not hasattr(self, "_initialized"):
-            self._initialized = True
+    def __init__(self, controller: AppController, parent=None):
 
-            super().__init__()
-            self.images: Dict[str, FITSModel] = {}
-            self.active_image: FITSModel | None = None
+        super().__init__(controller, parent)
+        self.images: Dict[str, FITSModel] = {}
+        self.first_image = True
 
-            # photometry settings
-            self.fwhm: float = self.FWHM_DEFAULT
-            self.threshold: float = self.THRESHOLD_DEFAULT
-            self.sigma: float = self.SIGMA_DEFAULT
+        # photometry settings
+        self.fwhm: float = self.FWHM_DEFAULT
+        self.threshold: float = self.THRESHOLD_DEFAULT
+        self.sigma: float = self.SIGMA_DEFAULT
 
-    def __new__(cls):
-        if cls._instance is None:
-            logging.debug("Creating Image Manager singleton")
-            cls._instance = super().__new__(cls)
-
-        return cls._instance
+        logging.debug("Initialized Image Manager")
 
     def add_image(self, image: FITSModel):
         """Add image to manager"""
         self.images[image.filename] = image
         self.compute_stats(image)
         self.build_base_preview(image)
-        self.image_added.emit(image)
-
-    def set_active_image(self, image: FITSModel | None):
-        """Sets active image"""
-        if self.active_image != image:
-            if image is None:
-                logging.debug(f"Setting active image to None")
-            else:
-                logging.debug(f"Setting image as active: {image.filename}")
-            self.active_image = image
-            self.active_image_changed.emit(image)
+        self.controller.dispatch(Event(EventDomain.IMAGE, "created", data=image))
+        if self.first_image:
+            self.controller.dispatch(Event(EventDomain.IMAGE, "selected", data=image))
+            self.first_image = False
 
     def remove_image(self, image: FITSModel):
         """Removes image from manager"""
         if image.filename in self.images.keys():
             self.images.pop(image.filename)
-
-        if self.active_image == image:
-            self.active_image = None
-            self.active_image_changed.emit(self.active_image)
-        self.image_removed.emit(image)
+            self.controller.dispatch(Event(EventDomain.IMAGE, "removed", data=image))
+        if len(self.images) == 0:
+            self.first_image = True
 
     def get_image(self, image_name: str) -> FITSModel | None:
         """Returns image from manager"""
@@ -125,9 +114,10 @@ class ImageManager(QObject):
         background_subtracted = data - background
         return background_subtracted
 
-    def find_centroids_from_points(self, start: QPoint, end: QPoint, threshold: float):
-        if self.active_image is None:
-            return []
+    def find_centroids_from_points(
+        self, image: FITSModel, start: QPoint, end: QPoint, threshold: float
+    ):
+
         x0, x1 = start.x(), end.x()
         y0, y1 = start.y(), end.y()
 
@@ -137,7 +127,7 @@ class ImageManager(QObject):
         if x1 < x0:
             x1, x0 = x0, x1
 
-        data = self.active_image.get_stamp_from_points(x0, x1, y0, y1)
+        data = image.get_stamp_from_points(x0, x1, y0, y1)
         # Prevent error from having no area to search
         h = data.shape[0]
         w = data.shape[1]

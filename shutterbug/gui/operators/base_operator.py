@@ -8,6 +8,7 @@ from shutterbug.gui.operators.base_settings import BaseSettings
 
 if TYPE_CHECKING:
     from shutterbug.gui.views.image import ImageViewer
+    from shutterbug.core.app_controller import AppController
 
 from PySide6.QtCore import QObject, Signal
 
@@ -20,9 +21,10 @@ class BaseOperator(QObject):
     name = "Base Operator"
     listening = True
 
-    def __init__(self, viewer: ImageViewer):
+    def __init__(self, viewer: ImageViewer, controller: AppController):
         super().__init__()
         self.viewer = viewer
+        self.controller = controller
         self.active = True
 
     def create_settings_widget(self) -> BaseSettings | None:

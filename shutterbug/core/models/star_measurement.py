@@ -1,3 +1,10 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from shutterbug.core.app_controller import AppController
+
 from typing import Optional
 
 from .base_observable import ObservableQObject
@@ -8,8 +15,11 @@ from uuid import uuid4
 class StarMeasurement(ObservableQObject):
     """Measurement of a star within an image"""
 
+    type = "measurement"
+
     def __init__(
         self,
+        controller: AppController,
         x: float,
         y: float,
         time: float,
@@ -21,7 +31,7 @@ class StarMeasurement(ObservableQObject):
         diff_mag: Optional[float] = None,
         diff_err: Optional[float] = None,
     ):
-        super().__init__()
+        super().__init__(controller)
         # Intrinsic
         self.uid = uuid4().hex
         self.x = x

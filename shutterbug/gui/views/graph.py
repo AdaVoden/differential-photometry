@@ -1,16 +1,24 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+
+if TYPE_CHECKING:
+    from shutterbug.core.app_controller import AppController
+
 import logging
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 from PySide6.QtCore import Slot
 from PySide6.QtWidgets import QVBoxLayout, QWidget
-from shutterbug.core.managers import GraphManager
-from shutterbug.core.models import GraphDataModel
+
+from shutterbug.core.events.change_event import Event
 
 
 class GraphViewer(QWidget):
     """Viewer for star data in spreadsheet format"""
 
-    def __init__(self):
+    def __init__(self, controller: AppController):
         super().__init__()
         # Layout settings
         layout = QVBoxLayout()
@@ -18,7 +26,6 @@ class GraphViewer(QWidget):
         layout.setSpacing(0)
         self.setLayout(layout)
 
-        self.graph_manager = GraphManager()
         self.graph = None
         # Graph settings
         self.figure = Figure(figsize=(5, 4))
@@ -26,7 +33,7 @@ class GraphViewer(QWidget):
         self.ax = None
         layout.addWidget(self.canvas)
 
-        self.graph_manager.active_graph_changed.connect(self._on_active_graph_change)
+        controller.on("graph.selected", self._on_active_graph_change)
 
     def _clear(self):
         """Clears active graph and axes object"""
@@ -37,8 +44,9 @@ class GraphViewer(QWidget):
         self.figure.clear()
         self.ax = None
 
-    @Slot(GraphDataModel)
-    def _on_active_graph_change(self, graph_data: GraphDataModel | None):
+    @Slot(Event)
+    def _on_active_graph_change(self, event: Event):
+        graph_data = event.data
         if graph_data is None:
             logging.debug(f"Graph viewer clearing graph, no graph selected")
             self._clear()

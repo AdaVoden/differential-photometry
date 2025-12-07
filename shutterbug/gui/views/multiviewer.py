@@ -1,3 +1,10 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from shutterbug.core.app_controller import AppController
+
 import logging
 from PySide6.QtWidgets import (
     QWidget,
@@ -6,7 +13,6 @@ from PySide6.QtWidgets import (
     QComboBox,
     QStackedWidget,
 )
-from PySide6.QtGui import QUndoStack
 from PySide6.QtCore import Signal, Slot
 
 from shutterbug.gui.tools.base_tool import BaseTool
@@ -18,10 +24,8 @@ class MultiViewer(QWidget):
 
     propagation_requested = Signal()
     batch_requested = Signal()
-    tool_changed = Signal(BaseTool)
-    tool_settings_changed = Signal(QWidget)
 
-    def __init__(self, undo_stack: QUndoStack):
+    def __init__(self, controller: AppController):
         super().__init__()
         self.setObjectName("multiviewer")
 
@@ -35,9 +39,9 @@ class MultiViewer(QWidget):
         top_bar.setObjectName("topbar")
 
         # Stacked views
-        self.image_viewer = ImageViewer(undo_stack)
-        self.graph_viewer = GraphViewer()  # Placeholder
-        self.table_viewer = SpreadsheetViewer()
+        self.image_viewer = ImageViewer(controller)
+        self.graph_viewer = GraphViewer(controller)
+        self.table_viewer = SpreadsheetViewer(controller)
 
         self.stack = QStackedWidget()
         self.stack.addWidget(self.image_viewer)
@@ -58,8 +62,6 @@ class MultiViewer(QWidget):
         self.mode_selector.currentIndexChanged.connect(self.change_mode)
         self.image_viewer.propagation_requested.connect(self.propagation_requested)
         self.image_viewer.batch_requested.connect(self.batch_requested)
-        self.image_viewer.tool_changed.connect(self.tool_changed)
-        self.image_viewer.tool_settings_changed.connect(self.tool_settings_changed)
 
         logging.debug("Multiviewer intialized")
 

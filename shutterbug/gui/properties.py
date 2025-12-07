@@ -1,20 +1,13 @@
-from __future__ import annotations
-
-from typing import TYPE_CHECKING
-
-if TYPE_CHECKING:
-    from shutterbug.gui.main_window import MainWindow
-
+from shutterbug.core.app_controller import AppController
+from shutterbug.core.events.change_event import Event
 import logging
 
 from PySide6.QtCore import Qt, Slot
-from PySide6.QtGui import QUndoStack
 from PySide6.QtWidgets import QLabel, QTabWidget, QVBoxLayout, QWidget
-from shutterbug.core.managers import ImageManager
-from shutterbug.core.models import FITSModel
 from shutterbug.gui.commands.image_commands import (
     SetBrightnessCommand,
     SetContrastCommand,
+    SetImageValueCommand,
 )
 from shutterbug.gui.controls import LabeledSlider, LabeledComboBox
 from shutterbug.gui.tools.base_tool import BaseTool
@@ -23,11 +16,9 @@ from shutterbug.core.LUTs.registry import STRETCH_REGISTRY
 
 
 class Properties(QWidget):
-    def __init__(self, undo_stack: QUndoStack, main_window: MainWindow):
+    def __init__(self, controller: AppController):
         super().__init__()
         self.setObjectName("settings")
-
-        self._undo_stack = undo_stack
 
         layout = QVBoxLayout()
         self.setLayout(layout)
@@ -41,10 +32,10 @@ class Properties(QWidget):
         self.tabs.setTabPosition(QTabWidget.TabPosition.West)
 
         # Different property panels
-        self.tool_properties = ToolPropertiesPanel()
-        self.image_properties = ImagePropertiesPanel(undo_stack)
-        self.star_properties = StarPropertiesPanel(undo_stack)
-        self.general_properties = GeneralPropertiesPanel(undo_stack)
+        self.tool_properties = ToolPropertiesPanel(controller)
+        self.image_properties = ImagePropertiesPanel(controller)
+        self.star_properties = StarPropertiesPanel(controller)
+        self.general_properties = GeneralPropertiesPanel(controller)
 
         self.tabs.addTab(self.tool_properties, "Tool")
         self.tabs.addTab(self.general_properties, "Gen")
@@ -54,7 +45,7 @@ class Properties(QWidget):
         self.show_image_properties()
 
         # Main Window signals
-        main_window.active_tool_changed.connect(self._on_active_tool_change)
+        controller.on("tool.selected", self._on_active_tool_change)
 
         logging.debug("Tool settings initialized")
 
@@ -69,26 +60,20 @@ class Properties(QWidget):
     def show_general_properties(self):
         self.tabs.setCurrentWidget(self.general_properties)
 
-    def get_state(self):
-        return {"image_properties": self.image_properties.get_state()}
-
-    def set_state(self, state):
-        self.image_properties.set_state(state["image_properties"])
-
-    @Slot(BaseTool)
-    def _on_active_tool_change(self, tool: BaseTool):
+    @Slot(Event)
+    def _on_active_tool_change(self, event: Event):
+        tool = event.data
         self.tool_properties.set_panel(tool)
 
 
 class ImagePropertiesPanel(QWidget):
 
-    def __init__(self, undo_stack: QUndoStack):
+    def __init__(self, controller: AppController):
         super().__init__()
 
-        self._undo_stack = undo_stack
+        self._undo_stack = controller._undo_stack
 
-        self.image_manager = ImageManager()
-        self.current_image = self.image_manager.active_image
+        self.current_image = None
 
         self.setObjectName("imageProperties")
         layout = QVBoxLayout()
@@ -118,27 +103,35 @@ class ImagePropertiesPanel(QWidget):
         # Signals to slots
         self.brightness_slider.valueChanged.connect(self._on_brightness_changed)
         self.contrast_slider.valueChanged.connect(self._on_contrast_changed)
+        self.stretches.activated.connect(self._on_stretch_changed)
 
-        self.image_manager.active_image_changed.connect(self._on_image_changed)
+        controller.on("image.selected", self._on_image_selected)
+        controller.on(
+            "image.updated.brightness",
+            lambda evt: self.brightness_slider.set_value(evt.data.brightness),
+        )
+        controller.on(
+            "image.updated.contrast",
+            lambda evt: self.contrast_slider.set_value(evt.data.contrast),
+        )
+        controller.on(
+            "image.updated.stretch_type",
+            lambda evt: self.stretches.set_text(evt.data.stretch_type),
+        )
 
         logging.debug("Image properties panel initialized")
 
-    @Slot(FITSModel)
-    def _on_image_changed(self, image: FITSModel):
+    @Slot(Event)
+    def _on_image_selected(self, event: Event):
         """Handles image changing in image manager"""
-        if self.current_image:
-            # There's a current image remove all previous subscriptions
-            self.current_image.updated.disconnect(self.set_brightness)
-            self.current_image.updated.disconnect(self.set_contrast)
-
-        self.current_image = image
+        image = event.data
 
         if image:
             # Add new subscriptions and set the slider values
-            image.updated.connect(self.set_brightness)
-            image.updated.connect(self.set_contrast)
-            self.set_brightness(image)
-            self.set_contrast(image)
+            self.current_image = image
+            self.brightness_slider.set_value(image.brightness)
+            self.contrast_slider.set_value(image.contrast)
+            self.stretches.set_text(image.stretch_type)
 
     @Slot(int)
     def _on_brightness_changed(self, value: int):
@@ -150,30 +143,16 @@ class ImagePropertiesPanel(QWidget):
         if self.current_image:
             self._undo_stack.push(SetContrastCommand(value, self.current_image))
 
-    @Slot(FITSModel)
-    def set_brightness(self, image: FITSModel):
-        value = image.brightness
-        self.brightness_slider.set_value(value)
-
-    @Slot(FITSModel)
-    def set_contrast(self, image: FITSModel):
-        value = image.contrast
-        self.contrast_slider.set_value(value)
-
-    def get_state(self):
-        state = {
-            "brightness": self.brightness_slider.value(),
-            "contrast": self.contrast_slider.value(),
-        }
-        return state
-
-    def set_state(self, state):
-        self.set_brightness(state["brightness"])
-        self.set_contrast(state["contrast"])
+    @Slot(str)
+    def _on_stretch_changed(self, value: str):
+        if self.current_image:
+            self._undo_stack.push(
+                SetImageValueCommand("stretch_type", value, self.current_image)
+            )
 
 
 class StarPropertiesPanel(QWidget):
-    def __init__(self, undo_stack: QUndoStack):
+    def __init__(self, controller: AppController):
         super().__init__()
         self.setObjectName("starProperties")
         layout = QVBoxLayout()
@@ -204,7 +183,7 @@ class StarPropertiesPanel(QWidget):
 
 
 class GeneralPropertiesPanel(QWidget):
-    def __init__(self, undo_stack: QUndoStack):
+    def __init__(self, controller: AppController):
         super().__init__()
         layout = QVBoxLayout()
         self.setLayout(layout)
@@ -213,7 +192,7 @@ class GeneralPropertiesPanel(QWidget):
 
 
 class ToolPropertiesPanel(QWidget):
-    def __init__(self):
+    def __init__(self, controller: AppController):
         super().__init__()
         layout = QVBoxLayout()
         self.setLayout(layout)

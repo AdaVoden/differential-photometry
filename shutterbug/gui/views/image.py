@@ -1,3 +1,11 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+
+if TYPE_CHECKING:
+    from shutterbug.core.app_controller import AppController
+
 import logging
 from typing import Tuple
 
@@ -19,36 +27,25 @@ from PySide6.QtGui import (
     QMouseEvent,
     QPen,
     QPixmap,
-    QUndoStack,
     QWheelEvent,
 )
 from PySide6.QtWidgets import QGraphicsScene, QGraphicsView, QMenu, QWidget
-from shutterbug.core.managers import (
-    ImageManager,
-    SelectionManager,
-    StarCatalog,
-    StretchManager,
-)
-from shutterbug.core.models import FITSModel, StarIdentity, StarMeasurement
+
+from shutterbug.core.models import FITSModel
 from shutterbug.core.utility.photometry import measure_star_magnitude
-from shutterbug.gui.commands import (
-    AddMeasurementsCommand,
-    RemoveMeasurementCommand,
-    SelectStarCommand,
-)
-from shutterbug.gui.operators.base_operator import BaseOperator
-from shutterbug.gui.panels.base_popover import BasePopOver
-from shutterbug.gui.panels.operator_panel import OperatorPanel
-from shutterbug.gui.panels.tool_panel import ToolPanel
+from shutterbug.core.events.change_event import Event
+from shutterbug.core.managers import StretchManager
+from shutterbug.gui.panels import BasePopOver, OperatorPanel, ToolPanel
+from shutterbug.gui.tools import SelectTool
 from shutterbug.gui.managers import ToolManager
-from shutterbug.gui.tools import BaseTool, SelectTool
 
 
 class ImageViewer(QGraphicsView):
 
     propagation_requested = Signal(FITSModel)
     batch_requested = Signal()
-    tool_changed = Signal(BaseTool)
+
+    # Tool signals
     tool_settings_changed = Signal(QWidget)
 
     # Zoom defaults
@@ -57,24 +54,26 @@ class ImageViewer(QGraphicsView):
     ZOOM_MINIMUM_DEFAULT = 0.5
 
     # Marker defaults
-    MARKER_COLOUR_DEFAULT = "cyan"
-    MARKER_RADIUS_DEFAULT = 20  # pixels
+    MARKER_COLOUR_DEFAULT = "magenta"
+    MARKER_RADIUS_DEFAULT = 10  # pixels
 
-    def __init__(self, undo_stack: QUndoStack):
+    def __init__(self, controller: AppController):
         super().__init__()
         # Initial variables
         self.setObjectName("viewer")
         self.current_image = None
+        self.selected_star = None
         self.markers = {}  # (x, y) -> marker
+        self.controller = controller
 
         # Manager setup
-        self._undo_stack = undo_stack
-        self.selection = SelectionManager()
-        self.catalog = StarCatalog()
-        self.image_manager = ImageManager()
-        self.tool_manager = ToolManager(self)
-        self.stretch_manager = StretchManager()
-        self.tool_manager.set_tool(SelectTool)
+        self._undo_stack = controller._undo_stack
+        self.catalog = controller.stars
+        self.image_manager = controller.images
+        self.tools = ToolManager(controller)
+        self.stretchs = StretchManager(controller)
+
+        self.tools.set_tool(SelectTool)
 
         # Zoom settings
         self.zoom_factor = self.ZOOM_FACTOR_DEFAULT
@@ -113,49 +112,109 @@ class ImageViewer(QGraphicsView):
         self.setTransformationAnchor(QGraphicsView.ViewportAnchor.AnchorUnderMouse)
         self.setResizeAnchor(QGraphicsView.ViewportAnchor.AnchorUnderMouse)
 
-        # Set up signals
-        self.selection.image_selected.connect(self._on_image_selected)
-        self.catalog.measurement_added.connect(self.add_star_marker)
-        self.catalog.measurement_removed.connect(self.remove_star_marker)
-        self.tool_manager.tool_changed.connect(self._on_tool_changed)
-        self.tool_manager.tool_settings_changed.connect(self.tool_settings_changed)
+        # General signals
+        self.controller.on("image.selected", self._on_image_selected)
+        self.controller.on("image.updated.*", self._on_image_update_event)
+        self.controller.on("measurement.created", self._on_measurement_created)
+        self.controller.on("measurement.removed", self._on_measurement_removed)
+        self.controller.on("star.selected", self._on_star_selected)
 
-        self.popover.tool_selected.connect(self.tool_manager.set_tool)
-        self.tool_manager.operator_changed.connect(self._on_operator_changed)
-        self.tool_manager.operator_finished.connect(self._on_operator_finished)
-        self.tool_manager.operator_cancelled.connect(self._on_operator_finished)
+        # Tool signals
+        self.controller.on("operator.selected", self._on_operator_changed)
+        self.controller.on("operator.finished", self._on_operator_finished)
+        self.controller.on("operator.cancelled", self._on_operator_finished)
+
+        self.tools.tool_settings_changed.connect(self.tool_settings_changed)
+
+        self.popover.tool_selected.connect(self.tools.set_tool)
 
         logging.debug("Image Viewer initialized")
 
-    @Slot(FITSModel)
-    def _on_image_selected(self, image: FITSModel):
+    @Slot(Event)
+    def _on_image_selected(self, event: Event):
         """Handles image manager active image changing"""
+        image = event.data
         if image != self.current_image:
             if self.current_image:
-                self.current_image.updated.disconnect(self.update_display)
+                self.current_image.updated.disconnect(self._on_image_update_event)
 
             self.current_image = image
             if image is not None:
-                image.updated.connect(self.update_display)
-                self.stretch_manager.set_mode(image.stretch_type)
+                image.updated.connect(self._on_image_update_event)
+                self.stretchs.brightness = image.brightness
+                self.stretchs.contrast = image.contrast
+                self.stretchs.set_mode(image.stretch_type)
+                self.stretchs.update_lut()
 
             self.update_display()
 
-    @Slot(BaseTool)
-    def _on_tool_changed(self, tool: BaseTool):
-        """Handles tool changing in Tool Manager"""
-        self.tool_changed.emit(tool)
+    @Slot(Event)
+    def _on_star_selected(self, event: Event):
+        """Handles star being selected"""
+        star = event.data
+        if star is None:
+            return
+        if self.current_image is None:
+            return  # Need an image for this
 
-    @Slot(BaseOperator)
-    def _on_operator_changed(self, operator: BaseOperator):
+        if self.selected_star is not None:
+            # Add back in unselected star
+            s_star = self.selected_star
+            self.remove_star_marker(s_star.x, s_star.y)
+            self.add_star_marker(s_star.x, s_star.y)
+
+        measurement = star.measurements.get(self.current_image.filename)
+        self.selected_star = measurement
+        if measurement is None:
+            return  # Image does not have this measurement
+        self.remove_star_marker(measurement.x, measurement.y)
+        self.add_star_marker(measurement.x, measurement.y, colour="gold")
+
+    @Slot(Event)
+    def _on_image_update_event(self, event: Event):
+        """Handles current image changing values"""
+        image = event.data
+        if image is None:
+            return
+        if image == self.current_image:
+            self.stretchs.brightness = image.brightness
+            self.stretchs.contrast = image.contrast
+            self.stretchs.set_mode(image.stretch_type)
+            self.stretchs.update_lut()
+            self.update_display()
+
+    @Slot(Event)
+    def _on_operator_changed(self, event: Event):
         """Handles operator changing in Tool Manager"""
+        operator = event.data
+        if operator is None:
+            logging.debug("No operator given on change")
+            return
         self.op_panel.set_panel(operator)
         self._toggle_popover(self.op_panel)
 
-    @Slot()
-    def _on_operator_finished(self):
+    @Slot(Event)
+    def _on_operator_finished(self, _: Event):
         """Handles operator being finished or cancelled"""
         self.op_panel.hide()
+
+    @Slot(Event)
+    def _on_measurement_created(self, event: Event):
+        measurement = event.data
+        if measurement is None or self.current_image is None:
+            return
+        if measurement.image != self.current_image.filename:
+            return
+
+        self.add_star_marker(measurement.x, measurement.y)
+
+    @Slot(Event)
+    def _on_measurement_removed(self, event: Event):
+        measurement = event.data
+        if measurement is None or self.current_image is None:
+            return
+
+        self.remove_star_marker(measurement.x, measurement.y)
 
     # Zoom properties for animation
     def get_zoom(self):
@@ -225,8 +284,8 @@ class ImageViewer(QGraphicsView):
             super().mousePressEvent(fake_event)
         else:
             if event.button() == Qt.MouseButton.LeftButton:
-                self.tool_manager.end_operation_confirm()
-                self.tool_manager.begin_operation(event)
+                self.tools.end_operation_confirm()
+                self.tools.begin_operation(event, self)
             super().mousePressEvent(event)
 
     @Slot(QMouseEvent)
@@ -237,14 +296,14 @@ class ImageViewer(QGraphicsView):
             # Stop panning
             self.setDragMode(QGraphicsView.DragMode.NoDrag)
         if event.button() == Qt.MouseButton.LeftButton:
-            self.tool_manager.end_operation_interaction()
+            self.tools.end_operation_interaction()
         super().mouseReleaseEvent(event)
 
     @Slot(QMouseEvent)
     def mouseMoveEvent(self, event: QMouseEvent) -> None:
         if self.current_image is None:
             return None
-        self.tool_manager.update_operation(event)
+        self.tools.update_operation(event)
 
         super().mouseMoveEvent(event)
 
@@ -254,10 +313,10 @@ class ImageViewer(QGraphicsView):
         if event.key() == Qt.Key.Key_N:
             self._toggle_popover(self.popover)
         if event.key() == Qt.Key.Key_Escape:
-            self.tool_manager.end_operation_cancel()
+            self.tools.end_operation_cancel()
 
         if event.key() == Qt.Key.Key_Enter:
-            self.tool_manager.end_operation_confirm()
+            self.tools.end_operation_confirm()
 
     def contextMenuEvent(self, event: QContextMenuEvent) -> None:
         menu = QMenu()
@@ -297,7 +356,7 @@ class ImageViewer(QGraphicsView):
 
     def get_centroid_at_point(self, coordinates: QPoint):
         """Gets star, if any, under point"""
-        image = self.image_manager.active_image
+        image = self.current_image
         if image is None:
             # No work to do
             return None
@@ -305,77 +364,9 @@ class ImageViewer(QGraphicsView):
         x, y = self._convert_to_image_coordinates(coordinates)
         logging.debug(f"Attempting to select centroid at {x}/{y}")
 
-        star = self.image_manager.find_nearest_centroid(image, x, y)
+        centroid = self.image_manager.find_nearest_centroid(image, x, y)
 
-        return star
-
-    def get_registered_measurement(self, coordinates: QPoint) -> StarIdentity | None:
-        """Gets already registered measurement at point, if any"""
-        catalog = self.catalog
-        image = self.image_manager.active_image
-        if image is None:
-            return None  # No work to do
-
-        x, y = self._convert_to_image_coordinates(coordinates)
-
-        star = catalog.find_nearest(x, y)
-        if star is None:
-            return None
-
-        return star
-
-    def get_star_at_point(self, coordinates: QPoint):
-        """Grabs star at selected point"""
-        # First check to see if we have any registered at point
-        star = self.get_registered_measurement(coordinates)
-        if star:
-            return star  # Success
-
-        # Second, check if there's a centroid at point
-        centroid = self.get_centroid_at_point(coordinates)
-        if centroid:
-            return centroid
-
-        # Found nothing
-        return None
-
-    def select_star(self, coordinates: QPoint):
-        """Creates the select star command and pushes command to the stack"""
-        current_image = self.image_manager.active_image
-        if current_image is None:
-            return  # Nothing to do
-
-        star = self.get_star_at_point(coordinates)
-        if star is None:
-            logging.debug(
-                f"No star found under click at point ({coordinates.x()}, {coordinates.y()})"
-            )
-            return  # No work to do
-        if isinstance(star, StarIdentity):
-            self._undo_stack.push(SelectStarCommand(star))
-        else:
-            self._undo_stack.push(AddMeasurementsCommand([star], current_image))
-
-    def deselect_star(self, coordinates: QPoint):
-        """Creates the deselect star command and pushes command to the stack"""
-        current_image = self.image_manager.active_image
-        if current_image is None:
-            return  # Nothing to do
-        logging.debug(
-            f"Attempting to deselect star at {coordinates.x()}/{coordinates.y()}"
-        )
-        star = self.get_registered_measurement(coordinates)
-
-        if star is None:
-            logging.debug(
-                f"No star found under click at point ({coordinates.x()}, {coordinates.y()})"
-            )
-            return  # No work to do
-
-        logging.debug("Star found, creating command")
-        measurement = star.measurements.get(current_image.filename)
-        if measurement is not None:
-            self._undo_stack.push(RemoveMeasurementCommand(measurement))
+        return centroid
 
     @Slot()
     def _on_propagate_requested(self):
@@ -394,36 +385,35 @@ class ImageViewer(QGraphicsView):
 
     def add_star_marker(
         self,
-        star: StarMeasurement,
+        x: float,
+        y: float,
         radius: int = MARKER_RADIUS_DEFAULT,
         colour: str = MARKER_COLOUR_DEFAULT,
     ):
         """Add a circular marker at image coordinates x, y"""
-        logging.debug(
-            f"Adding marker at position ({star.x:.1f},{star.y:.1f}), colour: {colour}"
-        )
+        logging.debug(f"Adding marker at position ({x:.1f},{y:.1f}), colour: {colour}")
         # Create circle
         pen = QPen(QColor(colour))
         pen.setWidth(2)
 
         circle = self.scene().addEllipse(
-            star.x - radius,
-            star.y - radius,  # top-left corner of circle
+            x - radius,
+            y - radius,  # top-left corner of circle
             radius * 2,
             radius * 2,  # Width, height
             pen,
         )
 
-        self.markers[(star.x, star.y)] = circle
+        self.markers[(x, y)] = circle
 
         return circle
 
-    def remove_star_marker(self, star: StarMeasurement):
+    def remove_star_marker(self, x: float, y: float):
         """Remove a circular marker at image coordinates x, y"""
-        logging.debug(f"Removing marker at position ({star.x:.1f},{star.y:.1f})")
+        logging.debug(f"Removing marker at position ({x:.1f},{y:.1f})")
 
-        if (star.x, star.y) in self.markers:
-            marker = self.markers.pop((star.x, star.y))
+        if (x, y) in self.markers:
+            marker = self.markers.pop((x, y))
             self.scene().removeItem(marker)
 
     def _clear_markers(self):
@@ -486,19 +476,14 @@ class ImageViewer(QGraphicsView):
             if m is not None:
                 measurements.append(m)
         for m in measurements:
-            self.add_star_marker(m, colour="cyan")
+            self.add_star_marker(m.x, m.y, colour="cyan")
 
-    @Slot()
     def update_display(self):
         """Updates image display"""
         if self.current_image is None:
             self.pixmap_item.setPixmap(QPixmap())
             return
 
-        self.stretch_manager.brightness = self.current_image.brightness
-        self.stretch_manager.contrast = self.current_image.contrast
-        self.stretch_manager.set_mode(self.current_image.stretch_type)
-        self.stretch_manager.update_lut()
         self._display_image(self.current_image)
 
     def get_8bit_preview(self):
@@ -507,7 +492,7 @@ class ImageViewer(QGraphicsView):
         if image is None:
             return None
 
-        display_data = self.stretch_manager.apply(image.display_data)
+        display_data = self.stretchs.apply(image.display_data)
         return display_data
 
     def viewport_rect_to_scene(self, rect: QRect) -> QRect:

@@ -2,29 +2,28 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from shutterbug.core.events.change_event import Event, EventDomain
+
 if TYPE_CHECKING:
+    from shutterbug.core.app_controller import AppController
     from shutterbug.gui.views.image import ImageViewer
 
 import logging
-from PySide6.QtCore import QObject, Signal, Slot
+
+from PySide6.QtCore import Signal, Slot
 from PySide6.QtGui import QMouseEvent, QUndoCommand
 from PySide6.QtWidgets import QWidget
-
+from shutterbug.core.managers.base_manager import BaseManager
 from shutterbug.gui.operators.base_operator import BaseOperator
 from shutterbug.gui.tools.base_tool import BaseTool
 
 
-class ToolManager(QObject):
-    tool_changed = Signal(BaseTool)
-    operator_changed = Signal(BaseOperator)
+class ToolManager(BaseManager):
     tool_settings_changed = Signal(QWidget)
-    operator_finished = Signal()
-    operator_cancelled = Signal()
 
-    def __init__(self, viewer: ImageViewer):
-        super().__init__()
+    def __init__(self, controller: AppController, parent=None):
+        super().__init__(controller, parent)
         self._current_tool: BaseTool | None = None
-        self.viewer = viewer
         self.active_operator: BaseOperator | None = None
 
     @property
@@ -37,14 +36,18 @@ class ToolManager(QObject):
         logging.debug(f"Setting current tool to: {tool_cls.__name__}")
         tool = tool_cls()
         self._current_tool = tool
-        self.tool_changed.emit(tool)
+        self.controller.dispatch(Event(EventDomain.TOOL, "selected", data=tool))
 
-    def begin_operation(self, event: QMouseEvent):
+    def begin_operation(
+        self,
+        event: QMouseEvent,
+        viewer: ImageViewer,
+    ):
         """Creates operator and begins operation"""
         if not self._current_tool:
             return
 
-        op = self._current_tool.create_operator(self.viewer)
+        op = self._current_tool.create_operator(viewer, self.controller)
         self.active_operator = op
 
         widget = op.create_settings_widget()
@@ -53,7 +56,7 @@ class ToolManager(QObject):
         op.finished.connect(self._operator_finished)
         op.cancelled.connect(self._operator_cancelled)
 
-        self.operator_changed.emit(op)
+        self.controller.dispatch(Event(EventDomain.OPERATOR, "selected", data=op))
         op.start(event)
 
     def update_operation(self, event: QMouseEvent):
@@ -81,12 +84,11 @@ class ToolManager(QObject):
         """Finished current operation by pushing command to stack"""
         self.active_operator = None
         if cmd is not None:
-            print("Command is not none")
-            self.viewer._undo_stack.push(cmd)
-        self.operator_finished.emit()
+            self.controller._undo_stack.push(cmd)
+            self.controller.dispatch(Event(EventDomain.OPERATOR, "finished"))
 
     @Slot()
     def _operator_cancelled(self):
         """Cancels current operation"""
         self.active_operator = None
-        self.operator_cancelled.emit()
+        self.controller.dispatch(Event(EventDomain.OPERATOR, "cancelled"))
