@@ -21,23 +21,26 @@ GAIN_DEFAULT = 1  # electrons/adu
 
 
 def measure_star_magnitude(
-    star: StarMeasurement,
+    x: int,
+    y: int,
     data,
-    aperture_radius: int = APERTURE_RADIUS_DEFAULT,
-    annulus_inner: int = ANNULUS_INNER_DEFAULT,
-    annulus_outer: int = ANNULUS_OUTER_DEFAULT,
+    aperture_radius: float = APERTURE_RADIUS_DEFAULT,
+    annulus_inner: float = ANNULUS_INNER_DEFAULT,
+    annulus_outer: float = ANNULUS_OUTER_DEFAULT,
     gain: float = GAIN_DEFAULT,
     read_noise: float = READ_NOISE_DEFAULT,
     zero_point: float = ZERO_POINT_DEFAULT,
 ):
     """Measures the magnitude of a selected star"""
     # Define apertures
-    position = [(star.x, star.y)]
+    position = [(x, y)]
     aperture = CircularAperture(position, r=aperture_radius)
     annulus = CircularAnnulus(position, r_in=annulus_inner, r_out=annulus_outer)
 
     # Measure flux
-    phot_table = aperture_photometry(data, [aperture, annulus], method="exact")
+    phot_table = aperture_photometry(
+        data, [aperture, annulus], method="subpixel", subpixels=3
+    )
 
     # Photometry sums
     flux_aperture_ADU = phot_table["aperture_sum_0"][0]
@@ -92,12 +95,7 @@ def measure_star_magnitude(
         flux_net_ADU, flux_err_ADU, zero_point
     )
 
-    star.mag = magnitude  # type: ignore
-    star.mag_error = mag_error  # type: ignore
-    star.flux = flux_net_ADU
-    star.flux_error = flux_err_ADU
-
-    return star
+    return magnitude, mag_error, flux_net_ADU, flux_err_ADU
 
 
 def _calculate_magnitude_with_error(

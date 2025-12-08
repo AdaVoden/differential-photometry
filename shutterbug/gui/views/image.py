@@ -421,8 +421,8 @@ class ImageViewer(QGraphicsView):
 
     def _clear_markers(self):
         """Remove all star markers"""
-        for x, y in self.markers:
-            self.scene().removeItem(self.markers[(x, y)])
+        for x, y in self.markers.copy():
+            self.remove_star_marker(x, y)
 
         self.markers = {}
 

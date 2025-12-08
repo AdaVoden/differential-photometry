@@ -1,10 +1,8 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from PySide6.QtGui import QUndoCommand
-
-from shutterbug.core.models import StarIdentity
 
 if TYPE_CHECKING:
     from shutterbug.core.app_controller import AppController
@@ -14,18 +12,20 @@ import logging
 
 class SelectCommand(QUndoCommand):
 
-    def __init__(self, identity: StarIdentity, controller: AppController):
+    def __init__(self, object: Any, controller: AppController):
         super().__init__()
-        self.identity = identity
+        self.object = object
         self.controller = controller
         self.old_identity = self.controller.selections._current
 
     def redo(self):
-        logging.debug(f"COMMAND: Setting active star to {self.identity.id}")
-        self.controller.selections.set_selected_object(self.identity)
+        logging.debug(f"COMMAND: Setting active object to {type(self.object).__name__}")
+        self.controller.selections.set_selected_object(self.object)
 
     def undo(self):
-        logging.debug(f"COMMAND: undoing selection of active star {self.identity.id}")
+        logging.debug(
+            f"COMMAND: undoing selection of object {type(self.object).__name__}"
+        )
         self.controller.selections.set_selected_object(self.old_identity)
 
 

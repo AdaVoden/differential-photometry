@@ -8,7 +8,6 @@ if TYPE_CHECKING:
     from shutterbug.core.app_controller import AppController
 
 from typing import Dict
-from PySide6.QtCore import Signal
 
 from shutterbug.core.models.graph_model import GraphDataModel
 import logging

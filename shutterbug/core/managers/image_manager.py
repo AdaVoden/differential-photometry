@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from shutterbug.core.events.change_event import Event, EventDomain
+from shutterbug.gui.commands import SelectCommand
 
 if TYPE_CHECKING:
     from shutterbug.core.app_controller import AppController
@@ -48,7 +49,7 @@ class ImageManager(BaseManager):
         self.build_base_preview(image)
         self.controller.dispatch(Event(EventDomain.IMAGE, "created", data=image))
         if self.first_image:
-            self.controller.dispatch(Event(EventDomain.IMAGE, "selected", data=image))
+            self.controller._undo_stack.push(SelectCommand(image, self.controller))
             self.first_image = False
 
     def remove_image(self, image: FITSModel):
