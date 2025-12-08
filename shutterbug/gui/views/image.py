@@ -63,7 +63,7 @@ class ImageViewer(QGraphicsView):
         self.setObjectName("viewer")
         self.current_image = None
         self.selected_star = None
-        self.markers = {}  # (x, y) -> marker
+        self.markers = {}  # (x, y) -> List[marker]
         self.controller = controller
 
         # Manager setup
@@ -391,7 +391,6 @@ class ImageViewer(QGraphicsView):
         colour: str = MARKER_COLOUR_DEFAULT,
     ):
         """Add a circular marker at image coordinates x, y"""
-        logging.debug(f"Adding marker at position ({x:.1f},{y:.1f}), colour: {colour}")
         # Create circle
         pen = QPen(QColor(colour))
         pen.setWidth(2)
@@ -404,17 +403,21 @@ class ImageViewer(QGraphicsView):
             pen,
         )
 
-        self.markers[(x, y)] = circle
+        markers = self.markers.get((x, y))
+        if markers is None:
+            self.markers[(x, y)] = [circle]
+        else:
+            markers.append(circle)
 
         return circle
 
     def remove_star_marker(self, x: float, y: float):
         """Remove a circular marker at image coordinates x, y"""
-        logging.debug(f"Removing marker at position ({x:.1f},{y:.1f})")
 
         if (x, y) in self.markers:
-            marker = self.markers.pop((x, y))
-            self.scene().removeItem(marker)
+            markers = self.markers.pop((x, y))
+            for marker in markers:
+                self.scene().removeItem(marker)
 
     def _clear_markers(self):
         """Remove all star markers"""
