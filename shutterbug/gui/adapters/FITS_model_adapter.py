@@ -92,7 +92,7 @@ class FITSModelAdapter(TabularDataInterface):
 
     def _float_to_str(self, item: float | None) -> str:
         """Converts a float to a string"""
-        return "" if item is None else f"{item:.2f}"
+        return "" if item is None else f"{item:.3f}"
 
     def _get_row_from_measurement(self, measurement: StarMeasurement):
         """Gets ID from catalog and returns the row"""

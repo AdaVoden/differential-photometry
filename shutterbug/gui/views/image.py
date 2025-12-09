@@ -32,7 +32,6 @@ from PySide6.QtGui import (
 from PySide6.QtWidgets import QGraphicsScene, QGraphicsView, QMenu, QWidget
 
 from shutterbug.core.models import FITSModel
-from shutterbug.core.utility.photometry import measure_star_magnitude
 from shutterbug.core.events.change_event import Event
 from shutterbug.core.managers import StretchManager
 from shutterbug.gui.panels import BasePopOver, OperatorPanel, ToolPanel
@@ -50,7 +49,7 @@ class ImageViewer(QGraphicsView):
 
     # Zoom defaults
     ZOOM_FACTOR_DEFAULT = 1.1
-    ZOOM_MAXIMUM_DEFAULT = 7.5
+    ZOOM_MAXIMUM_DEFAULT = 10.0
     ZOOM_MINIMUM_DEFAULT = 0.5
 
     # Marker defaults
@@ -321,9 +320,6 @@ class ImageViewer(QGraphicsView):
     def contextMenuEvent(self, event: QContextMenuEvent) -> None:
         menu = QMenu()
 
-        calc_phot_action = menu.addAction("Calculate magnitude for selected star")
-        calc_phot_action.triggered.connect(self._on_photometry_requested)
-
         propagate_action = menu.addAction("Propagate star selection")
         propagate_action.triggered.connect(self._on_propagate_requested)
 
@@ -333,19 +329,6 @@ class ImageViewer(QGraphicsView):
         menu.exec(event.globalPos())
 
         super().contextMenuEvent(event)
-
-    @Slot()
-    def _on_photometry_requested(self):
-        """Handles photometry being requested on stars"""
-        if self.current_image is None:
-            return  # No work to do
-
-        catalog = self.catalog
-        image_name = self.current_image.filename
-
-        stars = catalog.get_measurements_by_image(image_name)
-        for star in stars:
-            measure_star_magnitude(star, data=self.current_image.data)
 
     def _toggle_popover(self, panel: BasePopOver):
         """Toggles popover panel"""

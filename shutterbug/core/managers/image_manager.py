@@ -3,7 +3,6 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from shutterbug.core.events.change_event import Event, EventDomain
-from shutterbug.gui.commands import SelectCommand
 
 if TYPE_CHECKING:
     from shutterbug.core.app_controller import AppController
@@ -49,7 +48,7 @@ class ImageManager(BaseManager):
         self.build_base_preview(image)
         self.controller.dispatch(Event(EventDomain.IMAGE, "created", data=image))
         if self.first_image:
-            self.controller._undo_stack.push(SelectCommand(image, self.controller))
+            self.controller.selections.set_selected_object(image)
             self.first_image = False
 
     def remove_image(self, image: FITSModel):
@@ -77,6 +76,7 @@ class ImageManager(BaseManager):
         y: float,
         max_distance: int = MAX_DISTANCE_DEFAULT,
     ):
+        """Given a coordinate, finds the nearest centroid within a tolerance to that coordinate"""
         stamp = image.get_stamp(x, y, max_distance)
         centroids = self.find_centroids(stamp)
 
