@@ -1,16 +1,33 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from shutterbug.core.app_controller import AppController
+
+
 from PySide6.QtWidgets import QPushButton, QVBoxLayout, QWidget, QSizePolicy
-from PySide6.QtCore import Qt
+from PySide6.QtCore import QSize, Qt
 from typing import List
 
 
 class CollapsibleSection(QWidget):
-    def __init__(self, title: str, content: List[QWidget], parent=None):
+    def __init__(
+        self,
+        title: str,
+        content: List[QWidget],
+        controller: AppController,
+        parent=None,
+    ):
         super().__init__(parent)
-
+        self.controller = controller
         # Initial variables
         self.content = content
         self.is_expanded = True
         self.title = title
+        self.arrow = controller.icons.get_rotated("arrow-left", 180)
+        self.arrow_down = controller.icons.get_rotated("arrow-left", -90)
+        self.icon_size = QSize(24, 24)
         self.setObjectName("collapsibleSection")
         self.setAutoFillBackground(True)
         self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
@@ -26,7 +43,9 @@ class CollapsibleSection(QWidget):
             QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Maximum)
         )
         # Header
-        self.header = QPushButton(f"v {title}")
+        self.header = QPushButton(f"{title}")
+        self.header.setIcon(self.arrow_down)
+        self.header.setIconSize(self.icon_size)
         self.header.setCheckable(True)
         self.header.setChecked(True)
         self.header.clicked.connect(self.toggle)
@@ -56,9 +75,11 @@ class CollapsibleSection(QWidget):
             widget.setVisible(self.is_expanded)
             self.header.setChecked(self.is_expanded)
         if self.is_expanded:
-            self.header.setText(f"v {self.title}")
+            self.header.setIcon(self.arrow_down)
+            self.header.setIconSize(self.icon_size)
             self.content_layout.setContentsMargins(16, 8, 8, 8)
 
         else:
-            self.header.setText(f"> {self.title}")
+            self.header.setIcon(self.arrow)
+            self.header.setIconSize(self.icon_size)
             self.content_layout.setContentsMargins(0, 0, 0, 0)

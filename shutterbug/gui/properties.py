@@ -47,6 +47,7 @@ class ImagePropertiesPanel(QWidget):
     def __init__(self, controller: AppController):
         super().__init__()
 
+        self.controller = controller
         self._undo_stack = controller._undo_stack
 
         self.current_image = None
@@ -71,6 +72,7 @@ class ImagePropertiesPanel(QWidget):
         self.settings_panel = CollapsibleSection(
             "Image Settings",
             [self.stretches, self.brightness_slider, self.contrast_slider],
+            self.controller,
             self,
         )
 
@@ -154,7 +156,7 @@ class GraphPropertiesPanel(QWidget):
         self.y_label = LabeledTextBox("Y Label")
 
         self.panel = CollapsibleSection(
-            "Graph Settings", [self.title, self.x_label, self.y_label]
+            "Graph Settings", [self.title, self.x_label, self.y_label], controller, self
         )
 
         layout.addWidget(self.panel)

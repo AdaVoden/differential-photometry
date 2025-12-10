@@ -9,6 +9,7 @@ from shutterbug.gui.adapters import (
     StarIdentityAdapter,
 )
 from shutterbug.gui.adapters.adapter_registry import AdapterRegistry
+from shutterbug.gui.managers.icon_manager import IconManager
 
 from .managers import (
     FileManager,
@@ -38,6 +39,7 @@ class AppController(QObject):
         self.adapters = AdapterRegistry(self)
         self.selections = SelectionManager(self)
         self.markers = MarkerManager(self)
+        self.icons = IconManager()
 
         # Undo stack
         self._undo_stack = QUndoStack()

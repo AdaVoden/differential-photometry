@@ -1,3 +1,10 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from shutterbug.core.app_controller import AppController
+
 from shutterbug.gui.operators.base_operator import BaseOperator
 from shutterbug.gui.panels.base_popover import BasePopOver
 from shutterbug.gui.panels.collapsible_section import CollapsibleSection
@@ -5,8 +12,8 @@ from shutterbug.gui.panels.collapsible_section import CollapsibleSection
 
 class OperatorPanel(BasePopOver):
 
-    def __init__(self, parent):
-        super().__init__(parent)
+    def __init__(self, controller: AppController, parent):
+        super().__init__(controller, parent)
         # Initially hidden
         self.hide()
 
@@ -24,7 +31,9 @@ class OperatorPanel(BasePopOver):
         # Add new!
         settings = operator.create_settings_widget()
         if settings is not None:
-            section = CollapsibleSection(settings.name, [settings], self)
+            section = CollapsibleSection(
+                settings.name, [settings], self.controller, self
+            )
             layout.addWidget(section)
 
     def show_at_corner(self):

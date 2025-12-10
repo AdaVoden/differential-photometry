@@ -91,8 +91,8 @@ class ImageViewer(QGraphicsView):
         self.setScene(scene)
 
         # Popover panel
-        self.popover = ToolPanel(self)
-        self.op_panel = OperatorPanel(self)
+        self.popover = ToolPanel(controller, self)
+        self.op_panel = OperatorPanel(controller, self)
 
         # Add pixmap item to scene, blank for now
         self.pixmap_item = scene.addPixmap(QPixmap())
