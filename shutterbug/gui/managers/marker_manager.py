@@ -26,8 +26,14 @@ class MarkerManager(BaseManager):
     def __init__(self, controller: AppController, parent=None):
         super().__init__(controller, parent)
         self._markers = {}  # image.uid -> [markers]
+        self._marker_measurements = {}  # measurement.uid -> marker
 
+        # Handle signals
         self.controller.on("measurement.created", self._on_measurement_created)
+        self.controller.on("measurement.selected", self._on_measurement_selected)
+        self.controller.on("measurement.deselected", self._on_measurement_deselected)
+        self.controller.on("star.selected", self._on_star_selected)
+        self.controller.on("star.deselected", self._on_star_deselected)
 
         logging.debug("Marker manager initialized")
 
@@ -63,18 +69,59 @@ class MarkerManager(BaseManager):
         if measurement is None:
             logging.error("No measurement provided on measurement created event")
             return  # No measurement provided
-        marker = MarkerModel(
+        marker = self.create(
             measurement.image_id,
             measurement.x,
             measurement.y,
             MarkerType.DISPLAY,
             self.MARKER_RADIUS_DEFAULT,
-            QColor(self.MARKER_COLOUR_DEFAULT),
+            self.MARKER_COLOUR_DEFAULT,
             self.MARKER_THICKNESS_DEFAULT,
-            True,
-            self.controller,
         )
+        self._marker_measurements[measurement.uid] = marker
         self.add_marker(marker)
+
+    @Slot(Event)
+    def _on_measurement_selected(self, event: Event):
+        """Handles a measurement being selected"""
+        measurement = event.data
+        if measurement is None:
+            return
+        marker = self._marker_measurements.get(measurement.uid)
+        if marker:
+            marker.colour = "gold"
+
+    @Slot(Event)
+    def _on_measurement_deselected(self, event: Event):
+        """Handles a measurement being deselected"""
+        measurement = event.data
+        if measurement is None:
+            return
+        marker = self._marker_measurements.get(measurement.uid)
+        if marker:
+            marker.colour = self.MARKER_COLOUR_DEFAULT
+
+    @Slot(Event)
+    def _on_star_selected(self, event: Event):
+        """Handles a star being selected"""
+        star = event.data
+        if star is None:
+            return
+        for m in star.measurements.values():
+            marker = self._marker_measurements.get(m.uid)
+            if marker:
+                marker.colour = "gold"
+
+    @Slot(Event)
+    def _on_star_deselected(self, event: Event):
+        """Handles a star being deselected"""
+        star = event.data
+        if star is None:
+            return
+        for m in star.measurements.values():
+            marker = self._marker_measurements.get(m.uid)
+            if marker:
+                marker.colour = self.MARKER_COLOUR_DEFAULT
 
     def create_marker_from_position(self, x: float, y: float, image: FITSModel):
         """Given a position, create a default marker in image"""

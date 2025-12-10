@@ -71,13 +71,13 @@ class StarCatalog(BaseManager):
     def find_nearest(
         self, x: float, y: float, tolerance: float = 3.0
     ) -> StarIdentity | None:
-        """Finds stars, if any, that exist at x/y position within tolerance"""
+        """Finds stars, if any, that exist at (x, y) position within tolerance"""
         self._ensure_tree()
 
         if self._kdtree is None:
             return None
 
-        _, idx = self._kdtree.query((x, y), distance_upper_bound=tolerance)
+        _, idx = self._kdtree.query((x, y), p=1, distance_upper_bound=tolerance)
 
         if idx == self._kdtree.n:
             # Found nothing
@@ -123,10 +123,7 @@ class StarCatalog(BaseManager):
 
     def get_by_measurement(self, measurement: StarMeasurement) -> StarIdentity | None:
         """Retreives a star's identity by a measurement, if any"""
-        if measurement.uid in self.measurement_to_star:
-            return self.measurement_to_star[measurement.uid]
-        else:
-            return None
+        return self.measurement_to_star.get(measurement.uid)
 
     def get_measurements_by_image(self, image: FITSModel) -> List[StarMeasurement]:
         """Gets all measurements that belong to a specific image"""
@@ -141,3 +138,13 @@ class StarCatalog(BaseManager):
     def get_all_stars(self) -> List[StarIdentity]:
         """Gets all stars currently registered"""
         return list(self.stars.values())
+
+    def create_measurement(self, x: float, y: float, time: float, image_id: str):
+        star = self.find_nearest(x, y)
+        if star:
+            logging.error(f"Attempted to create duplicate measurement at ({x}, {y})")
+            return star.measurements[image_id]
+
+        measurement = StarMeasurement(self.controller, x, y, time, image_id)
+        self.register_measurement(measurement)
+        return measurement

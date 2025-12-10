@@ -340,14 +340,6 @@ class ImageViewer(QGraphicsView):
 
         return centroid
 
-    @Slot()
-    def _on_propagate_requested(self):
-        """Handles image propagation being requested"""
-        if self.current_image is None:
-            return None
-
-        self.propagation_requested.emit(self.current_image)
-
     def _convert_to_image_coordinates(self, coordinate: QPoint) -> Tuple[float, float]:
         """Converts coordinates of click to coordinates of active image"""
         # Step 1, convert to scene coordinates

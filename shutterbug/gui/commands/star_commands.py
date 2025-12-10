@@ -28,16 +28,15 @@ class AddMeasurementsCommand(QUndoCommand):
     def redo(self):
         logging.debug(f"COMMAND: Adding {len(self.stars)} measurements")
         for star in self.stars:
-            measurement = StarMeasurement(
-                controller=self.controller,
-                x=star["xcentroid"],
-                y=star["ycentroid"],
-                time=self.time,
-                image_id=self.image.uid,
+            measurement = self.controller.stars.create_measurement(
+                star["xcentroid"],
+                star["ycentroid"],
+                self.image.observation_time,
+                self.image.uid,
             )
-
-            self.controller.stars.register_measurement(measurement)
             self.measurements.append(measurement)
+        if len(self.measurements) == 1:
+            self.controller.selections.set_selected_object(self.measurements[0])
 
     def undo(self):
         logging.debug(f"COMMAND: undoing addition of {len(self.stars)} measurements")
