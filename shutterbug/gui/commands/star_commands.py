@@ -85,6 +85,14 @@ class PhotometryMeasurementCommand(QUndoCommand):
         self.image = image
         self.parameters = parameters
         self.controller = controller
+        self.old = {}
+        for m in self.measurements:
+            self.old[m.uid] = {
+                "flux": m.flux,
+                "flux_error": m.flux_error,
+                "mag": m.mag,
+                "mag_error": m.mag_error,
+            }
 
     def redo(self):
         for m in self.measurements:
@@ -109,10 +117,37 @@ class PhotometryMeasurementCommand(QUndoCommand):
 
     def undo(self):
         for m in self.measurements:
-            m.flux = None
-            m.flux_error = None
-            m.mag = None
-            m.mag_error = None
+            o = self.old[m.uid]
+            m.flux = o["flux"]
+            m.flux_error = o["flux_error"]
+            m.mag = o["mag"]
+            m.mag_error = o["mag_error"]
+
+
+class PhotometryAllCommand(QUndoCommand):
+    """Runs photometry with parameters across all images"""
+
+    def __init__(self, params: PhotometryParameters, controller: AppController):
+        super().__init__("Photometry All Images")
+        self.controller = controller
+        self.params = params
+        self.images = controller.images.get_all_images()
+        self.cmds = []
+        for i in self.images:
+            measurements = controller.stars.get_measurements_by_image(i)
+            self.cmds.append(
+                PhotometryMeasurementCommand(
+                    measurements, i, self.params, self.controller
+                )
+            )
+
+    def redo(self):
+        for cmd in self.cmds:
+            cmd.redo()
+
+    def undo(self):
+        for cmd in self.cmds:
+            cmd.undo()
 
 
 class DifferentialPhotometryCommand(QUndoCommand):
@@ -149,12 +184,14 @@ class DifferentialPhotometryAllCommand(QUndoCommand):
     def __init__(self, controller: AppController):
         super().__init__("Differential Photometry All Images")
         self.images = controller.images.get_all_images()
-        cmds = []
+        self.cmds = []
         for i in self.images:
-            cmds.append(DifferentialPhotometryCommand(i, controller))
+            self.cmds.append(DifferentialPhotometryCommand(i, controller))
 
     def redo(self):
-        pass
+        for cmd in self.cmds:
+            cmd.redo()
 
     def undo(self):
-        pass
+        for cmd in self.cmds:
+            cmd.undo()
