@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from shutterbug.core.models.marker_model import MarkerModel, MarkerType
 from shutterbug.gui.commands.select_commands import SelectCommand
 from shutterbug.gui.commands.star_commands import AddMeasurementsCommand
 

@@ -31,14 +31,10 @@ class Properties(QWidget):
         # Different property panels
         self.tool_properties = ToolPropertiesPanel(controller)
         self.image_properties = ImagePropertiesPanel(controller)
-        self.star_properties = StarPropertiesPanel(controller)
-        self.general_properties = GeneralPropertiesPanel(controller)
         self.graph_properties = GraphPropertiesPanel(controller)
 
         self.tabs.addTab(self.tool_properties, "Tool")
-        self.tabs.addTab(self.general_properties, "Gen")
         self.tabs.addTab(self.image_properties, "Image")
-        self.tabs.addTab(self.star_properties, "Star")
         self.tabs.addTab(self.graph_properties, "Graph")
 
         self.tabs.setCurrentWidget(self.tool_properties)
@@ -210,46 +206,6 @@ class GraphPropertiesPanel(QWidget):
             self.controller._undo_stack.push(
                 SetGraphValueCommand("y_label", label, self.current_graph)
             )
-
-
-class StarPropertiesPanel(QWidget):
-    def __init__(self, controller: AppController):
-        super().__init__()
-        self.setObjectName("starProperties")
-        layout = QVBoxLayout()
-        self.setLayout(layout)
-
-        layout.addWidget(QLabel("Star Information"))
-
-        self.info_labels = {}
-        for field in ["Position", "Flux", "Magnitude", "FWHM"]:
-            label = QLabel(f"{field}: --")
-            self.info_labels[field] = label
-            layout.addWidget(label)
-
-        layout.addStretch()
-
-        logging.debug("Star properties panel initialized")
-
-    def display_star(self, star):
-        """Update labels with star data"""
-
-        self.info_labels["Position"].setText(f"Position: ({star.x:.1f}, {star.y:.1f})")
-        self.info_labels["Flux"].setText(f"Flux: {star.flux:.1f}")
-
-        if star.magnitude:
-            self.info_labels["Magnitude"].setText(f"Magnitude: {star.magnitude:.1f}")
-        else:
-            self.info_labels["Magnitude"].setText("Magnitude: --")
-
-
-class GeneralPropertiesPanel(QWidget):
-    def __init__(self, controller: AppController):
-        super().__init__()
-        layout = QVBoxLayout()
-        self.setLayout(layout)
-        # Add general property controls here
-        logging.debug("General properties panel initialized")
 
 
 class ToolPropertiesPanel(QWidget):
