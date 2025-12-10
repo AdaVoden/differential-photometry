@@ -141,6 +141,7 @@ class GraphPropertiesPanel(QWidget):
         # General variables and settings
         self.setObjectName("graphProperties")
         self.current_graph = None
+        self.controller = controller
 
         # Layout
         layout = QVBoxLayout()
@@ -160,6 +161,9 @@ class GraphPropertiesPanel(QWidget):
             "Graph Settings", [self.title, self.x_label, self.y_label]
         )
 
+        layout.addWidget(self.panel)
+
+        # Handle signals
         controller.on("graph.selected", self._on_graph_selected)
         controller.on(
             "graph.updated.title", lambda evt: self.title.set_text(evt.data.title)
@@ -186,14 +190,26 @@ class GraphPropertiesPanel(QWidget):
     @Slot(str)
     def _on_title_changed(self, title: str):
         """Handles title changing in graph"""
+        if self.current_graph:
+            self.controller._undo_stack.push(
+                SetGraphValueCommand("title", title, self.current_graph)
+            )
 
     @Slot(str)
     def _on_x_label_changed(self, label: str):
         """Handles X label changing in graph"""
+        if self.current_graph:
+            self.controller._undo_stack.push(
+                SetGraphValueCommand("x_label", label, self.current_graph)
+            )
 
     @Slot(str)
     def _on_y_label_changed(self, label: str):
         """Handles Y label changing in graph"""
+        if self.current_graph:
+            self.controller._undo_stack.push(
+                SetGraphValueCommand("y_label", label, self.current_graph)
+            )
 
 
 class StarPropertiesPanel(QWidget):

@@ -69,7 +69,7 @@ class FITSModelAdapter(TabularDataInterface):
         """Loads all stars from the Star Catalog into table"""
         rows = []
         for star in self.controller.stars.get_all_stars():
-            measurement = star.measurements.get(self.image.filename)
+            measurement = star.measurements.get(self.image.uid)
             if measurement is not None:
                 row = self._get_row_from_measurement(measurement)
                 rows.append(row)
@@ -107,7 +107,7 @@ class FITSModelAdapter(TabularDataInterface):
         """Handles measurement being changed"""
         if event.data is None or event.field is None:
             return
-        if event.data.image != self.image.filename:
+        if event.data.image_id != self.image.uid:
             return
         star = self.controller.stars.get_by_measurement(event.data)
         if star is None:

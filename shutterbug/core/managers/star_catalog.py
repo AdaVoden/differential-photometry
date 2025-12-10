@@ -6,6 +6,7 @@ from shutterbug.core.events.change_event import (
     Event,
     EventDomain,
 )
+from shutterbug.core.models.fits_model import FITSModel
 
 if TYPE_CHECKING:
     from shutterbug.core.app_controller import AppController
@@ -127,11 +128,12 @@ class StarCatalog(BaseManager):
         else:
             return None
 
-    def get_measurements_by_image(self, image_name: str) -> List[StarMeasurement]:
+    def get_measurements_by_image(self, image: FITSModel) -> List[StarMeasurement]:
         """Gets all measurements that belong to a specific image"""
         measurements = []
+        image_id = image.uid
         for star in self.get_all_stars():
-            m = star.measurements.get(image_name)
+            m = star.measurements.get(image_id)
             if m is not None:
                 measurements.append(m)
         return measurements

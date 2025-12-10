@@ -91,7 +91,7 @@ class PhotometryOperator(BaseOperator):
         image = self.viewer.current_image
         if image is None:
             return None
-        measurements = self.controller.stars.get_measurements_by_image(image.filename)
+        measurements = self.controller.stars.get_measurements_by_image(image)
         return PhotometryMeasurementCommand(
             measurements, image, self.params, self.controller
         )

@@ -51,7 +51,6 @@ class SelectOperator(BaseOperator):
         else:
             cmd = SelectCommand(star, self.controller)
 
-        self.cleanup_preview()
         return cmd
 
     def cleanup_preview(self):
