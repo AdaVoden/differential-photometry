@@ -39,8 +39,8 @@ class GraphDataModel(ObservableQObject):
 
     def set_limits(self, xlim: Optional[float] = None, ylim: Optional[float] = None):
         """Sets limit of the graph"""
-        self.xlim = xlim
-        self.ylim = ylim
+        self._xlim = xlim
+        self._ylim = ylim
         self.updated.emit(self)
 
     def get_ys(self):

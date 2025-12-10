@@ -4,12 +4,9 @@ import logging
 
 from PySide6.QtCore import Qt, Slot
 from PySide6.QtWidgets import QLabel, QTabWidget, QVBoxLayout, QWidget
-from shutterbug.gui.commands.image_commands import (
-    SetBrightnessCommand,
-    SetContrastCommand,
-    SetImageValueCommand,
-)
+from shutterbug.gui.commands import SetGraphValueCommand, SetImageValueCommand
 from shutterbug.gui.controls import LabeledSlider, LabeledComboBox
+from shutterbug.gui.controls.labeled_text_box import LabeledTextBox
 from shutterbug.gui.tools.base_tool import BaseTool
 from shutterbug.gui.panels.collapsible_section import CollapsibleSection
 from shutterbug.core.LUTs.registry import STRETCH_REGISTRY
@@ -36,34 +33,17 @@ class Properties(QWidget):
         self.image_properties = ImagePropertiesPanel(controller)
         self.star_properties = StarPropertiesPanel(controller)
         self.general_properties = GeneralPropertiesPanel(controller)
+        self.graph_properties = GraphPropertiesPanel(controller)
 
         self.tabs.addTab(self.tool_properties, "Tool")
         self.tabs.addTab(self.general_properties, "Gen")
         self.tabs.addTab(self.image_properties, "Image")
         self.tabs.addTab(self.star_properties, "Star")
+        self.tabs.addTab(self.graph_properties, "Graph")
 
-        self.show_image_properties()
-
-        # Main Window signals
-        controller.on("tool.selected", self._on_active_tool_change)
+        self.tabs.setCurrentWidget(self.tool_properties)
 
         logging.debug("Tool settings initialized")
-
-    def show_image_properties(self):
-        self.tabs.setCurrentWidget(self.image_properties)
-
-    @Slot()
-    def show_star_properties(self, star_data):
-        self.star_properties.display_star(star_data)
-        self.tabs.setCurrentWidget(self.star_properties)
-
-    def show_general_properties(self):
-        self.tabs.setCurrentWidget(self.general_properties)
-
-    @Slot(Event)
-    def _on_active_tool_change(self, event: Event):
-        tool = event.data
-        self.tool_properties.set_panel(tool)
 
 
 class ImagePropertiesPanel(QWidget):
@@ -80,7 +60,7 @@ class ImagePropertiesPanel(QWidget):
         self.setLayout(layout)
         layout.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignTop)
 
-        # Remove layout styling
+        # Set layout styling
         layout.setContentsMargins(16, 8, 8, 8)
         layout.setSpacing(5)
 
@@ -136,12 +116,16 @@ class ImagePropertiesPanel(QWidget):
     @Slot(int)
     def _on_brightness_changed(self, value: int):
         if self.current_image:
-            self._undo_stack.push(SetBrightnessCommand(value, self.current_image))
+            self._undo_stack.push(
+                SetImageValueCommand("brightness", value, self.current_image)
+            )
 
     @Slot(int)
     def _on_contrast_changed(self, value: int):
         if self.current_image:
-            self._undo_stack.push(SetContrastCommand(value, self.current_image))
+            self._undo_stack.push(
+                SetImageValueCommand("contrast", value, self.current_image)
+            )
 
     @Slot(str)
     def _on_stretch_changed(self, value: str):
@@ -149,6 +133,67 @@ class ImagePropertiesPanel(QWidget):
             self._undo_stack.push(
                 SetImageValueCommand("stretch_type", value, self.current_image)
             )
+
+
+class GraphPropertiesPanel(QWidget):
+    def __init__(self, controller: AppController):
+        super().__init__()
+        # General variables and settings
+        self.setObjectName("graphProperties")
+        self.current_graph = None
+
+        # Layout
+        layout = QVBoxLayout()
+        self.setLayout(layout)
+        layout.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignTop)
+
+        # Set layout styling
+        layout.setContentsMargins(16, 8, 8, 8)
+        layout.setSpacing(5)
+
+        # Set up controls
+        self.title = LabeledTextBox("Title")
+        self.x_label = LabeledTextBox("X Label")
+        self.y_label = LabeledTextBox("Y Label")
+
+        self.panel = CollapsibleSection(
+            "Graph Settings", [self.title, self.x_label, self.y_label]
+        )
+
+        controller.on("graph.selected", self._on_graph_selected)
+        controller.on(
+            "graph.updated.title", lambda evt: self.title.set_text(evt.data.title)
+        )
+        controller.on(
+            "graph.updated.x_label", lambda evt: self.title.set_text(evt.data.x_label)
+        )
+        controller.on(
+            "graph.updated.y_label", lambda evt: self.title.set_text(evt.data.y_label)
+        )
+
+        logging.debug("Graph Properties panel initialized")
+
+    @Slot(Event)
+    def _on_graph_selected(self, event: Event):
+        """Handles new graph being selected"""
+        graph = event.data
+        self.current_graph = graph
+        if graph:
+            self.title.set_text(graph.title)
+            self.x_label.set_text(graph.x_label)
+            self.y_label.set_text(graph.y_label)
+
+    @Slot(str)
+    def _on_title_changed(self, title: str):
+        """Handles title changing in graph"""
+
+    @Slot(str)
+    def _on_x_label_changed(self, label: str):
+        """Handles X label changing in graph"""
+
+    @Slot(str)
+    def _on_y_label_changed(self, label: str):
+        """Handles Y label changing in graph"""
 
 
 class StarPropertiesPanel(QWidget):
@@ -200,6 +245,8 @@ class ToolPropertiesPanel(QWidget):
         layout.setContentsMargins(16, 8, 8, 8)
         layout.setSpacing(5)
         layout.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignTop)
+
+        controller.on("tool.selected", lambda x: self.set_panel(x.data))
 
         logging.debug("Tool properties panel initialized")
 
