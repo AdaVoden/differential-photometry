@@ -80,7 +80,7 @@ class StarIdentityAdapter(TabularDataInterface):
     def _data_to_row(self, star: StarMeasurement) -> List[QStandardItem]:
         """Converts star measurement to data row for display in spreadsheet"""
         row = [
-            QStandardItem(star.image),
+            QStandardItem(star.image_id),
             QStandardItem(self._float_to_str(star.x)),
             QStandardItem(self._float_to_str(star.y)),
             QStandardItem(self._float_to_str(star.flux)),

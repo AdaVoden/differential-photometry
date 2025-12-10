@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from shutterbug.core.models.marker_model import MarkerModel, MarkerType
 from shutterbug.gui.commands.select_commands import SelectCommand
 from shutterbug.gui.commands.star_commands import AddMeasurementsCommand
 
@@ -19,14 +20,17 @@ class SelectOperator(BaseOperator):
         super().__init__(viewer, controller)
         self.centroid = None
         self.image = self.viewer.current_image
+        self.marker = None
 
     def start(self, event: QMouseEvent):
+        image = self.viewer.current_image
+        if image is None:
+            return
         self.cleanup_preview()
         self.centroid = self.viewer.get_centroid_at_point(event.pos())
         if self.centroid is not None:
-
-            self.viewer.add_star_marker(
-                self.centroid["xcentroid"], self.centroid["ycentroid"], colour="gold"
+            self.marker = self.controller.markers.create_marker_from_position(
+                self.centroid["xcentroid"], self.centroid["ycentroid"], image
             )
 
     def create_settings_widget(self) -> None:
@@ -52,8 +56,7 @@ class SelectOperator(BaseOperator):
 
     def cleanup_preview(self):
         """Clears the preview of the selection"""
-        if self.centroid is not None:
-            self.viewer.remove_star_marker(
-                self.centroid["xcentroid"], self.centroid["ycentroid"]
-            )
+        if self.marker is not None:
+            self.controller.markers.remove_marker(self.marker)
         self.centroid = None
+        self.marker = None

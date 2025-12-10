@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from PySide6.QtCore import Slot
-from PySide6.QtGui import QMouseEvent
+from PySide6.QtGui import QMouseEvent, QUndoCommand
 
 from shutterbug.gui.commands.star_commands import PhotometryMeasurementCommand
 from shutterbug.gui.operators.operator_parameters import PhotometryParameters
@@ -14,6 +14,7 @@ if TYPE_CHECKING:
     from shutterbug.core.app_controller import AppController
 
 from shutterbug.gui.operators.base_operator import BaseOperator
+from shutterbug.core.models import MarkerType
 
 
 class PhotometryOperator(BaseOperator):
@@ -27,6 +28,7 @@ class PhotometryOperator(BaseOperator):
         super().__init__(viewer, controller)
         self.params = params
         self.listening = True
+        self.markers = {}  # (x, y) -> [markers]
 
         self.params.changed.connect(self._on_params_changed)
 
@@ -36,7 +38,44 @@ class PhotometryOperator(BaseOperator):
 
     def start(self, event: QMouseEvent):
         """Begins operator function"""
-        self._update_preview()
+        if self.viewer.current_image is None:
+            return
+        i_id = self.viewer.current_image.uid
+        image_markers = self.controller.markers.markers_from_image(
+            self.viewer.current_image
+        ).copy()
+        for marker in image_markers:
+            marker.visible = False
+            x = marker.x
+            y = marker.y
+            aperture = self.controller.markers.create(
+                i_id,
+                x,
+                y,
+                MarkerType.APERTURE,
+                self.params.aperture_radius,
+                "magenta",
+                2,
+            )
+            annulus_inner = self.controller.markers.create(
+                i_id,
+                x,
+                y,
+                MarkerType.ANNULUS_INNER,
+                self.params.annulus_inner_radius,
+                "red",
+                2,
+            )
+            annulus_outer = self.controller.markers.create(
+                i_id,
+                x,
+                y,
+                MarkerType.ANNULUS_OUTER,
+                self.params.annulus_outer_radius,
+                "red",
+                2,
+            )
+            self.markers[(x, y)] = [aperture, annulus_inner, annulus_outer]
 
     def update(self, event: QMouseEvent):
         """Updates operator on mouse movement"""
@@ -59,19 +98,31 @@ class PhotometryOperator(BaseOperator):
 
     def cleanup_preview(self):
         """Returns view to normal"""
-        marker_positions = self.viewer.markers.copy().keys()
-        for x, y in marker_positions:
-            self.viewer.remove_star_marker(x, y)
-            self.viewer.add_star_marker(x, y)
+        if self.viewer.current_image is None:
+            return
+
+        for pos in self.markers:
+            for marker in self.markers[pos]:
+                self.controller.markers.remove_marker(marker)
+
+        image_markers = self.controller.markers.markers_from_image(
+            self.viewer.current_image
+        ).copy()
+        for marker in image_markers:
+            marker.visible = True
 
     def _update_preview(self):
         """Updates preview"""
-        marker_positions = self.viewer.markers.copy().keys()
-        for x, y in marker_positions:
-            self.viewer.remove_star_marker(x, y)
-            self.viewer.add_star_marker(x, y, self.params.aperture_radius, "magenta")
-            self.viewer.add_star_marker(x, y, self.params.annulus_inner_radius, "red")
-            self.viewer.add_star_marker(x, y, self.params.annulus_outer_radius, "red")
+        for pos in self.markers:
+            # Select
+            markers = self.markers[pos]
+            aperture = markers[0]
+            annulus_inner = markers[1]
+            annulus_outer = markers[2]
+            # Update
+            aperture.radius = self.params.aperture_radius
+            annulus_inner.radius = self.params.annulus_inner_radius
+            annulus_outer.radius = self.params.annulus_outer_radius
 
     @Slot()
     def _on_params_changed(self):

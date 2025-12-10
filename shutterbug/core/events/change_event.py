@@ -14,6 +14,7 @@ class EventDomain(Enum):
     OPERATOR = "operator"
     ADAPTER = "adapter"
     FILE = "file"
+    MARKER = "marker"
 
 
 @dataclass

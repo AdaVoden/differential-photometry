@@ -18,6 +18,7 @@ from .managers import (
     StarCatalog,
 )
 from .models import FITSModel, GraphDataModel, StarIdentity, StarMeasurement
+from shutterbug.gui.managers import MarkerManager
 
 ADAPTERS = [(FITSModel, FITSModelAdapter), (StarIdentity, StarIdentityAdapter)]
 
@@ -36,6 +37,7 @@ class AppController(QObject):
         self.graphs = GraphManager(self)
         self.adapters = AdapterRegistry(self)
         self.selections = SelectionManager(self)
+        self.markers = MarkerManager(self)
 
         # Undo stack
         self._undo_stack = QUndoStack()
@@ -108,7 +110,7 @@ class AppController(QObject):
                             x=star_data["xcentroid"],
                             y=star_data["ycentroid"],
                             time=img.observation_time,
-                            image=img.filename,
+                            image_id=img.filename,
                         )
                         self.stars.register_measurement(measurement)
 

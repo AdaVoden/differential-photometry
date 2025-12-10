@@ -33,7 +33,7 @@ class AddMeasurementsCommand(QUndoCommand):
                 x=star["xcentroid"],
                 y=star["ycentroid"],
                 time=self.time,
-                image=self.image.filename,
+                image_id=self.image.uid,
             )
 
             self.controller.stars.register_measurement(measurement)
