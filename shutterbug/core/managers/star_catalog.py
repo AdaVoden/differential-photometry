@@ -13,7 +13,6 @@ if TYPE_CHECKING:
 import logging
 from typing import Dict, List
 
-from PySide6.QtCore import Signal
 from scipy.spatial import KDTree
 from shutterbug.core.models import StarIdentity, StarMeasurement
 
@@ -101,7 +100,7 @@ class StarCatalog(BaseManager):
             star_id = f"Star_{self._new_id()}"
             star = StarIdentity(controller=self.controller, id=star_id)
             self._add_star(star, measurement.x, measurement.y)
-        star.measurements[measurement.image] = measurement
+        star.measurements[measurement.image_id] = measurement
         self.measurement_to_star[measurement.uid] = star
         self.controller.dispatch(
             Event(EventDomain.MEASUREMENT, "created", data=measurement)
@@ -112,7 +111,7 @@ class StarCatalog(BaseManager):
         """Removes measurement from star in catalog"""
         star = self.find_nearest(measurement.x, measurement.y)
         if star is not None:
-            star.measurements.pop(measurement.image)
+            star.measurements.pop(measurement.image_id)
             self.measurement_to_star.pop(measurement.uid)
             self.controller.dispatch(
                 Event(EventDomain.MEASUREMENT, "removed", data=measurement)

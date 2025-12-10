@@ -90,14 +90,14 @@ class BoxSelectOperator(BaseOperator):
             self.rubber = None
         # Clear old preview items
         for item in self.preview_items:
-            self.viewer.remove_star_marker(item.x(), item.y())
+            self.controller.markers.remove_marker(item)
         self.preview_items.clear()
 
     def _update_preview(self):
         """Updates preview of command"""
         # Clear old preview
         for item in self.preview_items:
-            self.viewer.remove_star_marker(item.x(), item.y())
+            self.controller.markers.remove_marker(item)
 
         self.preview_items.clear()
 
@@ -111,7 +111,9 @@ class BoxSelectOperator(BaseOperator):
 
         # Build the preview
         for star in stars:
-            circle = self.viewer.add_star_marker(star["xcentroid"], star["ycentroid"])
+            circle = self.controller.markers.create_marker_from_position(
+                star["xcentroid"], star["ycentroid"], self.viewer.current_image
+            )
             self.preview_items.append(circle)
 
     def _find_stars_in(self, scene_rect: QRect):

@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from shutterbug.core.models.marker_model import MarkerModel
+
 
 if TYPE_CHECKING:
     from shutterbug.core.app_controller import AppController
@@ -20,7 +22,6 @@ from PySide6.QtCore import (
     Slot,
 )
 from PySide6.QtGui import (
-    QColor,
     QContextMenuEvent,
     QImage,
     QKeyEvent,
@@ -51,10 +52,6 @@ class ImageViewer(QGraphicsView):
     ZOOM_FACTOR_DEFAULT = 1.1
     ZOOM_MAXIMUM_DEFAULT = 10.0
     ZOOM_MINIMUM_DEFAULT = 0.5
-
-    # Marker defaults
-    MARKER_COLOUR_DEFAULT = "magenta"
-    MARKER_RADIUS_DEFAULT = 10  # pixels
 
     def __init__(self, controller: AppController):
         super().__init__()
@@ -114,9 +111,9 @@ class ImageViewer(QGraphicsView):
         # General signals
         self.controller.on("image.selected", self._on_image_selected)
         self.controller.on("image.updated.*", self._on_image_update_event)
-        self.controller.on("measurement.created", self._on_measurement_created)
-        self.controller.on("measurement.removed", self._on_measurement_removed)
-        self.controller.on("star.selected", self._on_star_selected)
+        self.controller.on("marker.created", self._on_marker_created)
+        self.controller.on("marker.removed", self._on_marker_removed)
+        self.controller.on("marker.updated.*", self._on_marker_updated)
 
         # Tool signals
         self.controller.on("operator.selected", self._on_operator_changed)
@@ -134,40 +131,15 @@ class ImageViewer(QGraphicsView):
         """Handles image manager active image changing"""
         image = event.data
         if image != self.current_image:
-            if self.current_image:
-                self.current_image.updated.disconnect(self._on_image_update_event)
 
             self.current_image = image
             if image is not None:
-                image.updated.connect(self._on_image_update_event)
                 self.stretchs.brightness = image.brightness
                 self.stretchs.contrast = image.contrast
                 self.stretchs.set_mode(image.stretch_type)
                 self.stretchs.update_lut()
 
             self.update_display()
-
-    @Slot(Event)
-    def _on_star_selected(self, event: Event):
-        """Handles star being selected"""
-        star = event.data
-        if star is None:
-            return
-        if self.current_image is None:
-            return  # Need an image for this
-
-        if self.selected_star is not None:
-            # Add back in unselected star
-            s_star = self.selected_star
-            self.remove_star_marker(s_star.x, s_star.y)
-            self.add_star_marker(s_star.x, s_star.y)
-
-        measurement = star.measurements.get(self.current_image.filename)
-        self.selected_star = measurement
-        if measurement is None:
-            return  # Image does not have this measurement
-        self.remove_star_marker(measurement.x, measurement.y)
-        self.add_star_marker(measurement.x, measurement.y, colour="gold")
 
     @Slot(Event)
     def _on_image_update_event(self, event: Event):
@@ -198,22 +170,34 @@ class ImageViewer(QGraphicsView):
         self.op_panel.hide()
 
     @Slot(Event)
-    def _on_measurement_created(self, event: Event):
-        measurement = event.data
-        if measurement is None or self.current_image is None:
+    def _on_marker_created(self, event: Event):
+        marker = event.data
+        if marker is None or self.current_image is None:
             return
-        if measurement.image != self.current_image.filename:
+        if marker.image_id != self.current_image.uid:
             return
 
-        self.add_star_marker(measurement.x, measurement.y)
+        self.add_star_marker(marker)
 
     @Slot(Event)
-    def _on_measurement_removed(self, event: Event):
-        measurement = event.data
-        if measurement is None or self.current_image is None:
+    def _on_marker_removed(self, event: Event):
+        marker = event.data
+        if marker is None or self.current_image is None:
             return
 
-        self.remove_star_marker(measurement.x, measurement.y)
+        self.remove_star_marker(marker)
+
+    @Slot(Event)
+    def _on_marker_updated(self, event: Event):
+        marker = event.data
+        if marker is None or self.current_image is None:
+            return
+        if marker.image_id != self.current_image.uid:
+            return
+
+        # Lazy way, need to revise
+        self.remove_star_marker(marker)
+        self.add_star_marker(marker)
 
     # Zoom properties for animation
     def get_zoom(self):
@@ -366,46 +350,32 @@ class ImageViewer(QGraphicsView):
         # Step 2, there is no step 2
         return scene_pos.x(), scene_pos.y()
 
-    def add_star_marker(
-        self,
-        x: float,
-        y: float,
-        radius: int = MARKER_RADIUS_DEFAULT,
-        colour: str = MARKER_COLOUR_DEFAULT,
-    ):
+    def add_star_marker(self, marker: MarkerModel):
         """Add a circular marker at image coordinates x, y"""
         # Create circle
-        pen = QPen(QColor(colour))
-        pen.setWidth(2)
+        pen = QPen(marker.colour)
+        pen.setWidth(marker.thickness)
 
         circle = self.scene().addEllipse(
-            x - radius,
-            y - radius,  # top-left corner of circle
-            radius * 2,
-            radius * 2,  # Width, height
+            marker.rect,
             pen,
         )
+        if not marker.visible:
+            circle.hide()
 
-        markers = self.markers.get((x, y))
-        if markers is None:
-            self.markers[(x, y)] = [circle]
-        else:
-            markers.append(circle)
+        self.markers[marker.id] = circle
 
-        return circle
-
-    def remove_star_marker(self, x: float, y: float):
+    def remove_star_marker(self, marker: MarkerModel):
         """Remove a circular marker at image coordinates x, y"""
 
-        if (x, y) in self.markers:
-            markers = self.markers.pop((x, y))
-            for marker in markers:
-                self.scene().removeItem(marker)
+        if marker.id in self.markers:
+            item = self.markers.pop(marker.id)
+            self.scene().removeItem(item)
 
     def _clear_markers(self):
         """Remove all star markers"""
-        for x, y in self.markers.copy():
-            self.remove_star_marker(x, y)
+        for item in self.markers.values():
+            self.scene().removeItem(item)
 
         self.markers = {}
 
@@ -453,16 +423,10 @@ class ImageViewer(QGraphicsView):
         # Add markers from image
         if self.current_image is None:
             return
-        image_name = self.current_image.filename
 
-        stars = self.catalog.get_all_stars()
-        measurements = []
-        for star in stars:
-            m = star.measurements.get(image_name)
-            if m is not None:
-                measurements.append(m)
-        for m in measurements:
-            self.add_star_marker(m.x, m.y, colour="cyan")
+        markers = self.controller.markers.markers_from_image(self.current_image)
+        for marker in markers:
+            self.add_star_marker(marker)
 
     def update_display(self):
         """Updates image display"""

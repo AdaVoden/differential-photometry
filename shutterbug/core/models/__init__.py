@@ -7,7 +7,8 @@ from .outliner_model import OutlinerModel
 from .marker_model import MarkerModel, MarkerType
 
 __all__ = [
-    "MarkerType" "MarkerModel",
+    "MarkerType",
+    "MarkerModel",
     "StarMeasurement",
     "StarIdentity",
     "ObservableQObject",

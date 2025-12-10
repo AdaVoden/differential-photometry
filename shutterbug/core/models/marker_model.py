@@ -4,6 +4,7 @@ from enum import Enum
 from typing import TYPE_CHECKING
 from uuid import uuid4
 
+from PySide6.QtCore import QRectF
 from PySide6.QtGui import QColor
 
 if TYPE_CHECKING:
@@ -15,7 +16,8 @@ from .base_observable import ObservableQObject
 class MarkerType(Enum):
     DISPLAY = "display"
     APERTURE = "aperture"
-    ANNULUS = "annulus"
+    ANNULUS_INNER = "annulus_inner"
+    ANNULUS_OUTER = "annulus_outer"
 
 
 class MarkerModel(ObservableQObject):
@@ -27,10 +29,10 @@ class MarkerModel(ObservableQObject):
         image_id: str,
         x: float,
         y: float,
-        type: MarkerType,
+        marker_type: MarkerType,
         radius: float,
         colour: QColor,
-        thickness: float,
+        thickness: int,
         visible: bool,
         controller: AppController,
         parent=None,
@@ -40,8 +42,18 @@ class MarkerModel(ObservableQObject):
         self.image_id = image_id
         self.x = self._define_field("x", x)
         self.y = self._define_field("y", y)
-        self.type = type
+        self.marker_type = marker_type
         self.radius = self._define_field("radius", radius)
         self.colour = self._define_field("colour", colour)
         self.thickness = self._define_field("thickness", thickness)
         self.visible = self._define_field("visible", visible)
+
+    @property
+    def rect(self):
+        """Creates rect of marker at point in image coordinates"""
+        return QRectF(
+            self.x - self.radius,
+            self.y - self.radius,
+            self.radius * 2,
+            self.radius * 2,
+        )

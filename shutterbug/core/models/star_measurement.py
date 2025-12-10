@@ -23,7 +23,7 @@ class StarMeasurement(ObservableQObject):
         x: float,
         y: float,
         time: float,
-        image: str,
+        image_id: str,
         flux: Optional[float] = None,
         flux_error: Optional[float] = None,
         mag: Optional[float] = None,
@@ -37,7 +37,7 @@ class StarMeasurement(ObservableQObject):
         self.x = x
         self.y = y
         self.time = time
-        self.image = image
+        self.image_id = image_id
         # Computed later
         self.flux = self._define_field("flux", flux)
         self.flux_error = self._define_field("flux_error", flux_error)
