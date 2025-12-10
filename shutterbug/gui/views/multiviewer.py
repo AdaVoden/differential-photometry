@@ -13,17 +13,13 @@ from PySide6.QtWidgets import (
     QComboBox,
     QStackedWidget,
 )
-from PySide6.QtCore import Signal, Slot
+from PySide6.QtCore import Slot
 
-from shutterbug.gui.tools.base_tool import BaseTool
 from shutterbug.gui.views import ImageViewer, GraphViewer, SpreadsheetViewer
 
 
 class MultiViewer(QWidget):
     """Viewer that can switch between multiple modes"""
-
-    propagation_requested = Signal()
-    batch_requested = Signal()
 
     def __init__(self, controller: AppController):
         super().__init__()
@@ -60,8 +56,6 @@ class MultiViewer(QWidget):
 
         # Connections
         self.mode_selector.currentIndexChanged.connect(self.change_mode)
-        self.image_viewer.propagation_requested.connect(self.propagation_requested)
-        self.image_viewer.batch_requested.connect(self.batch_requested)
 
         logging.debug("Multiviewer intialized")
 

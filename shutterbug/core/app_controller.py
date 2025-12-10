@@ -1,7 +1,6 @@
 import logging
 
 from shutterbug.core.events.change_event import Event
-import shutterbug.core.utility.photometry as phot
 from PySide6.QtCore import QObject, Signal, Slot
 from PySide6.QtGui import QUndoStack
 from shutterbug.gui.adapters import (
@@ -18,7 +17,7 @@ from .managers import (
     SelectionManager,
     StarCatalog,
 )
-from .models import FITSModel, GraphDataModel, StarIdentity, StarMeasurement
+from .models import FITSModel, GraphDataModel, StarIdentity
 from shutterbug.gui.managers import MarkerManager
 
 ADAPTERS = [(FITSModel, FITSModelAdapter), (StarIdentity, StarIdentityAdapter)]
@@ -78,60 +77,6 @@ class AppController(QObject):
     def on_undo(self):
         if self._undo_stack.canUndo():
             self._undo_stack.undo()
-
-    @Slot(FITSModel)
-    def process_all_images(self, image: FITSModel):
-        """Generate light curve from all loaded images"""
-
-        self.propagate_star_selection(image)
-        for image in self.images.get_all_images():
-            self.process_single_image(image)
-
-    def process_single_image(self, image: FITSModel):
-        """Process one image for differential photometry"""
-
-        for measurement in self.stars.get_measurements_by_image(image.filename):
-            phot.measure_star_magnitude(measurement, data=image.data)
-
-    @Slot(FITSModel)
-    def propagate_star_selection(self, image: FITSModel):
-        """Propagates star selection across all images"""
-        images = self.images
-        stars = self.stars.get_measurements_by_image(image.filename)
-
-        for img in images.get_all_images():
-            if img != image:
-                # Propagate to all other images, ignore target
-
-                for star in stars:
-                    star_data = images.find_nearest_centroid(img, star.x, star.y)
-
-                    if star_data:
-                        measurement = StarMeasurement(
-                            controller=self,
-                            x=star_data["xcentroid"],
-                            y=star_data["ycentroid"],
-                            time=img.observation_time,
-                            image_id=img.filename,
-                        )
-                        self.stars.register_measurement(measurement)
-
-    @Slot(str)
-    def differential_image(self, image_name: str):
-        """Calculates differential photometry on all measurements in image"""
-
-        measurements = self.stars.get_measurements_by_image(image_name)
-
-        for m in measurements:
-            # This could be a better algorithm
-            other_ms = [n for n in measurements if n != m]
-            phot.calculate_differential_magnitude(m, other_ms)
-
-    @Slot()
-    def differential_all(self):
-        """Calculates differential photometry on all images' measurements"""
-        for image in self.images.get_all_images():
-            self.differential_image(image.filename)
 
     @Slot()
     def create_graph_from_selection(self):

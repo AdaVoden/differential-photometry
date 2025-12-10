@@ -58,14 +58,14 @@ class RemoveMeasurementCommand(QUndoCommand):
     def redo(self):
         m = self.measurement
         logging.debug(
-            f"COMMAND: Removing measurement at {m.x:.0f}/{m.y:.0f} for image {m.image}"
+            f"COMMAND: Removing measurement at {m.x:.0f}/{m.y:.0f} for image {m.image_id}"
         )
         self.stars.unregister_measurement(m)
 
     def undo(self):
         m = self.measurement
         logging.debug(
-            f"COMMAND: Undoing measurement removal at {m.x:.0f}/{m.y:.0f} for image {m.image}"
+            f"COMMAND: Undoing measurement removal at {m.x:.0f}/{m.y:.0f} for image {m.image_id}"
         )
         self.stars.register_measurement(m)
 
@@ -113,3 +113,31 @@ class PhotometryMeasurementCommand(QUndoCommand):
             m.flux_error = None
             m.mag = None
             m.mag_error = None
+
+
+class DifferentialPhotometryCommand(QUndoCommand):
+    """Command to perform differential photometry on measurements"""
+
+    def __init__(self, image: FITSModel, controller: AppController):
+        super().__init__()
+        self.image = image
+        self.controller = controller
+        self.measurements = controller.stars.get_measurements_by_image(image)
+        self.old_measurements = {}
+        # Take a snapshot
+        for m in self.measurements:
+            self.old_measurements[m.uid] = {
+                "diff_mag": m.diff_mag,
+                "diff_err": m.diff_err,
+            }
+
+    def redo(self):
+        for m in self.measurements:
+            other_ms = [n for n in self.measurements if n != m]
+            phot.calculate_differential_magnitude(m, other_ms)
+
+    def undo(self):
+        # Reset to before times
+        for m in self.measurements:
+            m.diff_mag = self.old_measurements[m.uid]["diff_mag"]
+            m.diff_err = self.old_measurements[m.uid]["diff_err"]

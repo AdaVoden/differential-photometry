@@ -35,15 +35,13 @@ from PySide6.QtWidgets import QGraphicsScene, QGraphicsView, QMenu, QWidget
 from shutterbug.core.models import FITSModel
 from shutterbug.core.events.change_event import Event
 from shutterbug.core.managers import StretchManager
+from shutterbug.gui.commands import DifferentialPhotometryCommand
 from shutterbug.gui.panels import BasePopOver, OperatorPanel, ToolPanel
 from shutterbug.gui.tools import SelectTool
 from shutterbug.gui.managers import ToolManager
 
 
 class ImageViewer(QGraphicsView):
-
-    propagation_requested = Signal(FITSModel)
-    batch_requested = Signal()
 
     # Tool signals
     tool_settings_changed = Signal(QWidget)
@@ -199,6 +197,16 @@ class ImageViewer(QGraphicsView):
         self.remove_star_marker(marker)
         self.add_star_marker(marker)
 
+    @Slot()
+    def _on_differential(self):
+        """Handles differential photometry on image being requested"""
+        if self.current_image is None:
+            return  # No work to do
+
+        self.controller._undo_stack.push(
+            DifferentialPhotometryCommand(self.current_image, self.controller)
+        )
+
     # Zoom properties for animation
     def get_zoom(self):
         """Gets zoom level"""
@@ -304,11 +312,8 @@ class ImageViewer(QGraphicsView):
     def contextMenuEvent(self, event: QContextMenuEvent) -> None:
         menu = QMenu()
 
-        propagate_action = menu.addAction("Propagate star selection")
-        propagate_action.triggered.connect(self._on_propagate_requested)
-
-        process_action = menu.addAction("Batch process all images")
-        process_action.triggered.connect(self.batch_requested)
+        propagate_action = menu.addAction("Differential Photometry")
+        propagate_action.triggered.connect(self._on_differential)
 
         menu.exec(event.globalPos())
 

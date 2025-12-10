@@ -32,6 +32,7 @@ class Properties(QWidget):
         self.tool_properties = ToolPropertiesPanel(controller)
         self.image_properties = ImagePropertiesPanel(controller)
         self.graph_properties = GraphPropertiesPanel(controller)
+        # We need some icons too
         tool_icon = controller.icons.get_rotated("tool", 90)
         image_icon = controller.icons.get_rotated("image", 90)
         graph_icon = controller.icons.get_rotated("chart", 90)
@@ -218,6 +219,7 @@ class ToolPropertiesPanel(QWidget):
         super().__init__()
         layout = QVBoxLayout()
         self.setLayout(layout)
+        self.controller = controller
 
         layout.setContentsMargins(16, 8, 8, 8)
         layout.setSpacing(5)
@@ -243,5 +245,7 @@ class ToolPropertiesPanel(QWidget):
             layout.addWidget(label)
             settings = tool.create_settings_widget()
             if settings is not None:
-                section = CollapsibleSection("Options", [settings], self)
+                section = CollapsibleSection(
+                    "Options", [settings], self.controller, self
+                )
                 layout.addWidget(section)

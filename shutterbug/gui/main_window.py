@@ -102,12 +102,6 @@ class MainWindow(QMainWindow):
 
         diff_menu = edit_menu.addMenu("Differential")
 
-        image_action = diff_menu.addAction("Differential Photometry (image)")
-        image_action.triggered.connect(self.controller.differential_image)
-
-        all_action = diff_menu.addAction("Differential Photometry (all)")
-        all_action.triggered.connect(self.controller.differential_all)
-
         graph_action = diff_menu.addAction("Graph selected star")
         graph_action.triggered.connect(self.controller.create_graph_from_selection)
 
