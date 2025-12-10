@@ -32,10 +32,13 @@ class Properties(QWidget):
         self.tool_properties = ToolPropertiesPanel(controller)
         self.image_properties = ImagePropertiesPanel(controller)
         self.graph_properties = GraphPropertiesPanel(controller)
+        tool_icon = controller.icons.get_rotated("tool", 90)
+        image_icon = controller.icons.get_rotated("image", 90)
+        graph_icon = controller.icons.get_rotated("chart", 90)
 
-        self.tabs.addTab(self.tool_properties, "Tool")
-        self.tabs.addTab(self.image_properties, "Image")
-        self.tabs.addTab(self.graph_properties, "Graph")
+        self.tabs.addTab(self.tool_properties, tool_icon, "")
+        self.tabs.addTab(self.image_properties, image_icon, "")
+        self.tabs.addTab(self.graph_properties, graph_icon, "")
 
         self.tabs.setCurrentWidget(self.tool_properties)
 

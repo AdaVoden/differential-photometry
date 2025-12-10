@@ -144,7 +144,6 @@ profiles/
 *.hd5
 *.nc
 *.org
-*.svg
 /output/
 results/
 /data/
