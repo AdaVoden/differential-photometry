@@ -23,7 +23,7 @@ class GraphManager(BaseManager):
 
         super().__init__(controller, parent)
         self.graphs: Dict[str, GraphDataModel] = {}
-        self.active_graph: GraphDataModel | None = None
+        self._ids = []
 
         logging.debug("Graph Manager initialized")
 
@@ -38,6 +38,17 @@ class GraphManager(BaseManager):
 
     def create_from_star(self, star: StarIdentity):
         """Creates a graph from a given star and adds it to the manager"""
-        graph = GraphDataModel.from_star(self.controller, star)
+        label = self._new_label()
+        graph = GraphDataModel.from_star(label, self.controller, star)
         self.add_graph(graph)
         return graph
+
+    def _new_label(self):
+        """Creates new number for default graph labels"""
+        if not self._ids:
+            # No other ids
+            self._ids.append(1)
+            return "graph_001"
+        new_id = self._ids[-1] + 1
+        self._ids.append(new_id)
+        return f"graph_{new_id:03}"

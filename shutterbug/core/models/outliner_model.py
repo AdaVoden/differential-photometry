@@ -21,7 +21,9 @@ class OutlinerModel(QStandardItemModel):
         self.images_item.appendRow(data)
 
     def add_graph(self, graph_model: GraphDataModel):
-        pass
+        data = QStandardItem(graph_model.label)
+        data.setData(graph_model, Qt.ItemDataRole.UserRole)
+        self.graphs_item.appendRow(data)
 
     def add_star(self, star_model: StarIdentity):
         data = QStandardItem(star_model.id)
@@ -40,8 +42,10 @@ class OutlinerModel(QStandardItemModel):
         if row >= 0:
             self.images_item.takeChild(row)
 
-    def remove_graph(self, graph_mode: GraphDataModel):
-        pass
+    def remove_graph(self, graph_model: GraphDataModel):
+        row = self._find_in_item(graph_model.label, self.graphs_item)
+        if row >= 0:
+            self.graphs_item.takeChild(row)
 
     def remove_star(self, star_model: StarIdentity):
         row = self._find_in_item(star_model.id, self.stars_item)
