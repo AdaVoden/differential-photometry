@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from shutterbug.core.models.marker_model import MarkerModel
+from shutterbug.gui.commands.star_commands import PropagateStarSelection
 
 
 if TYPE_CHECKING:
@@ -206,6 +207,16 @@ class ImageViewer(QGraphicsView):
             DifferentialPhotometryCommand(self.current_image, self.controller)
         )
 
+    @Slot()
+    def _on_propagate(self):
+        """Handles propagating measurements request"""
+        if self.current_image is None:
+            return  # No work to do
+
+        self.controller._undo_stack.push(
+            PropagateStarSelection(self.current_image, self.controller)
+        )
+
     # Zoom properties for animation
     def get_zoom(self):
         """Gets zoom level"""
@@ -311,8 +322,11 @@ class ImageViewer(QGraphicsView):
     def contextMenuEvent(self, event: QContextMenuEvent) -> None:
         menu = QMenu()
 
-        propagate_action = menu.addAction("Differential Photometry")
-        propagate_action.triggered.connect(self._on_differential)
+        differential_action = menu.addAction("Differential Photometry")
+        differential_action.triggered.connect(self._on_differential)
+
+        propagate_action = menu.addAction("Propagate Measurements")
+        propagate_action.triggered.connect(self._on_propagate)
 
         menu.exec(event.globalPos())
 

@@ -10,6 +10,8 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 from shutterbug.core.app_controller import AppController
+from shutterbug.gui.commands.graph_commands import AddGraphCommand
+from shutterbug.gui.commands.star_commands import DifferentialPhotometryAllCommand
 
 
 from .commands import LoadImagesCommand
@@ -102,8 +104,11 @@ class MainWindow(QMainWindow):
 
         diff_menu = edit_menu.addMenu("Differential")
 
+        diff_all_action = diff_menu.addAction("Differential (All Images)")
+        diff_all_action.triggered.connect(self._on_differential_all)
+
         graph_action = diff_menu.addAction("Graph selected star")
-        graph_action.triggered.connect(self.controller.create_graph_from_selection)
+        graph_action.triggered.connect(self._on_graph_selection)
 
         # Help menu
         # help_menu = menu_bar.addMenu("Help")
@@ -122,8 +127,7 @@ class MainWindow(QMainWindow):
             "FITS Files (*.fits *.fit *.fts);;All Files (*)",
         )
 
-        load_command = LoadImagesCommand(filenames, self.controller)
-        self.controller._undo_stack.push(load_command)
+        self.controller._undo_stack.push(LoadImagesCommand(filenames, self.controller))
 
     @Slot()
     def save_project(self):
@@ -146,3 +150,17 @@ class MainWindow(QMainWindow):
     @Slot()
     def exit(self):
         QCoreApplication.quit()
+
+    @Slot()
+    def _on_differential_all(self):
+        """Handles differential all being triggered"""
+        self.controller._undo_stack.push(
+            DifferentialPhotometryAllCommand(self.controller)
+        )
+
+    @Slot()
+    def _on_graph_selection(self):
+        """Handles graph creation being triggered"""
+        star = self.controller.selections.star
+        if star:
+            self.controller._undo_stack.push(AddGraphCommand(star, self.controller))

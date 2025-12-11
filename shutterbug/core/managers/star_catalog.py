@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 from shutterbug.core.events.change_event import (
     Event,
@@ -138,12 +138,40 @@ class StarCatalog(BaseManager):
         """Gets all stars currently registered"""
         return list(self.stars.values())
 
-    def create_measurement(self, x: float, y: float, time: float, image_id: str):
+    def create_measurement(
+        self,
+        x: float,
+        y: float,
+        time: float,
+        image_id: str,
+        flux: Optional[float] = None,
+        flux_error: Optional[float] = None,
+        mag: Optional[float] = None,
+        mag_error: Optional[float] = None,
+        diff_mag: Optional[float] = None,
+        diff_err: Optional[float] = None,
+    ):
         star = self.find_nearest(x, y)
         if star:
-            logging.error(f"Attempted to create duplicate measurement at ({x}, {y})")
-            return star.measurements[image_id]
+            old_measurement = star.measurements.get(image_id)
+            if old_measurement:
+                logging.error(
+                    f"Attempted to create duplicate measurement at ({x:.2f}, {y:.2f})"
+                )
+                return star.measurements[image_id]
 
-        measurement = StarMeasurement(self.controller, x, y, time, image_id)
+        measurement = StarMeasurement(
+            self.controller,
+            x,
+            y,
+            time,
+            image_id,
+            flux,
+            flux_error,
+            mag,
+            mag_error,
+            diff_mag,
+            diff_err,
+        )
         self.register_measurement(measurement)
         return measurement
