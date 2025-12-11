@@ -26,22 +26,28 @@ class SelectionContext:
     image: Optional[FITSModel] = None
     star: Optional[StarIdentity] = None
     graph: Optional[GraphDataModel] = None
-    measurement: Optional[StarMeasurement] = None
+    adapter: Optional[object] = None
 
 
 class SelectionManager(BaseManager):
+
+    mapping = {
+        FITSModel: "image",
+        StarIdentity: "star",
+        GraphDataModel: "graph",
+        StarMeasurement: "star",
+    }
 
     def __init__(self, controller: AppController, parent=None):
 
         super().__init__(controller, parent)
         self.adapter_registry = controller.adapters
-        self._context = SelectionContext
+        self._context = SelectionContext()
         logging.debug("Selection Manager initialized")
 
     @Slot(object)
-    def set_selected_object(self, selected: Any):
+    def select(self, selected: Any):
         """Sets selected object in program"""
-        self._current = selected
         logging.debug(f"Attempting to find adapter for {type(selected).__name__}")
         adapter = self.adapter_registry.get_adapter_for(selected)
         if adapter is not None:
@@ -49,51 +55,25 @@ class SelectionManager(BaseManager):
             self.controller.dispatch(
                 Event(EventDomain.ADAPTER, "selected", data=adapter)
             )
+            self._context.adapter = adapter
         else:
             logging.error(f"Failed to find adapter for {type(selected).__name__}")
 
-        # Still ought to be a better way
-        if isinstance(selected, FITSModel):
-            if self._context.image:
+        self._change_selection(selected)
+
+    def _change_selection(self, data: Any):
+        """Changes selection based on type mapping"""
+        data_type = self.mapping.get(type(data))
+        # If we have a type, we're golden
+        if data_type:
+            selection = getattr(self._context, data_type)
+            if selection:
                 self.controller.dispatch(
-                    Event(EventDomain.IMAGE, "deselected", data=self._context.image)
+                    Event(EventDomain(data_type), "deselected", data=selection)
                 )
-            self._context.image = selected
+            setattr(self._context, data_type, data)
             self.controller.dispatch(
-                Event(EventDomain.IMAGE, "selected", data=selected)
-            )
-        elif isinstance(selected, GraphDataModel):
-            if self._context.graph:
-                self.controller.dispatch(
-                    Event(EventDomain.GRAPH, "deselected", data=self._context.graph)
-                )
-
-            self._context.graph = selected
-            self.controller.dispatch(
-                Event(EventDomain.GRAPH, "selected", data=selected)
-            )
-        elif isinstance(selected, StarIdentity):
-            if self._context.star:
-                self.controller.dispatch(
-                    Event(EventDomain.STAR, "deselected", data=self._context.star)
-                )
-
-            self._context.star = selected
-            self.controller.dispatch(Event(EventDomain.STAR, "selected", data=selected))
-
-        elif isinstance(selected, StarMeasurement):
-            if self._context.measurement:
-                self.controller.dispatch(
-                    Event(
-                        EventDomain.MEASUREMENT,
-                        "deselected",
-                        data=self._context.measurement,
-                    )
-                )
-
-            self._context.measurement = selected
-            self.controller.dispatch(
-                Event(EventDomain.MEASUREMENT, "selected", data=selected)
+                Event(EventDomain(data_type), "selected", data=data)
             )
 
     @property
@@ -109,5 +89,11 @@ class SelectionManager(BaseManager):
         return self._context.graph
 
     @property
-    def measurement(self):
-        return self._context.measurement
+    def adapter(self):
+        return self._context.adapter
+
+    def get(self, object: Any):
+        """Gets the selection of a given object's type"""
+        data_type = self.mapping.get(type(object))
+        if data_type:
+            return getattr(self._context, data_type)

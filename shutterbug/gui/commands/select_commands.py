@@ -16,30 +16,14 @@ class SelectCommand(QUndoCommand):
         super().__init__()
         self.object = object
         self.controller = controller
-        self.old_identity = self.controller.selections._current
+        self.old_identity = self.controller.selections.get(object)
 
     def redo(self):
         logging.debug(f"COMMAND: Setting active object to {type(self.object).__name__}")
-        self.controller.selections.set_selected_object(self.object)
+        self.controller.selections.select(self.object)
 
     def undo(self):
         logging.debug(
             f"COMMAND: undoing selection of object {type(self.object).__name__}"
         )
-        self.controller.selections.set_selected_object(self.old_identity)
-
-
-class DeselectCommand(QUndoCommand):
-
-    def __init__(self, controller: AppController):
-        super().__init__()
-        self.controller = controller
-        self.old_identity = self.controller.selections._current
-
-    def redo(self):
-        logging.debug(f"COMMAND: removing active star selection")
-        self.controller.selections.set_selected_object(None)
-
-    def undo(self):
-        logging.debug(f"COMMAND: undoing removal of active star")
-        self.controller.selections.set_selected_object(self.old_identity)
+        self.controller.selections.select(self.old_identity)

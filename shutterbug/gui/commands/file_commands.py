@@ -57,11 +57,11 @@ class SelectFileCommand(QUndoCommand):
             f"COMMAND: Setting active image to: {self.selected_image.filename}"
         )
         self.last_selection = self.controller.selections._current
-        self.controller.selections.set_selected_object(self.selected_image)
+        self.controller.selections.select(self.selected_image)
 
     def undo(self) -> None:
         logging.debug(
             f"COMMAND: undoing setting active image to: {self.selected_image.filename}"
         )
 
-        self.controller.selections.set_selected_object(self.last_selection)
+        self.controller.selections.select(self.last_selection)

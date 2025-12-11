@@ -56,7 +56,6 @@ class ImageViewer(QGraphicsView):
         # Initial variables
         self.setObjectName("viewer")
         self.current_image = None
-        self.selected_star = None
         self.markers = {}  # (x, y) -> List[marker]
         self.controller = controller
 
@@ -334,7 +333,7 @@ class ImageViewer(QGraphicsView):
             return None
 
         x, y = self._convert_to_image_coordinates(coordinates)
-        logging.debug(f"Attempting to select centroid at {x}/{y}")
+        logging.debug(f"Attempting to select centroid at ({x}, {y})")
 
         centroid = self.image_manager.find_nearest_centroid(image, x, y)
 

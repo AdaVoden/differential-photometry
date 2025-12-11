@@ -5,7 +5,7 @@ from .star_commands import (
     PhotometryMeasurementCommand,
     DifferentialPhotometryCommand,
 )
-from .select_commands import SelectCommand, DeselectCommand
+from .select_commands import SelectCommand
 from .settings_commands import SetGraphValueCommand, SetImageValueCommand
 
 __all__ = [
@@ -14,7 +14,6 @@ __all__ = [
     "AddMeasurementsCommand",
     "RemoveMeasurementCommand",
     "SelectCommand",
-    "DeselectCommand",
     "SetGraphValueCommand",
     "SetImageValueCommand",
     "PhotometryMeasurementCommand",

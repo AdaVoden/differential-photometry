@@ -37,8 +37,11 @@ class AddMeasurementsCommand(QUndoCommand):
             )
             self.measurements.append(measurement)
         if len(self.measurements) == 1:
+            self.star_select = self.controller.stars.get_by_measurement(
+                self.measurements[0]
+            )
             self.old_select = self.controller.selections.star
-            self.controller.selections.set_selected_object(self.measurements[0])
+            self.controller.selections.select(self.star_select)
 
     def undo(self):
         logging.debug(f"COMMAND: undoing addition of {len(self.stars)} measurements")
@@ -49,7 +52,7 @@ class AddMeasurementsCommand(QUndoCommand):
 
         if len(self.measurements) == 1:
             if self.old_select:
-                self.controller.selections.set_selected_object(self.old_select)
+                self.controller.selections.select(self.old_select)
 
 
 class RemoveMeasurementCommand(QUndoCommand):

@@ -19,7 +19,6 @@ class SelectOperator(BaseOperator):
         super().__init__(viewer, controller)
         self.centroid = None
         self.image = self.viewer.current_image
-        self.marker = None
 
     def start(self, event: QMouseEvent):
         image = self.viewer.current_image
@@ -50,10 +49,3 @@ class SelectOperator(BaseOperator):
             cmd = AddMeasurementsCommand([centroid], self.image, self.controller)
 
         return cmd
-
-    def cleanup_preview(self):
-        """Clears the preview of the selection"""
-        if self.marker is not None:
-            self.controller.markers.remove_marker(self.marker)
-        self.centroid = None
-        self.marker = None

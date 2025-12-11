@@ -29,7 +29,6 @@ class StarCatalog(BaseManager):
         self.measurement_to_star: Dict[str, StarIdentity] = (
             {}
         )  # StarMeasurement.uid -> StarIdentity
-        self.active_star = None  # selected star
         self._kdtree = None
         self._coords = []  # Reference coordinates
         self._ids = []  # Matching star IDs

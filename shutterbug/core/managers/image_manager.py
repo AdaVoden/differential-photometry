@@ -48,7 +48,7 @@ class ImageManager(BaseManager):
         self.build_base_preview(image)
         self.controller.dispatch(Event(EventDomain.IMAGE, "created", data=image))
         if self.first_image:
-            self.controller.selections.set_selected_object(image)
+            self.controller.selections.select(image)
             self.first_image = False
 
     def remove_image(self, image: FITSModel):

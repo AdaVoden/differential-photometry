@@ -59,7 +59,7 @@ class Outliner(QWidget):
         data = s.data(Qt.ItemDataRole.UserRole)
         if data is None:
             return  # No need to do anything
-        self.controller.selections.set_selected_object(data)
+        self.controller.selections.select(data)
 
     @Slot(QPoint)
     def show_context_menu(self, pos: QPoint):
