@@ -46,6 +46,9 @@ class Outliner(QWidget):
         controller.on("image.created", lambda evt: self.model.add_image(evt.data))
         controller.on("graph.created", lambda evt: self.model.add_graph(evt.data))
         controller.on("star.created", lambda evt: self.model.add_star(evt.data))
+        controller.on("image.removed", lambda evt: self.model.remove_image(evt.data))
+        controller.on("graph.removed", lambda evt: self.model.remove_graph(evt.data))
+        controller.on("star.removed", lambda evt: self.model.remove_star(evt.data))
 
         logging.debug("Outliner initialized")
 

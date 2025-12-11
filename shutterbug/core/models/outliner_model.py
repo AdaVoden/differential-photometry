@@ -27,3 +27,23 @@ class OutlinerModel(QStandardItemModel):
         data = QStandardItem(star_model.id)
         data.setData(star_model, Qt.ItemDataRole.UserRole)
         self.stars_item.appendRow(data)
+
+    def _find_in_item(self, text: str, item: QStandardItem):
+        for row in range(item.rowCount()):
+            i = item.child(row)
+            if i.text() == text:
+                return row
+        return -1
+
+    def remove_image(self, fits_model: FITSModel):
+        row = self._find_in_item(fits_model.filename, self.images_item)
+        if row >= 0:
+            self.images_item.takeChild(row)
+
+    def remove_graph(self, graph_mode: GraphDataModel):
+        pass
+
+    def remove_star(self, star_model: StarIdentity):
+        row = self._find_in_item(star_model.id, self.stars_item)
+        if row >= 0:
+            self.stars_item.takeChild(row)
