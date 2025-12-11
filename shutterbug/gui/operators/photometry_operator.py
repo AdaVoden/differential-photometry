@@ -5,7 +5,10 @@ from typing import TYPE_CHECKING
 from PySide6.QtCore import Slot
 from PySide6.QtGui import QMouseEvent, QUndoCommand
 
-from shutterbug.gui.commands.star_commands import PhotometryMeasurementCommand
+from shutterbug.gui.commands.star_commands import (
+    PhotometryAllCommand,
+    PhotometryMeasurementCommand,
+)
 from shutterbug.gui.operators.operator_parameters import PhotometryParameters
 from shutterbug.gui.tools.photometry_settings import PhotometryOperatorSettingsWidget
 
@@ -92,9 +95,12 @@ class PhotometryOperator(BaseOperator):
         if image is None:
             return None
         measurements = self.controller.stars.get_measurements_by_image(image)
-        return PhotometryMeasurementCommand(
-            measurements, image, self.params, self.controller
-        )
+        if self.params.images == "single":
+            return PhotometryMeasurementCommand(
+                measurements, image, self.params, self.controller
+            )
+        if self.params.images == "all":
+            return PhotometryAllCommand(self.params, self.controller)
 
     def cleanup_preview(self):
         """Returns view to normal"""

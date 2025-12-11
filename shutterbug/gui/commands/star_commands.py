@@ -156,10 +156,14 @@ class PhotometryAllCommand(QUndoCommand):
             )
 
     def redo(self):
+        logging.debug(
+            f"COMMAND: Performing photometry on all measurements in all images"
+        )
         for cmd in self.cmds:
             cmd.redo()
 
     def undo(self):
+        logging.debug(f"COMMAND: Undoing photometry on all measurements in all images")
         for cmd in self.cmds:
             cmd.undo()
 

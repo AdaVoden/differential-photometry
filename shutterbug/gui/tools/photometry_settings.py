@@ -15,6 +15,7 @@ class PhotometryOperatorSettingsWidget(BaseSettings):
         layout.setSpacing(6)
         layout.setContentsMargins(0, 0, 0, 0)
         self.mode = LabeledComboBox("Mode", ["all", "active"])
+        self.images = LabeledComboBox("Images", ["single", "all"])
         self.aperture = LabeledSlider(
             "Aperture",
             1,
@@ -40,11 +41,14 @@ class PhotometryOperatorSettingsWidget(BaseSettings):
             self.params.decimal_places,
         )
 
+        self.mode.activated.connect(self._update_mode)
+        self.images.activated.connect(self._update_images)
         self.aperture.valueChanged.connect(self._update_aperture)
         self.annulus_inner.valueChanged.connect(self._update_annulus_inner)
         self.annulus_outer.valueChanged.connect(self._update_annulus_outer)
 
         layout.addWidget(self.mode)
+        layout.addWidget(self.images)
         layout.addWidget(self.aperture)
         layout.addWidget(self.annulus_inner)
         layout.addWidget(self.annulus_outer)
@@ -77,6 +81,18 @@ class PhotometryOperatorSettingsWidget(BaseSettings):
         if value <= self.annulus_inner.value:
             # Make inner annulus smaller to accommodate outer
             self.annulus_inner.set_value(value - self.params.buffer)
+        self.params.changed.emit()
+
+    @Slot(str)
+    def _update_mode(self, value: str):
+        """Updates mode parameter"""
+        self.params.mode = value
+        self.params.changed.emit()
+
+    @Slot(str)
+    def _update_images(self, value: str):
+        """Updates images parameter"""
+        self.params.images = value
         self.params.changed.emit()
 
 
