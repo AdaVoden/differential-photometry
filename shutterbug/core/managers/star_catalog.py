@@ -93,9 +93,14 @@ class StarCatalog(BaseManager):
         last_id = int(last_id_str)
         return last_id + 1
 
-    def register_measurement(self, measurement: StarMeasurement) -> StarIdentity:
-        """Registers measurement with catalog"""
-        star = self.find_nearest(measurement.x, measurement.y)
+    def register_measurement(
+        self, measurement: StarMeasurement, star: Optional[StarIdentity] = None
+    ) -> StarIdentity:
+        """Registers measurement to star with catalog"""
+        # If no star, try to find one
+        if star is None:
+            star = self.find_nearest(measurement.x, measurement.y)
+        # If still none, create one
         if star is None:
             star_id = f"Star_{self._new_id()}"
             star = StarIdentity(controller=self.controller, id=star_id)
@@ -150,8 +155,10 @@ class StarCatalog(BaseManager):
         mag_error: Optional[float] = None,
         diff_mag: Optional[float] = None,
         diff_err: Optional[float] = None,
+        star: Optional[StarIdentity] = None,
     ):
-        star = self.find_nearest(x, y)
+        if star is None:
+            star = self.find_nearest(x, y)
         if star:
             old_measurement = star.measurements.get(image_id)
             if old_measurement:
@@ -173,5 +180,5 @@ class StarCatalog(BaseManager):
             diff_mag,
             diff_err,
         )
-        self.register_measurement(measurement)
+        self.register_measurement(measurement, star)
         return measurement

@@ -232,6 +232,7 @@ class PropagateStarSelection(QUndoCommand):
         logging.debug(f"COMMAND: Propagating stars from image {self.image.uid}")
         for i in self.others:
             for m in self.measurements:
+                star = self.controller.stars.get_by_measurement(m)
                 centroid = self.controller.images.find_nearest_centroid(i, m.x, m.y)
                 if not centroid:
                     logging.error(
@@ -245,6 +246,7 @@ class PropagateStarSelection(QUndoCommand):
                     i.uid,
                     flux=centroid["flux"],
                     mag=centroid["mag"],
+                    star=star,
                 )
                 self.added.append(new_m)
 
