@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from shutterbug.core.events.change_event import Event, EventDomain
+from shutterbug.core.models.star_identity import StarIdentity
 
 if TYPE_CHECKING:
     from shutterbug.core.app_controller import AppController
@@ -34,3 +35,9 @@ class GraphManager(BaseManager):
         if graph.uid in self.graphs:
             self.graphs.pop(graph.uid)
             self.controller.dispatch(Event(EventDomain.GRAPH, "removed", data=graph))
+
+    def create_from_star(self, star: StarIdentity):
+        """Creates a graph from a given star and adds it to the manager"""
+        graph = GraphDataModel.from_star(self.controller, star)
+        self.add_graph(graph)
+        return graph

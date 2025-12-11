@@ -80,8 +80,8 @@ class AppController(QObject):
 
     @Slot()
     def create_graph_from_selection(self):
-        star = self.stars.active_star
         logging.debug("Graph creation called")
+        star = self.selections.star
         if star is not None:
             graph = GraphDataModel.from_star(self, star)
             self.graphs.add_graph(graph)
