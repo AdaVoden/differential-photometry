@@ -1,11 +1,9 @@
 import logging
-from shutterbug.core.events import Event
 
 from PySide6.QtCore import QItemSelection, QPoint, Qt, Signal, Slot
 from PySide6.QtWidgets import QMenu, QTreeView, QVBoxLayout, QWidget
 from shutterbug.core.app_controller import AppController
 from shutterbug.core.models import OutlinerModel
-from shutterbug.core.models.fits_model import FITSModel
 
 
 class Outliner(QWidget):

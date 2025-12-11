@@ -23,6 +23,7 @@ class AddMeasurementsCommand(QUndoCommand):
         self.image = image
         self.time = image.observation_time
         self.controller = controller
+        self.old_select = None
         self.measurements = []
 
     def redo(self):
@@ -36,6 +37,7 @@ class AddMeasurementsCommand(QUndoCommand):
             )
             self.measurements.append(measurement)
         if len(self.measurements) == 1:
+            self.old_select = self.controller.selections.star
             self.controller.selections.set_selected_object(self.measurements[0])
 
     def undo(self):
@@ -44,6 +46,10 @@ class AddMeasurementsCommand(QUndoCommand):
         for m in self.measurements:
 
             self.controller.stars.unregister_measurement(m)
+
+        if len(self.measurements) == 1:
+            if self.old_select:
+                self.controller.selections.set_selected_object(self.old_select)
 
 
 class RemoveMeasurementCommand(QUndoCommand):

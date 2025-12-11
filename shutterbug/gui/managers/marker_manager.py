@@ -6,6 +6,7 @@ from PySide6.QtCore import Slot
 from PySide6.QtGui import QColor
 
 from shutterbug.core.models.fits_model import FITSModel
+from shutterbug.core.models.star_measurement import StarMeasurement
 
 if TYPE_CHECKING:
     from shutterbug.core.app_controller import AppController
@@ -30,6 +31,7 @@ class MarkerManager(BaseManager):
 
         # Handle signals
         self.controller.on("measurement.created", self._on_measurement_created)
+        self.controller.on("measurement.removed", self._on_measurement_removed)
         self.controller.on("measurement.selected", self._on_measurement_selected)
         self.controller.on("measurement.deselected", self._on_measurement_deselected)
         self.controller.on("star.selected", self._on_star_selected)
@@ -79,7 +81,17 @@ class MarkerManager(BaseManager):
             self.MARKER_THICKNESS_DEFAULT,
         )
         self._marker_measurements[measurement.uid] = marker
-        self.add_marker(marker)
+
+    @Slot(Event)
+    def _on_measurement_removed(self, event: Event):
+        measurement = event.data
+        if measurement is None:
+            logging.error("No measurement provided on measurement removal event")
+            return
+        marker = self.marker_from_measurement(measurement)
+        if marker:
+            self.remove_marker(marker)
+            self._marker_measurements.pop(measurement.uid)
 
     @Slot(Event)
     def _on_measurement_selected(self, event: Event):
@@ -166,3 +178,7 @@ class MarkerManager(BaseManager):
         if image.uid in self._markers:
             return self._markers[image.uid]
         return []
+
+    def marker_from_measurement(self, measurement: StarMeasurement):
+        """Returns marker associated with measurement"""
+        return self._marker_measurements.get(measurement.uid)

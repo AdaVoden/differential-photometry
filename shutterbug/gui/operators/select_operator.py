@@ -25,12 +25,11 @@ class SelectOperator(BaseOperator):
         image = self.viewer.current_image
         if image is None:
             return
-        self.cleanup_preview()
         self.centroid = self.viewer.get_centroid_at_point(event.pos())
-        if self.centroid is not None:
-            self.marker = self.controller.markers.create_marker_from_position(
-                self.centroid["xcentroid"], self.centroid["ycentroid"], image
-            )
+        if self.centroid is None:
+            self.cancel()
+        else:
+            self.confirm()
 
     def create_settings_widget(self) -> None:
         return None
@@ -45,10 +44,10 @@ class SelectOperator(BaseOperator):
             centroid["xcentroid"], centroid["ycentroid"]
         )
 
-        if star is None:
-            cmd = AddMeasurementsCommand([centroid], self.image, self.controller)
-        else:
+        if star:
             cmd = SelectCommand(star, self.controller)
+        else:
+            cmd = AddMeasurementsCommand([centroid], self.image, self.controller)
 
         return cmd
 
