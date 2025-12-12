@@ -27,7 +27,7 @@ class Outliner(BaseUIWidget):
         self.item_view.setHeaderHidden(True)
         self.model = OutlinerModel()
         self.item_view.setModel(self.model)
-        self.item_view.alternatingRowColors()
+        self.item_view.setAlternatingRowColors(True)
         layout.addWidget(self.item_view)
 
         # Set up right-click context menu

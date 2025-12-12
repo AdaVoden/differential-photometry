@@ -14,9 +14,19 @@ QMainWindow {
 
 #outliner > QTreeView {
     background-color: {{ bg_primary }};
+    alternate-background-color: {{ bg_secondary }};
     border-radius: 6px;
     border: 1px solid {{ bg_secondary }};
 }
+
+#outliner > QTreeView::item:hover {
+    background: {{ bg_tertiary }};
+}
+
+#outliner > QTreeView::item:selected {
+    background: {{ bg_tertiary }};
+}
+
 
 #sidebar {
     background-color: {{ bg_dark }};
