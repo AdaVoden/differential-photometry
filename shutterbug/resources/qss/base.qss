@@ -1,12 +1,10 @@
-/* Clear out extra padding and spaces in widgets */
+QWidget {
+    color: {{ fg_primary }}
+}
 
 #outliner {
     min-height: 300px;
     margin: 0px;
-}
-
-#outliner > QTreeView::branch {
-    border-image: url(none.png);
 }
 
 #sidebar {

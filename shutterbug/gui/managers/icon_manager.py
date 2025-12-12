@@ -1,11 +1,18 @@
-from pathlib import Path
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from shutterbug.core.app_controller import AppController
 
 from PySide6.QtGui import QIcon, QTransform
 
+from shutterbug.core.managers.base_manager import BaseManager
 
-class IconManager:
-    def __init__(self):
-        base = Path(__file__).resolve().parent.parent.parent / "resources" / "icons"
+
+class IconManager(BaseManager):
+    def __init__(self, controller: AppController):
+        base = controller.resources / "icons"
 
         self._icons = {f.stem: QIcon(str(f)) for f in base.glob("*.svg")}
 
