@@ -10,7 +10,7 @@ import logging
 from shutterbug.core.events import Event
 from PySide6.QtWidgets import QVBoxLayout, QWidget, QTableView, QHeaderView
 from PySide6.QtGui import QStandardItem, QStandardItemModel
-from PySide6.QtCore import Slot, Qt
+from PySide6.QtCore import Slot
 
 from shutterbug.gui.adapters.tabular_data_interface import TabularDataInterface
 

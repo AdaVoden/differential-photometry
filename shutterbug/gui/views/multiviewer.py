@@ -2,12 +2,13 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from shutterbug.gui.base_ui_widget import BaseUIWidget
+
 if TYPE_CHECKING:
     from shutterbug.core.app_controller import AppController
 
 import logging
 from PySide6.QtWidgets import (
-    QWidget,
     QVBoxLayout,
     QHBoxLayout,
     QComboBox,
@@ -18,11 +19,11 @@ from PySide6.QtCore import Slot
 from shutterbug.gui.views import ImageViewer, GraphViewer, SpreadsheetViewer
 
 
-class MultiViewer(QWidget):
+class MultiViewer(BaseUIWidget):
     """Viewer that can switch between multiple modes"""
 
-    def __init__(self, controller: AppController):
-        super().__init__()
+    def __init__(self, controller: AppController, parent=None):
+        super().__init__(controller, parent)
         self.setObjectName("multiviewer")
 
         # Top bar
@@ -50,8 +51,8 @@ class MultiViewer(QWidget):
         layout.addWidget(self.stack)
         self.setLayout(layout)
 
-        # Remove styling from layouts
-        layout.setContentsMargins(0, 0, 0, 0)
+        # Styling layouts
+        layout.setContentsMargins(1, 1, 1, 1)
         layout.setSpacing(2)
 
         # Connections

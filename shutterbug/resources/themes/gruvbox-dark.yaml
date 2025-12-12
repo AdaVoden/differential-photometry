@@ -1,9 +1,12 @@
 # Backgrounds
-bg_primary: "#1d2021"
-bg_secondary: "#282828"
-bg_tertiary: "#3c3836"
+bg_primary: "#282828"
+bg_secondary: "#3c3836"
+bg_tertiary: "#504945"
+bg_4: "#665c54"
+bg_dark: "#1d2021"
 
 # Foreground/text
+text: "#fbf1c7"
 fg_primary: "#ebdbb2"
 fg_secondary: "#a89984"
 fg_dim: "#665c54"
@@ -15,7 +18,7 @@ accent_warning: "#fabd2f"   # Needs attention
 accent_error: "#fb4934"     # Invalid/error
 
 # Data visualization
-star_selected: "#fe8019"
-star_reference: "#8ec07c"
-aperture_inner: "#83a598"
-aperture_outer: "#458588"
+star_selected: "#fabd2f"
+star_reference: "#458588"
+aperture_inner: "#fb4934"
+aperture_outer: "#d3869b"

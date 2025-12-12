@@ -49,7 +49,7 @@ class MainWindow(QMainWindow):
         central.setLayout(main_layout)
 
         # Remove styling from layouts
-        main_layout.setContentsMargins(0, 0, 0, 0)
+        main_layout.setContentsMargins(1, 1, 1, 1)
         main_layout.setSpacing(2)
 
         # Add in contents
