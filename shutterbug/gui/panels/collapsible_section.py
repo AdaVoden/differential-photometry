@@ -49,6 +49,7 @@ class CollapsibleSection(QWidget):
         self.header.setCheckable(True)
         self.header.setChecked(True)
         self.header.clicked.connect(self.toggle)
+        self.header.setObjectName("header")
 
         # Content
         self.content_body = QWidget()

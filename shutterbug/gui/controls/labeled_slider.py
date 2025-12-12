@@ -27,6 +27,7 @@ class LabeledSlider(LabeledWidget):
         if layout is not None:
             layout.addWidget(self.slider)
 
+        self.setAutoFillBackground(False)
         # Attach slider's signal to custom signal
         self.slider.valueChanged.connect(self.valueChanged)
 

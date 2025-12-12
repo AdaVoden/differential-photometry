@@ -15,11 +15,12 @@ from shutterbug.core.LUTs.registry import STRETCH_REGISTRY
 class Properties(QWidget):
     def __init__(self, controller: AppController):
         super().__init__()
-        self.setObjectName("settings")
+        self.setObjectName("properties")
 
         layout = QVBoxLayout()
         self.setLayout(layout)
-        # Remove layout styling
+        # styling
+        self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(2)
 

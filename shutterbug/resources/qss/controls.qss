@@ -1,23 +1,22 @@
-ScrubbySlider QPushButton {
+#scrubbySlider {
+    background-color: {{ bg_primary }};
+    border-radius: 4px;
+
+}
+#scrubbySlider > QPushButton {
+    background-color: transparent;
+    outline: none;
+    border: none;
     max-width: 10px;
     min-width: 10px;
     padding: 2px;
-    border-style: outset;
-    border-width: 1px;
-    border-color: gray;
 }
 
-ScrubbySlider QLineEdit {
-    max-width: 75px;
+#scrubbySlider > QLineEdit {
+    background-color: transparent;
+    selection-background-color: {{ bg_tertiary }};
+    border: none;
     padding-left: 0px;
     padding-right: 0px;
     text-align: center;
-}
-
-LabeledSlider {
-    max-width: 200px;
-}
-
-LabeledSlider > QLabel {
-    min-width: 75px;
 }

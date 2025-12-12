@@ -1,4 +1,4 @@
-from PySide6.QtWidgets import QWidget, QHBoxLayout, QLineEdit, QPushButton
+from PySide6.QtWidgets import QSizePolicy, QWidget, QHBoxLayout, QLineEdit, QPushButton
 from PySide6.QtCore import QTimer, Qt, Signal, QPoint, Slot
 from PySide6.QtGui import QIntValidator, QCursor, QMouseEvent, QDoubleValidator
 
@@ -17,6 +17,7 @@ class ScrubbySlider(QWidget):
         decimal_places: int = 3,
     ):
         super().__init__()
+        # Main variables
         self.min_val = min_val
         self.max_val = max_val
         self.current_val = default
@@ -42,11 +43,21 @@ class ScrubbySlider(QWidget):
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(0)
         self.setLayout(layout)
+        # Styling
+        self.setAutoFillBackground(True)
+        self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
+        self.setObjectName("scrubbySlider")
+        self.setSizePolicy(
+            QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Maximum)
+        )
 
         # Left Arrow
         self.left_btn = QPushButton("<")
         self.left_btn.clicked.connect(self.decrement)
         layout.addWidget(self.left_btn)
+        self.left_btn.setAutoFillBackground(True)
+        self.left_btn.setObjectName("leftButton")
+        self.left_btn.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
 
         # Line edit for value display and input
         if number_type == "int":
@@ -63,6 +74,8 @@ class ScrubbySlider(QWidget):
             self.line_edit.setValidator(
                 QDoubleValidator(min_val, max_val, decimal_places)
             )
+        self.line_edit.setAutoFillBackground(True)
+        self.line_edit.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
         self.line_edit.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.line_edit.editingFinished.connect(self.on_text_changed)
 
@@ -77,6 +90,10 @@ class ScrubbySlider(QWidget):
         # Right arrow button
         self.right_btn = QPushButton(">")
         self.right_btn.clicked.connect(self.increment)
+        self.right_btn.setAutoFillBackground(True)
+        self.right_btn.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
+
+        self.right_btn.setObjectName("rightButton")
         layout.addWidget(self.right_btn)
 
     def line_edit_mouse_press(self, event: QMouseEvent):

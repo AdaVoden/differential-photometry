@@ -1,5 +1,5 @@
 QWidget {
-    color: {{ fg_primary }}
+    color: {{ fg_primary }};
 }
 
 #outliner {
@@ -7,11 +7,24 @@ QWidget {
     margin: 0px;
 }
 
+#outliner > QTreeView {
+    background-color: {{ bg_secondary }}
+}
+
 #sidebar {
     margin: 0px;
     max-width: 400px;
 }
 
+#multiviewer {
+    border-radius: 4px;
+}
+
 #viewer {
     margin: 0px;
+    background-color: {{ bg_primary }};
+}
+
+#properties > QTabWidget {
+    background-color: {{ bg_primary }}
 }
