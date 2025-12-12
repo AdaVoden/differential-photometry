@@ -1,0 +1,24 @@
+# Backgrounds
+bg_primary: "#282828"
+bg_secondary: "#3c3836"
+bg_tertiary: "#504945"
+bg_4: "#665c54"
+bg_dark: "#1d2021"
+
+# Foreground/text
+text: "#fbf1c7"
+fg_primary: "#ebdbb2"
+fg_secondary: "#a89984"
+fg_dim: "#665c54"
+
+# Accent colors
+accent_primary: "#83a598"   # Selection, focus
+accent_success: "#b8bb26"   # Valid measurements
+accent_warning: "#fabd2f"   # Needs attention
+accent_error: "#fb4934"     # Invalid/error
+
+# Data visualization
+star_selected: "#fabd2f"
+star_reference: "#458588"
+aperture_inner: "#fb4934"
+aperture_outer: "#d3869b"

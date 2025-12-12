@@ -20,7 +20,6 @@ import logging
 
 class MarkerManager(BaseManager):
 
-    MARKER_COLOUR_DEFAULT = "magenta"
     MARKER_RADIUS_DEFAULT = 10  # pixels
     MARKER_THICKNESS_DEFAULT = 2  # pixels
 
@@ -71,13 +70,14 @@ class MarkerManager(BaseManager):
         if measurement is None:
             logging.error("No measurement provided on measurement created event")
             return  # No measurement provided
+        colour = self.controller.themes.colours["star_reference"]
         marker = self.create(
             measurement.image_id,
             measurement.x,
             measurement.y,
             MarkerType.DISPLAY,
             self.MARKER_RADIUS_DEFAULT,
-            self.MARKER_COLOUR_DEFAULT,
+            colour,
             self.MARKER_THICKNESS_DEFAULT,
         )
         self._marker_measurements[measurement.uid] = marker
@@ -100,8 +100,9 @@ class MarkerManager(BaseManager):
         if measurement is None:
             return
         marker = self._marker_measurements.get(measurement.uid)
+        colour = self.controller.themes.colours["star_selected"]
         if marker:
-            marker.colour = "gold"
+            marker.colour = colour
 
     @Slot(Event)
     def _on_measurement_deselected(self, event: Event):
@@ -110,8 +111,9 @@ class MarkerManager(BaseManager):
         if measurement is None:
             return
         marker = self._marker_measurements.get(measurement.uid)
+        colour = self.controller.themes.colours["star_reference"]
         if marker:
-            marker.colour = self.MARKER_COLOUR_DEFAULT
+            marker.colour = colour
 
     @Slot(Event)
     def _on_star_selected(self, event: Event):
@@ -132,18 +134,21 @@ class MarkerManager(BaseManager):
             return
         for m in star.measurements.values():
             marker = self._marker_measurements.get(m.uid)
+            colour = self.controller.themes.colours["star_reference"]
+
             if marker:
-                marker.colour = self.MARKER_COLOUR_DEFAULT
+                marker.colour = colour
 
     def create_marker_from_position(self, x: float, y: float, image: FITSModel):
         """Given a position, create a default marker in image"""
+        colour = self.controller.themes.colours["star_reference"]
         marker = self.create(
             image.uid,
             x,
             y,
             MarkerType.DISPLAY,
             self.MARKER_RADIUS_DEFAULT,
-            self.MARKER_COLOUR_DEFAULT,
+            colour,
             self.MARKER_THICKNESS_DEFAULT,
         )
         return marker

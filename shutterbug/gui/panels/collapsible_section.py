@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from shutterbug.gui.base_ui_widget import BaseUIWidget
+
 if TYPE_CHECKING:
     from shutterbug.core.app_controller import AppController
 
@@ -11,7 +13,7 @@ from PySide6.QtCore import QSize, Qt
 from typing import List
 
 
-class CollapsibleSection(QWidget):
+class CollapsibleSection(BaseUIWidget):
     def __init__(
         self,
         title: str,
@@ -19,8 +21,7 @@ class CollapsibleSection(QWidget):
         controller: AppController,
         parent=None,
     ):
-        super().__init__(parent)
-        self.controller = controller
+        super().__init__(controller, parent)
         # Initial variables
         self.content = content
         self.is_expanded = True
@@ -29,8 +30,6 @@ class CollapsibleSection(QWidget):
         self.arrow_down = controller.icons.get_rotated("arrow-left", -90)
         self.icon_size = QSize(24, 24)
         self.setObjectName("collapsibleSection")
-        self.setAutoFillBackground(True)
-        self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
 
         # Layout setup
         layout = QVBoxLayout(self)
@@ -49,6 +48,7 @@ class CollapsibleSection(QWidget):
         self.header.setCheckable(True)
         self.header.setChecked(True)
         self.header.clicked.connect(self.toggle)
+        self.header.setObjectName("header")
 
         # Content
         self.content_body = QWidget()

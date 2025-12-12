@@ -47,6 +47,8 @@ class PhotometryOperator(BaseOperator):
         image_markers = self.controller.markers.markers_from_image(
             self.viewer.current_image
         ).copy()
+        inner_colour = self.controller.themes.colours["aperture_inner"]
+        outer_colour = self.controller.themes.colours["aperture_outer"]
         for marker in image_markers:
             marker.visible = False
             x = marker.x
@@ -57,7 +59,7 @@ class PhotometryOperator(BaseOperator):
                 y,
                 MarkerType.APERTURE,
                 self.params.aperture_radius,
-                "magenta",
+                inner_colour,
                 2,
             )
             annulus_inner = self.controller.markers.create(
@@ -66,7 +68,7 @@ class PhotometryOperator(BaseOperator):
                 y,
                 MarkerType.ANNULUS_INNER,
                 self.params.annulus_inner_radius,
-                "red",
+                outer_colour,
                 2,
             )
             annulus_outer = self.controller.markers.create(
@@ -75,7 +77,7 @@ class PhotometryOperator(BaseOperator):
                 y,
                 MarkerType.ANNULUS_OUTER,
                 self.params.annulus_outer_radius,
-                "red",
+                outer_colour,
                 2,
             )
             self.markers[(x, y)] = [aperture, annulus_inner, annulus_outer]

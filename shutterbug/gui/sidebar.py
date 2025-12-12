@@ -1,18 +1,19 @@
 import logging
 
 from PySide6.QtCore import Signal
-from PySide6.QtWidgets import QVBoxLayout, QWidget
+from PySide6.QtWidgets import QVBoxLayout
 from shutterbug.core.app_controller import AppController
+from shutterbug.gui.base_ui_widget import BaseUIWidget
 from shutterbug.gui.outliner import Outliner
 from shutterbug.gui.properties import Properties
 
 
-class Sidebar(QWidget):
+class Sidebar(BaseUIWidget):
 
     object_selected = Signal(object)
 
-    def __init__(self, controller: AppController):
-        super().__init__()
+    def __init__(self, controller: AppController, parent=None):
+        super().__init__(controller, parent)
         # Initialize sidebar components here
         self.setObjectName("sidebar")
 

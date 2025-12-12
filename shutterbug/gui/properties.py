@@ -3,7 +3,8 @@ from shutterbug.core.events.change_event import Event
 import logging
 
 from PySide6.QtCore import Qt, Slot
-from PySide6.QtWidgets import QLabel, QTabWidget, QVBoxLayout, QWidget
+from PySide6.QtWidgets import QLabel, QTabWidget, QVBoxLayout
+from shutterbug.gui.base_ui_widget import BaseUIWidget
 from shutterbug.gui.commands import SetGraphValueCommand, SetImageValueCommand
 from shutterbug.gui.controls import LabeledSlider, LabeledComboBox
 from shutterbug.gui.controls.labeled_text_box import LabeledTextBox
@@ -12,19 +13,21 @@ from shutterbug.gui.panels.collapsible_section import CollapsibleSection
 from shutterbug.core.LUTs.registry import STRETCH_REGISTRY
 
 
-class Properties(QWidget):
-    def __init__(self, controller: AppController):
-        super().__init__()
-        self.setObjectName("settings")
+class Properties(BaseUIWidget):
+    def __init__(self, controller: AppController, parent=None):
+        super().__init__(controller, parent)
+        self.setObjectName("properties")
 
         layout = QVBoxLayout()
         self.setLayout(layout)
-        # Remove layout styling
+        # styling
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(2)
 
         # Stacked tabs for that Blender goodness
         self.tabs = QTabWidget()
+        self.tabs.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
+        self.tabs.setAutoFillBackground(True)
         layout.addWidget(self.tabs)
         self.tabs.setTabPosition(QTabWidget.TabPosition.West)
 
@@ -46,10 +49,10 @@ class Properties(QWidget):
         logging.debug("Tool settings initialized")
 
 
-class ImagePropertiesPanel(QWidget):
+class ImagePropertiesPanel(BaseUIWidget):
 
-    def __init__(self, controller: AppController):
-        super().__init__()
+    def __init__(self, controller: AppController, parent=None):
+        super().__init__(controller, parent)
 
         self.controller = controller
         self._undo_stack = controller._undo_stack
@@ -137,9 +140,9 @@ class ImagePropertiesPanel(QWidget):
             )
 
 
-class GraphPropertiesPanel(QWidget):
-    def __init__(self, controller: AppController):
-        super().__init__()
+class GraphPropertiesPanel(BaseUIWidget):
+    def __init__(self, controller: AppController, parent=None):
+        super().__init__(controller, parent)
         # General variables and settings
         self.setObjectName("graphProperties")
         self.current_graph = None
@@ -214,11 +217,13 @@ class GraphPropertiesPanel(QWidget):
             )
 
 
-class ToolPropertiesPanel(QWidget):
-    def __init__(self, controller: AppController):
-        super().__init__()
+class ToolPropertiesPanel(BaseUIWidget):
+    def __init__(self, controller: AppController, parent=None):
+        super().__init__(controller, parent)
+        # Layout settings
         layout = QVBoxLayout()
         self.setLayout(layout)
+        self.setObjectName("toolProperties")
         self.controller = controller
 
         layout.setContentsMargins(16, 8, 8, 8)
