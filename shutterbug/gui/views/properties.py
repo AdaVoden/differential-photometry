@@ -11,9 +11,14 @@ from shutterbug.gui.controls.labeled_text_box import LabeledTextBox
 from shutterbug.gui.tools.base_tool import BaseTool
 from shutterbug.gui.panels.collapsible_section import CollapsibleSection
 from shutterbug.core.LUTs.registry import STRETCH_REGISTRY
+from shutterbug.gui.views.registry import register_view
+from .base_view import BaseView
 
 
-class Properties(BaseUIWidget):
+@register_view()
+class Properties(BaseView):
+    name = "Properties"
+
     def __init__(self, controller: AppController, parent=None):
         super().__init__(controller, parent)
         self.setObjectName("properties")

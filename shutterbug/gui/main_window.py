@@ -17,7 +17,8 @@ from shutterbug.gui.commands.star_commands import DifferentialPhotometryAllComma
 from .commands import LoadImagesCommand
 from .project import ShutterbugProject
 from .sidebar import Sidebar
-from .views import MultiViewer
+from .views import ImageViewer
+from .panel import Panel
 
 
 class MainWindow(QMainWindow):
@@ -40,7 +41,7 @@ class MainWindow(QMainWindow):
 
         # Create sidebar and viewer
         self.sidebar = Sidebar(controller)
-        self.viewer = MultiViewer(controller)
+        self.viewer = ImageViewer(controller)
 
         # Set up central widget with horizontal layout
         central = QWidget()
@@ -53,7 +54,9 @@ class MainWindow(QMainWindow):
         main_layout.setSpacing(2)
 
         # Add in contents
-        main_layout.addWidget(self.viewer, stretch=3)  # Viewer takes most space
+        main_layout.addWidget(
+            Panel(self.viewer, self.controller, self), stretch=3
+        )  # Viewer takes most space
         main_layout.addWidget(self.sidebar, stretch=1)  # Sidebar on the right
 
         # Set up menu bar

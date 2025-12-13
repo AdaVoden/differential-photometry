@@ -4,11 +4,14 @@ from PySide6.QtCore import QItemSelection, QPoint, Qt, Signal, Slot
 from PySide6.QtWidgets import QMenu, QTreeView, QVBoxLayout
 from shutterbug.core.app_controller import AppController
 from shutterbug.core.models import OutlinerModel
-from shutterbug.gui.base_ui_widget import BaseUIWidget
+from shutterbug.gui.views.registry import register_view
+from .base_view import BaseView
 
 
-class Outliner(BaseUIWidget):
+@register_view()
+class Outliner(BaseView):
 
+    name = "Outliner"
     object_selected = Signal(object)
 
     def __init__(self, controller: AppController, parent=None):

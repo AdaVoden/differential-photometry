@@ -4,8 +4,9 @@ from PySide6.QtCore import Signal
 from PySide6.QtWidgets import QVBoxLayout
 from shutterbug.core.app_controller import AppController
 from shutterbug.gui.base_ui_widget import BaseUIWidget
-from shutterbug.gui.outliner import Outliner
-from shutterbug.gui.properties import Properties
+from shutterbug.gui.panel import Panel
+from shutterbug.gui.views.outliner import Outliner
+from shutterbug.gui.views.properties import Properties
 
 
 class Sidebar(BaseUIWidget):
@@ -25,8 +26,8 @@ class Sidebar(BaseUIWidget):
         self.outliner = Outliner(controller)
         self.settings = Properties(controller)
 
-        layout.addWidget(self.outliner, stretch=1)
-        layout.addWidget(self.settings, stretch=3)
+        layout.addWidget(Panel(self.outliner, self.controller, self), stretch=1)
+        layout.addWidget(Panel(self.settings, self.controller, self), stretch=3)
         self.setLayout(layout)
 
         # pass up signals

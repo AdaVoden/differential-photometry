@@ -10,16 +10,21 @@ import logging
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 from PySide6.QtCore import Slot
-from PySide6.QtWidgets import QVBoxLayout, QWidget
+from PySide6.QtWidgets import QVBoxLayout
 
 from shutterbug.core.events.change_event import Event
+from .base_view import BaseView
+from .registry import register_view
 
 
-class GraphViewer(QWidget):
+@register_view()
+class GraphViewer(BaseView):
     """Viewer for star data in spreadsheet format"""
 
-    def __init__(self, controller: AppController):
-        super().__init__()
+    name = "Graph Viewer"
+
+    def __init__(self, controller: AppController, parent=None):
+        super().__init__(controller, parent)
         # Layout settings
         layout = QVBoxLayout()
         layout.setContentsMargins(0, 0, 0, 0)

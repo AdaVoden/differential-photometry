@@ -31,7 +31,7 @@ from PySide6.QtGui import (
     QPixmap,
     QWheelEvent,
 )
-from PySide6.QtWidgets import QGraphicsScene, QGraphicsView, QMenu, QWidget
+from PySide6.QtWidgets import QGraphicsScene, QGraphicsView, QMenu, QVBoxLayout, QWidget
 
 from shutterbug.core.models import FITSModel
 from shutterbug.core.events.change_event import Event
@@ -40,10 +40,14 @@ from shutterbug.gui.commands import DifferentialPhotometryCommand
 from shutterbug.gui.panels import BasePopOver, OperatorPanel, ToolPanel
 from shutterbug.gui.tools import SelectTool
 from shutterbug.gui.managers import ToolManager
+from .base_view import BaseView
+from shutterbug.gui.views.registry import register_view
 
 
-class ImageViewer(QGraphicsView):
+@register_view()
+class ImageViewer(BaseView):
 
+    name = "Image Viewer"
     # Tool signals
     tool_settings_changed = Signal(QWidget)
 
@@ -52,13 +56,21 @@ class ImageViewer(QGraphicsView):
     ZOOM_MAXIMUM_DEFAULT = 10.0
     ZOOM_MINIMUM_DEFAULT = 0.5
 
-    def __init__(self, controller: AppController):
-        super().__init__()
+    def __init__(self, controller: AppController, parent=None):
+        super().__init__(controller, parent)
         # Initial variables
         self.setObjectName("viewer")
         self.current_image = None
         self.markers = {}  # (x, y) -> List[marker]
-        self.controller = controller
+
+        self.viewer = QGraphicsView(self)
+
+        # Layout and styling
+        layout = QVBoxLayout()
+        self.setLayout(layout)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(0)
+        layout.addWidget(self.viewer)
 
         # Manager setup
         self._undo_stack = controller._undo_stack
@@ -73,7 +85,7 @@ class ImageViewer(QGraphicsView):
         self.zoom_factor = self.ZOOM_FACTOR_DEFAULT
         self.zoom_max = self.ZOOM_MAXIMUM_DEFAULT
         self.zoom_min = self.ZOOM_MINIMUM_DEFAULT
-        self.scale(1.0, 1.0)  # Scale of 1
+        self.viewer.scale(1.0, 1.0)  # Scale of 1
         self.first_image = True
 
         # Zoom animation settings
@@ -82,11 +94,11 @@ class ImageViewer(QGraphicsView):
         self._target_viewport_pos = QPointF()
         self.anim = None
 
-        self.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.viewer.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
         # Set up scene
         scene = QGraphicsScene(self)
-        self.setScene(scene)
+        self.viewer.setScene(scene)
 
         # Popover panel
         self.popover = ToolPanel(controller, self)
@@ -97,14 +109,16 @@ class ImageViewer(QGraphicsView):
 
         # Set up panning and scrolling
         # No drag initially, we will capture middle mouse and drag then
-        self.setDragMode(QGraphicsView.DragMode.NoDrag)
+        self.viewer.setDragMode(QGraphicsView.DragMode.NoDrag)
         # Scrollbars look ugly here
-        self.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
-        self.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.viewer.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.viewer.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
 
         # Set up zooming behavior
-        self.setTransformationAnchor(QGraphicsView.ViewportAnchor.AnchorUnderMouse)
-        self.setResizeAnchor(QGraphicsView.ViewportAnchor.AnchorUnderMouse)
+        self.viewer.setTransformationAnchor(
+            QGraphicsView.ViewportAnchor.AnchorUnderMouse
+        )
+        self.viewer.setResizeAnchor(QGraphicsView.ViewportAnchor.AnchorUnderMouse)
 
         # General signals
         self.controller.on("image.selected", self._on_image_selected)
@@ -229,14 +243,14 @@ class ImageViewer(QGraphicsView):
 
         factor = value / self._zoom_level
         self._zoom_level = value
-        self.scale(factor, factor)
+        self.viewer.scale(factor, factor)
 
         # Correct for mouse changing position
         delta = (
-            self.mapToScene(self._target_viewport_pos.toPoint())
+            self.viewer.mapToScene(self._target_viewport_pos.toPoint())
             - self._target_scene_pos
         )
-        self.translate(delta.x(), delta.y())
+        self.viewer.translate(delta.x(), delta.y())
 
     zoom = Property(float, get_zoom, set_zoom)
 
@@ -254,7 +268,7 @@ class ImageViewer(QGraphicsView):
 
         # Get old position first
         self._target_viewport_pos = event.position()
-        self._target_viewport_pos = self.mapToScene(event.position().toPoint())
+        self._target_viewport_pos = self.viewer.mapToScene(event.position().toPoint())
 
         # Kill any running animation
         if self.anim and self.anim.state() == QPropertyAnimation.State.Running:
@@ -273,7 +287,7 @@ class ImageViewer(QGraphicsView):
             return None
         if event.button() == Qt.MouseButton.MiddleButton:
             # start panning
-            self.setDragMode(QGraphicsView.DragMode.ScrollHandDrag)
+            self.viewer.setDragMode(QGraphicsView.DragMode.ScrollHandDrag)
             # Fake left-mousebutton for dragging
             fake_event = QMouseEvent(
                 event.type(),
@@ -295,7 +309,7 @@ class ImageViewer(QGraphicsView):
             return None
         if event.button() == Qt.MouseButton.MiddleButton:
             # Stop panning
-            self.setDragMode(QGraphicsView.DragMode.NoDrag)
+            self.viewer.setDragMode(QGraphicsView.DragMode.NoDrag)
         if event.button() == Qt.MouseButton.LeftButton:
             self.tools.end_operation_interaction()
         super().mouseReleaseEvent(event)
@@ -356,7 +370,7 @@ class ImageViewer(QGraphicsView):
     def _convert_to_image_coordinates(self, coordinate: QPoint) -> Tuple[float, float]:
         """Converts coordinates of click to coordinates of active image"""
         # Step 1, convert to scene coordinates
-        scene_pos = self.mapToScene(coordinate).toPoint()
+        scene_pos = self.viewer.mapToScene(coordinate).toPoint()
         # Step 2, there is no step 2
         return scene_pos.x(), scene_pos.y()
 
@@ -366,7 +380,7 @@ class ImageViewer(QGraphicsView):
         pen = QPen(marker.colour)
         pen.setWidth(marker.thickness)
 
-        circle = self.scene().addEllipse(
+        circle = self.viewer.scene().addEllipse(
             marker.rect,
             pen,
         )
@@ -380,12 +394,12 @@ class ImageViewer(QGraphicsView):
 
         if marker.id in self.markers:
             item = self.markers.pop(marker.id)
-            self.scene().removeItem(item)
+            self.viewer.scene().removeItem(item)
 
     def _clear_markers(self):
         """Remove all star markers"""
         for item in self.markers.values():
-            self.scene().removeItem(item)
+            self.viewer.scene().removeItem(item)
 
         self.markers = {}
 
@@ -394,7 +408,7 @@ class ImageViewer(QGraphicsView):
         logging.debug(f"Image display called on image: {image.filename}")
         self._clear_markers()
 
-        old_center = self.mapToScene(self.viewport().rect().center())
+        old_center = self.viewer.mapToScene(self.viewer.viewport().rect().center())
 
         # Store new image
         self.current_image = image
@@ -412,14 +426,14 @@ class ImageViewer(QGraphicsView):
         pixmap = QPixmap.fromImage(qimage)
         self.pixmap_item.setPixmap(pixmap)
         if self.first_image:
-            self.fitInView(self.pixmap_item, Qt.AspectRatioMode.KeepAspectRatio)
+            self.viewer.fitInView(self.pixmap_item, Qt.AspectRatioMode.KeepAspectRatio)
             self.first_image = False
 
-        self.centerOn(old_center)
-        new_center = self.mapToScene(self.viewport().rect().center())
+        self.viewer.centerOn(old_center)
+        new_center = self.viewer.mapToScene(self.viewer.viewport().rect().center())
         # Fixing upward drift
         delta = old_center - new_center
-        self.centerOn(old_center + delta)
+        self.viewer.centerOn(old_center + delta)
         self._display_markers_for_image()
 
     def _clear_image(self):
@@ -457,5 +471,5 @@ class ImageViewer(QGraphicsView):
 
     def viewport_rect_to_scene(self, rect: QRect) -> QRect:
         """Converts a rect to scene coordinates"""
-        poly = self.mapToScene(rect)
+        poly = self.viewer.mapToScene(rect)
         return poly.boundingRect().toRect()
