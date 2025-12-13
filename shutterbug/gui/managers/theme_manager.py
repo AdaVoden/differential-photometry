@@ -7,6 +7,7 @@ if TYPE_CHECKING:
 
 from PySide6.QtWidgets import QApplication
 from jinja2 import Template
+
 import yaml
 
 from shutterbug.core.managers.base_manager import BaseManager
@@ -50,6 +51,7 @@ class ThemeManager(BaseManager):
         return colours
 
     def _load_stylesheets(self):
+        """Loads stylesheets from qss directory"""
         combined = ""
         for sheet in self.stylesheets:
             with open(self.qss_dir / sheet, "r") as f:
@@ -59,4 +61,5 @@ class ThemeManager(BaseManager):
 
     @property
     def colours(self):
+        """Returns colours for use"""
         return self._colours

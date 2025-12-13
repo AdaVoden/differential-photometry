@@ -32,16 +32,18 @@
     background-color: transparent;
 }
 
-#popover > #collapsibleSection {
+#popover > #collapsibleSection > #collapsibleContentBody {
     border: none;
     background: rgba(30, 30, 30, 150);
-    border-radius: 8px;
+    border-bottom-left-radius: 6px;
+    border-bottom-right-radius: 6px;
 }
 
 #popover > #collapsibleSection > QPushButton{
     border: none;
     background: rgba(40, 40, 40, 150);
-    border-radius: 8px;
+    border-top-left-radius: 6px;
+    border-top-right-radius: 6px;
 }
 
 
