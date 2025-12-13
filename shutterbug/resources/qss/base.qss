@@ -3,7 +3,7 @@ QWidget {
 }
 
 QMainWindow {
-    background: {{ bg_dark }};
+    background: {{ bg_0 }};
 }
 
 #outliner {
@@ -13,52 +13,55 @@ QMainWindow {
 }
 
 #outliner > QTreeView {
-    background-color: {{ bg_primary }};
-    alternate-background-color: {{ bg_secondary }};
+    background-color: {{ bg_1 }};
+    alternate-background-color: {{ bg_2 }};
     border-radius: 6px;
-    border: 1px solid {{ bg_secondary }};
+    border: 1px solid {{ bg_3 }};
 }
 
 #outliner > QTreeView::item:hover {
-    background: {{ bg_tertiary }};
+    background: {{ bg_4 }};
 }
 
 #outliner > QTreeView::item:selected {
-    background: {{ bg_tertiary }};
+    background: {{ bg_4 }};
 }
 
 
 #sidebar {
-    background-color: {{ bg_dark }};
+    background-color: {{ bg_0 }};
     margin: 0px;
     max-width: 400px;
+    border-radius: 6px;
 }
 
 #multiviewer {
-    background: {{ bg_primary }};
+    background: {{ bg_4 }};
     border-radius: 4px;
-    border: 1px solid {{ bg_secondary }};
+    border: 1px solid {{ bg_3 }};
 }
 
 #multivier QWidget {
-    background: {{ bg_dark }};
+    background: {{ bg_0 }};
 }
 
 #viewer {
     margin: 0px;
-    background: {{ bg_dark }};
+    background: {{ bg_1 }};
     border-bottom-left-radius: 6px;
     border-bottom-right-radius: 6px;
 }
 
 #toolProperties, #imageProperties, #graphProperties {
-    background: {{ bg_secondary }};
+    background: {{ bg_4 }};
+    border-bottom-right-radius: 6px;
+    border-top-right-radius: 6px;
 }
 
 #properties > QTabWidget {
-    background: {{ bg_dark }};
+    background: {{ bg_0 }};
     border-radius: 6px;
-    border: 1px solid {{ bg_secondary }};
+    border: 1px solid {{ bg_3 }};
     left: 2px;
 }
 
@@ -75,7 +78,7 @@ QMainWindow {
 }
 
 #properties > QTabWidget > QTabBar::tab {
-    background: {{ bg_primary }};
+    background: {{ bg_2 }};
     margin-top: 2px;
     margin-left: 2px;
     border-top-left-radius: 4px;
@@ -87,13 +90,13 @@ QMainWindow {
 }
 
 #properties > QTabWidget > QTabBar::tab:selected {
-    background: {{ bg_secondary }};
+    background: {{ bg_4 }};
 }
 
 #properties > QTabWidget > QTabBar::tab:hover {
-    background: {{ bg_secondary }};
+    background: {{ bg_3 }};
 }
 
 QComboBox {
-    background: {{ bg_dark }};
+    background: {{ bg_0 }};
 }

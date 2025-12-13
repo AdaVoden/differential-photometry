@@ -1,5 +1,5 @@
 #scrubbySlider {
-    background-color: {{ bg_primary }};
+    background-color: {{ bg_1 }};
     border-radius: 4px;
 
 }
@@ -14,7 +14,7 @@
 
 #scrubbySlider > QLineEdit {
     background-color: transparent;
-    selection-background-color: {{ bg_tertiary }};
+    selection-background-color: {{ bg_3 }};
     border: none;
     padding-left: 0px;
     padding-right: 0px;

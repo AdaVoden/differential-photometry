@@ -24,7 +24,7 @@ class ThemeManager(BaseManager):
         self.base = controller.resources
         self.themes_dir = self.base / "themes"
         self.qss_dir = self.base / "qss"
-        self.current = "gruvbox-dark"
+        self.current = "nord"
 
         self._colours = self.load_colours()
         self._qss_template = self.load_template()

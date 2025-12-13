@@ -1,0 +1,27 @@
+# Inspired by Nordtheme https://www.nordtheme.com/
+# Colours from https://github.com/doomemacs/themes
+# Backgrounds
+bg_0: "#191C25"
+bg_1: "#242832"
+bg_2: "#2C333F"
+bg_3: "#373E4C"
+bg_4: "#434C5E"
+bg_5: "#9099AB"
+
+# Foreground/text
+text: "#ECEFF4"
+fg_primary: "#E5E9F0"
+fg_secondary: "#a89984"
+fg_dim: "#665c54"
+
+# Accent colors
+accent_primary: "#83a598"   # Selection, focus
+accent_success: "#b8bb26"   # Valid measurements
+accent_warning: "#fabd2f"   # Needs attention
+accent_error: "#fb4934"     # Invalid/error
+
+# Data visualization
+star_selected: "#A3BE8C"
+star_reference: "#8FBCBB"
+aperture_inner: "#5D80AE"
+aperture_outer: "#D08770"
