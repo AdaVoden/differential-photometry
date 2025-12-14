@@ -69,9 +69,7 @@ class ImageViewer(BaseView):
         self._undo_stack = controller._undo_stack
         self.catalog = controller.stars
         self.image_manager = controller.images
-        self.tools = ToolManager(controller)
-
-        self.tools.set_tool(SelectTool)
+        self.tools = controller.tools
 
         # Popover panel
         self.popover = ToolPanel(controller, self)

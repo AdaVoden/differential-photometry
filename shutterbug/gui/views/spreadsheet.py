@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, List
+from typing import TYPE_CHECKING, Any, List, Optional
 
 if TYPE_CHECKING:
     from shutterbug.core.app_controller import AppController
@@ -26,7 +26,7 @@ class SpreadsheetViewer(BaseView):
     def __init__(self, controller: AppController, parent=None):
         super().__init__(controller, parent)
         # Default variables
-        self.adapter: TabularDataInterface | None = None
+        self.adapter: Optional[TabularDataInterface] = None
         # Layout without styling
         layout = QVBoxLayout()
         layout.setContentsMargins(0, 0, 0, 0)
@@ -50,6 +50,12 @@ class SpreadsheetViewer(BaseView):
         controller.on("adapter.selected", self.set_adapter)
 
         logging.debug("Spreadsheet viewer initialized")
+
+    def on_activated(self):
+        """Handles spreadsheet viewer's first time activation"""
+        self.adapter = self.controller.selections.adapter
+        if self.adapter:
+            self.refresh()
 
     def _row_from_id(self, id: str) -> int | None:
         """Finds index associated with id"""

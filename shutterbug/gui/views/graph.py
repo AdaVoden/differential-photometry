@@ -40,6 +40,12 @@ class GraphViewer(BaseView):
 
         controller.on("graph.selected", self._on_active_graph_change)
 
+    def on_activated(self):
+        """On the graph viewer's initial activation"""
+        self.graph = self.controller.selections.graph
+        if self.graph:
+            self.display()
+
     def _clear(self):
         """Clears active graph and axes object"""
         if self.ax is None:

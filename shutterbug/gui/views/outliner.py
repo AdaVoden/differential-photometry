@@ -40,7 +40,6 @@ class Outliner(BaseView):
         self.item_view.selectionModel().selectionChanged.connect(
             self._on_selection_changed
         )
-
         # Handle signals
         controller.on("image.created", lambda evt: self.model.add_image(evt.data))
         controller.on("graph.created", lambda evt: self.model.add_graph(evt.data))
@@ -71,3 +70,12 @@ class Outliner(BaseView):
         delete_action = menu.addAction("Delete")
 
         menu.exec(self.item_view.mapToGlobal(pos))
+
+    def on_activated(self):
+        """Populate outliner on load"""
+        for star in self.controller.stars.all:
+            self.model.add_star(star)
+        for image in self.controller.images.all:
+            self.model.add_image(image)
+        for graph in self.controller.graphs.all:
+            self.model.add_graph(graph)

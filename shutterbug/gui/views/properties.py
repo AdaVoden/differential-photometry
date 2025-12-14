@@ -62,7 +62,7 @@ class ImagePropertiesPanel(BaseUIWidget):
         self.controller = controller
         self._undo_stack = controller._undo_stack
 
-        self.current_image = None
+        self.current_image = controller.selections.image
 
         self.setObjectName("imageProperties")
         layout = QVBoxLayout()
@@ -108,6 +108,12 @@ class ImagePropertiesPanel(BaseUIWidget):
             "image.updated.stretch_type",
             lambda evt: self.stretches.set_text(evt.data.stretch_type),
         )
+
+        # Set up sliders
+        if self.current_image:
+            self.stretches.set_text(self.current_image.stretch_type)
+            self.brightness_slider.set_value(self.current_image.brightness)
+            self.contrast_slider.set_value(self.current_image.contrast)
 
         logging.debug("Image properties panel initialized")
 
@@ -234,6 +240,10 @@ class ToolPropertiesPanel(BaseUIWidget):
         layout.setContentsMargins(16, 8, 8, 8)
         layout.setSpacing(5)
         layout.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignTop)
+
+        current_tool = self.controller.tools._current_tool
+        if current_tool:
+            self.set_panel(current_tool)
 
         controller.on("tool.selected", lambda x: self.set_panel(x.data))
 

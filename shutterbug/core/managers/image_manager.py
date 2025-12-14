@@ -65,7 +65,8 @@ class ImageManager(BaseManager):
             return self.images[image_name]
         return None
 
-    def get_all_images(self) -> List[FITSModel]:
+    @property
+    def all(self) -> List[FITSModel]:
         """Returns the master list of images from manager"""
         return list(self.images.values())
 
