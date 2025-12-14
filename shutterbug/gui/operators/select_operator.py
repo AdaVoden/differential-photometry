@@ -18,13 +18,14 @@ class SelectOperator(BaseOperator):
     def __init__(self, viewer: ImageViewer, controller: AppController):
         super().__init__(viewer, controller)
         self.centroid = None
-        self.image = self.viewer.current_image
+        self.view = viewer.view
+        self.image = self.view.current_image
 
     def start(self, event: QMouseEvent):
-        image = self.viewer.current_image
+        image = self.view.current_image
         if image is None:
             return
-        self.centroid = self.viewer.get_centroid_at_point(event.pos())
+        self.centroid = self.view.get_centroid_at_point(event.pos())
         if self.centroid is None:
             self.cancel()
         else:

@@ -34,6 +34,7 @@ class BoxSelectOperator(BaseOperator):
         self.end_pos = None
         self.rubber = None
         self.preview_items = []
+        self.view = viewer.view  # type: ignore
 
         # Debounce timer
         self.debounce_timer = QTimer()
@@ -46,7 +47,7 @@ class BoxSelectOperator(BaseOperator):
     def start(self, event: QMouseEvent):
         """Begins selection box at point of click"""
         self.start_pos = event.pos()
-        self.rubber = QRubberBand(QRubberBand.Shape.Rectangle, self.viewer)
+        self.rubber = QRubberBand(QRubberBand.Shape.Rectangle, self.view)
         self.rubber.setGeometry(QRect(event.pos(), QSize()))
         self.rubber.show()
 
@@ -65,7 +66,7 @@ class BoxSelectOperator(BaseOperator):
                 self.rubber.setGeometry(rect)
 
             # Compute scene rect
-            self.scene_rect = self.viewer.viewport_rect_to_scene(rect)
+            self.scene_rect = self.view.viewport_rect_to_scene(rect)
             self.debounce_timer.stop()
             self.debounce_timer.start(42)  # ~24 fps
 
@@ -74,13 +75,13 @@ class BoxSelectOperator(BaseOperator):
         if not self.rubber:
             return  # No work to do
 
-        scene_rect = self.viewer.viewport_rect_to_scene(self.rubber.geometry())
+        scene_rect = self.view.viewport_rect_to_scene(self.rubber.geometry())
         stars = self._find_stars_in(scene_rect)
 
-        if not stars or self.viewer.current_image is None:
+        if not stars or self.view.current_image is None:
             return None  # Things have gone wrong
 
-        return AddMeasurementsCommand(stars, self.viewer.current_image, self.controller)
+        return AddMeasurementsCommand(stars, self.view.current_image, self.controller)
 
     def cleanup_preview(self):
         """Cleans preview"""
@@ -106,13 +107,13 @@ class BoxSelectOperator(BaseOperator):
             return  # Something broke
         stars = self._find_stars_in(self.scene_rect)
 
-        if not stars or self.viewer.current_image is None:
+        if not stars or self.view.current_image is None:
             return None
 
         # Build the preview
         for star in stars:
             circle = self.controller.markers.create_marker_from_position(
-                star["xcentroid"], star["ycentroid"], self.viewer.current_image
+                star["xcentroid"], star["ycentroid"], self.view.current_image
             )
             self.preview_items.append(circle)
 
@@ -120,7 +121,7 @@ class BoxSelectOperator(BaseOperator):
         """Finds stars in a rectangle"""
         upper_left = scene_rect.topLeft()
         bottom_right = scene_rect.bottomRight()
-        image = self.viewer.current_image
+        image = self.view.current_image
         if image is None:
             return
 
