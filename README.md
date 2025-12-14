@@ -1,6 +1,6 @@
 # Shutterbug
 
-Built to find candidates for stars with varying brightness in an arbitrary star field. Shutterbug can load any `.xlsx` or `.csv` file given that the files have the requisite headers and are formatted properly. 
+Shutterbug is an open-source scientific analysis tool focused on accessible photometry workflows.
 
 ## Prerequisites
 
