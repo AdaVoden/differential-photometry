@@ -17,7 +17,6 @@ from shutterbug.gui.commands.star_commands import DifferentialPhotometryAllComma
 from .commands import LoadImagesCommand
 from .project import ShutterbugProject
 from .sidebar import Sidebar
-from .views import ImageViewer
 from .panel import Panel
 
 
