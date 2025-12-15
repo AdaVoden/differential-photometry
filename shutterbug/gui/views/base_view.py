@@ -11,11 +11,3 @@ class BaseView(BaseUIWidget):
     def create_header_actions(self) -> List[QAction]:
         """Returns actions in for use in menus"""
         return []
-
-    def on_activated(self):
-        """Handles activation of view"""
-        pass
-
-    def on_deactivated(self):
-        """Handes deactivation of view"""
-        pass

@@ -47,12 +47,12 @@ class SpreadsheetViewer(BaseView):
         layout.addWidget(self.table_view)
 
         # Handle signals
-        controller.on("adapter.selected", self.set_adapter)
 
         logging.debug("Spreadsheet viewer initialized")
 
     def on_activated(self):
         """Handles spreadsheet viewer's first time activation"""
+        self.subscribe("adapter.selected", self.set_adapter)
         self.adapter = self.controller.selections.adapter
         if self.adapter:
             self.refresh()

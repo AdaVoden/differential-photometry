@@ -40,15 +40,37 @@ class Outliner(BaseView):
         self.item_view.selectionModel().selectionChanged.connect(
             self._on_selection_changed
         )
-        # Handle signals
-        controller.on("image.created", lambda evt: self.model.add_image(evt.data))
-        controller.on("graph.created", lambda evt: self.model.add_graph(evt.data))
-        controller.on("star.created", lambda evt: self.model.add_star(evt.data))
-        controller.on("image.removed", lambda evt: self.model.remove_image(evt.data))
-        controller.on("graph.removed", lambda evt: self.model.remove_graph(evt.data))
-        controller.on("star.removed", lambda evt: self.model.remove_star(evt.data))
 
         logging.debug("Outliner initialized")
+
+    def on_activated(self):
+        """handle creation of outliner"""
+        self.item_view.selectionModel().selectionChanged.connect(
+            self._on_selection_changed
+        )
+
+        # Creation subscriptions
+        self.subscribe("image.created", lambda evt: self.model.add_image(evt.data))
+        self.subscribe("graph.created", lambda evt: self.model.add_graph(evt.data))
+        self.subscribe("star.created", lambda evt: self.model.add_star(evt.data))
+        # Destruction subscriptions
+        self.subscribe("image.removed", lambda evt: self.model.remove_image(evt.data))
+        self.subscribe("graph.removed", lambda evt: self.model.remove_graph(evt.data))
+        self.subscribe("star.removed", lambda evt: self.model.remove_star(evt.data))
+
+        for star in self.controller.stars.all:
+            self.model.add_star(star)
+        for image in self.controller.images.all:
+            self.model.add_image(image)
+        for graph in self.controller.graphs.all:
+            self.model.add_graph(graph)
+
+    def on_deactivated(self):
+        """Handle destruction of outliner"""
+        super().on_deactivated()
+        self.item_view.selectionModel().selectionChanged.disconnect(
+            self._on_selection_changed
+        )
 
     @Slot(QItemSelection, QItemSelection)
     def _on_selection_changed(self, selected: QItemSelection, _: QItemSelection):
@@ -70,12 +92,3 @@ class Outliner(BaseView):
         delete_action = menu.addAction("Delete")
 
         menu.exec(self.item_view.mapToGlobal(pos))
-
-    def on_activated(self):
-        """Populate outliner on load"""
-        for star in self.controller.stars.all:
-            self.model.add_star(star)
-        for image in self.controller.images.all:
-            self.model.add_image(image)
-        for graph in self.controller.graphs.all:
-            self.model.add_graph(graph)

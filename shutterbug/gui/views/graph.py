@@ -38,10 +38,9 @@ class GraphViewer(BaseView):
         self.ax = None
         layout.addWidget(self.canvas)
 
-        controller.on("graph.selected", self._on_active_graph_change)
-
     def on_activated(self):
         """On the graph viewer's initial activation"""
+        self.subscribe("graph.selected", self._on_active_graph_change)
         self.graph = self.controller.selections.graph
         if self.graph:
             self.display()

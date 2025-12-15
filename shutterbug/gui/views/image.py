@@ -38,8 +38,6 @@ from shutterbug.core.events.change_event import Event
 from shutterbug.core.managers import StretchManager
 from shutterbug.gui.commands import DifferentialPhotometryCommand
 from shutterbug.gui.panels import BasePopOver, OperatorPanel, ToolPanel
-from shutterbug.gui.tools import SelectTool
-from shutterbug.gui.managers import ToolManager
 from .base_view import BaseView
 from shutterbug.gui.views.registry import register_view
 
@@ -78,16 +76,24 @@ class ImageViewer(BaseView):
 
         # General signals
 
-        # Tool signals
-        self.controller.on("operator.selected", self._on_operator_changed)
-        self.controller.on("operator.finished", self._on_operator_finished)
-        self.controller.on("operator.cancelled", self._on_operator_finished)
-
         self.tools.tool_settings_changed.connect(self.tool_settings_changed)
 
         self.popover.tool_selected.connect(self.tools.set_tool)
 
         logging.debug("Image Viewer initialized")
+
+    def on_activated(self):
+        """When panel is instantiated"""
+        # Viewer subscriptions
+        self.subscribe("operator.selected", self._on_operator_changed)
+        self.subscribe("operator.finished", self._on_operator_finished)
+        self.subscribe("operator.cancelled", self._on_operator_finished)
+        # View subscriptions
+        self.subscribe("image.selected", self.view._on_image_selected)
+        self.subscribe("image.updated.*", self.view._on_image_update_event)
+        self.subscribe("marker.created", self.view._on_marker_created)
+        self.subscribe("marker.removed", self.view._on_marker_removed)
+        self.subscribe("marker.updated.*", self.view._on_marker_updated)
 
     @Slot(Event)
     def _on_operator_changed(self, event: Event):
@@ -223,13 +229,6 @@ class ImageGraphicsView(QGraphicsView):
         self._target_scene_pos = QPointF()
         self._target_viewport_pos = QPointF()
         self.anim = None
-
-        # General signals
-        self.controller.on("image.selected", self._on_image_selected)
-        self.controller.on("image.updated.*", self._on_image_update_event)
-        self.controller.on("marker.created", self._on_marker_created)
-        self.controller.on("marker.removed", self._on_marker_removed)
-        self.controller.on("marker.updated.*", self._on_marker_updated)
 
     @Slot(Event)
     def _on_image_selected(self, event: Event):
