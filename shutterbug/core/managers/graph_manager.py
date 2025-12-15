@@ -52,3 +52,7 @@ class GraphManager(BaseManager):
         new_id = self._ids[-1] + 1
         self._ids.append(new_id)
         return f"graph_{new_id:03}"
+
+    @property
+    def all(self):
+        return list(self.graphs.values())

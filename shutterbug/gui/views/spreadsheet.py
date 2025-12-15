@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, List
+from typing import TYPE_CHECKING, Any, List, Optional
 
 if TYPE_CHECKING:
     from shutterbug.core.app_controller import AppController
@@ -8,21 +8,25 @@ if TYPE_CHECKING:
 
 import logging
 from shutterbug.core.events import Event
-from PySide6.QtWidgets import QVBoxLayout, QWidget, QTableView, QHeaderView
+from PySide6.QtWidgets import QVBoxLayout, QTableView, QHeaderView
 from PySide6.QtGui import QStandardItem, QStandardItemModel
 from PySide6.QtCore import Slot
 
 from shutterbug.gui.adapters.tabular_data_interface import TabularDataInterface
+from shutterbug.gui.views.registry import register_view
+from .base_view import BaseView
 
 
-class SpreadsheetViewer(QWidget):
+@register_view()
+class SpreadsheetViewer(BaseView):
     """Viewer for star data in spreadsheet format"""
 
-    def __init__(self, controller: AppController):
-        super().__init__()
+    name = "Spreadsheet Viewer"
+
+    def __init__(self, controller: AppController, parent=None):
+        super().__init__(controller, parent)
         # Default variables
-        self.adapter: TabularDataInterface | None = None
-        self.controller = controller
+        self.adapter: Optional[TabularDataInterface] = None
         # Layout without styling
         layout = QVBoxLayout()
         layout.setContentsMargins(0, 0, 0, 0)
@@ -43,9 +47,15 @@ class SpreadsheetViewer(QWidget):
         layout.addWidget(self.table_view)
 
         # Handle signals
-        controller.on("adapter.selected", self.set_adapter)
 
         logging.debug("Spreadsheet viewer initialized")
+
+    def on_activated(self):
+        """Handles spreadsheet viewer's first time activation"""
+        self.subscribe("adapter.selected", self.set_adapter)
+        self.adapter = self.controller.selections.adapter
+        if self.adapter:
+            self.refresh()
 
     def _row_from_id(self, id: str) -> int | None:
         """Finds index associated with id"""

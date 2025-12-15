@@ -11,6 +11,7 @@ from shutterbug.gui.adapters import (
 from shutterbug.gui.adapters.adapter_registry import AdapterRegistry
 from shutterbug.gui.managers.icon_manager import IconManager
 from shutterbug.gui.managers.theme_manager import ThemeManager
+from shutterbug.gui.tools.select import SelectTool
 
 from .managers import (
     FileManager,
@@ -20,7 +21,7 @@ from .managers import (
     StarCatalog,
 )
 from .models import FITSModel, StarIdentity
-from shutterbug.gui.managers import MarkerManager
+from shutterbug.gui.managers import MarkerManager, ToolManager
 
 ADAPTERS = [(FITSModel, FITSModelAdapter), (StarIdentity, StarIdentityAdapter)]
 
@@ -31,6 +32,8 @@ class AppController(QObject):
 
     def __init__(self):
         super().__init__()
+        self._subscriptions = {}  # callback -> listener
+        self._next_id = 0
 
         # Instantiate managers
 
@@ -45,6 +48,10 @@ class AppController(QObject):
         self.markers = MarkerManager(self)
         self.icons = IconManager(self)
         self.themes = ThemeManager(self)
+        self.tools = ToolManager(self)
+
+        # Default tool
+        self.tools.set_tool(SelectTool)
 
         # Undo stack
         self._undo_stack = QUndoStack()
@@ -59,17 +66,30 @@ class AppController(QObject):
         logging.debug(f"EVENT: {evt.key}")
         self.change_event.emit(evt)
 
-    def on(self, pattern: str, callback):
+    def on(self, pattern: str, callback) -> int:
         """Sets up callback for event, if match"""
 
         def listener(evt):
             if self._match(evt.key, pattern):
                 callback(evt)
 
-        self.change_event.connect(listener)
-        return listener
+        sub_id = self._next_id
+        self._next_id += 1
 
-    def _match(self, key, pattern):
+        self.change_event.connect(listener)
+        self._subscriptions[sub_id] = listener
+        return sub_id
+
+    def off(self, sub_id) -> bool:
+        """Unsubscribes callback from listening"""
+        listener = self._subscriptions.get(sub_id)
+        if listener:
+            self.change_event.disconnect(listener)
+            self._subscriptions.pop(sub_id)
+            return True
+        return False
+
+    def _match(self, key, pattern) -> bool:
         """Matches event domain and action to pattern"""
         if pattern.endswith(".*"):
             return key.startswith(pattern[:-2])

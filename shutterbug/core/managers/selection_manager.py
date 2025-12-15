@@ -4,6 +4,8 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, Optional
 
 from shutterbug.core.events.change_event import Event, EventDomain
+from shutterbug.gui.adapters.tabular_data_interface import TabularDataInterface
+from shutterbug.gui.tools.base_tool import BaseTool
 
 if TYPE_CHECKING:
     from shutterbug.core.app_controller import AppController
@@ -26,7 +28,8 @@ class SelectionContext:
     image: Optional[FITSModel] = None
     star: Optional[StarIdentity] = None
     graph: Optional[GraphDataModel] = None
-    adapter: Optional[object] = None
+    adapter: Optional[TabularDataInterface] = None
+    tool: Optional[BaseTool] = None
 
 
 class SelectionManager(BaseManager):
@@ -59,11 +62,15 @@ class SelectionManager(BaseManager):
         else:
             logging.error(f"Failed to find adapter for {type(selected).__name__}")
 
-        self._change_selection(selected)
+        if isinstance(selected, BaseTool):
+            self._change_selection(selected, "tool")
+        else:
+            self._change_selection(selected)
 
-    def _change_selection(self, data: Any):
+    def _change_selection(self, data: Any, data_type: Optional[str] = None):
         """Changes selection based on type mapping"""
-        data_type = self.mapping.get(type(data))
+        if not data_type:
+            data_type = self.mapping.get(type(data))
         # If we have a type, we're golden
         if data_type:
             selection = getattr(self._context, data_type)
@@ -91,6 +98,10 @@ class SelectionManager(BaseManager):
     @property
     def adapter(self):
         return self._context.adapter
+
+    @property
+    def tool(self):
+        return self._context.tool
 
     def get(self, object: Any):
         """Gets the selection of a given object's type"""

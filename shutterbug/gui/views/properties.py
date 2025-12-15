@@ -11,9 +11,14 @@ from shutterbug.gui.controls.labeled_text_box import LabeledTextBox
 from shutterbug.gui.tools.base_tool import BaseTool
 from shutterbug.gui.panels.collapsible_section import CollapsibleSection
 from shutterbug.core.LUTs.registry import STRETCH_REGISTRY
+from shutterbug.gui.views.registry import register_view
+from .base_view import BaseView
 
 
-class Properties(BaseUIWidget):
+@register_view()
+class Properties(BaseView):
+    name = "Properties"
+
     def __init__(self, controller: AppController, parent=None):
         super().__init__(controller, parent)
         self.setObjectName("properties")
@@ -48,6 +53,19 @@ class Properties(BaseUIWidget):
 
         logging.debug("Tool settings initialized")
 
+    def on_activated(self):
+        """Handles creation of properties view"""
+        self.image_properties.on_activated()
+        self.tool_properties.on_activated()
+        self.graph_properties.on_activated()
+
+    def on_deactivated(self):
+        """Handles destruction of properties view"""
+        super().on_deactivated()
+        self.image_properties.on_deactivated()
+        self.tool_properties.on_deactivated()
+        self.graph_properties.on_deactivated()
+
 
 class ImagePropertiesPanel(BaseUIWidget):
 
@@ -57,7 +75,7 @@ class ImagePropertiesPanel(BaseUIWidget):
         self.controller = controller
         self._undo_stack = controller._undo_stack
 
-        self.current_image = None
+        self.current_image = controller.selections.image
 
         self.setObjectName("imageProperties")
         layout = QVBoxLayout()
@@ -85,26 +103,34 @@ class ImagePropertiesPanel(BaseUIWidget):
 
         layout.addWidget(self.settings_panel)
 
+        # Set up sliders
+        if self.current_image:
+            self.stretches.set_text(self.current_image.stretch_type)
+            self.brightness_slider.set_value(self.current_image.brightness)
+            self.contrast_slider.set_value(self.current_image.contrast)
+
+        logging.debug("Image properties panel initialized")
+
+    def on_activated(self):
+        """Handles activation of image properties panel"""
         # Signals to slots
         self.brightness_slider.valueChanged.connect(self._on_brightness_changed)
         self.contrast_slider.valueChanged.connect(self._on_contrast_changed)
         self.stretches.activated.connect(self._on_stretch_changed)
 
-        controller.on("image.selected", self._on_image_selected)
-        controller.on(
+        self.subscribe("image.selected", self._on_image_selected)
+        self.subscribe(
             "image.updated.brightness",
             lambda evt: self.brightness_slider.set_value(evt.data.brightness),
         )
-        controller.on(
+        self.subscribe(
             "image.updated.contrast",
             lambda evt: self.contrast_slider.set_value(evt.data.contrast),
         )
-        controller.on(
+        self.subscribe(
             "image.updated.stretch_type",
             lambda evt: self.stretches.set_text(evt.data.stretch_type),
         )
-
-        logging.debug("Image properties panel initialized")
 
     @Slot(Event)
     def _on_image_selected(self, event: Event):
@@ -168,19 +194,21 @@ class GraphPropertiesPanel(BaseUIWidget):
 
         layout.addWidget(self.panel)
 
+        logging.debug("Graph Properties panel initialized")
+
+    def on_activated(self):
+        """Handles creation of graph properties panel"""
         # Handle signals
-        controller.on("graph.selected", self._on_graph_selected)
-        controller.on(
+        self.subscribe("graph.selected", self._on_graph_selected)
+        self.subscribe(
             "graph.updated.title", lambda evt: self.title.set_text(evt.data.title)
         )
-        controller.on(
+        self.subscribe(
             "graph.updated.x_label", lambda evt: self.title.set_text(evt.data.x_label)
         )
-        controller.on(
+        self.subscribe(
             "graph.updated.y_label", lambda evt: self.title.set_text(evt.data.y_label)
         )
-
-        logging.debug("Graph Properties panel initialized")
 
     @Slot(Event)
     def _on_graph_selected(self, event: Event):
@@ -230,9 +258,15 @@ class ToolPropertiesPanel(BaseUIWidget):
         layout.setSpacing(5)
         layout.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignTop)
 
-        controller.on("tool.selected", lambda x: self.set_panel(x.data))
+        current_tool = self.controller.tools._current_tool
+        if current_tool:
+            self.set_panel(current_tool)
 
         logging.debug("Tool properties panel initialized")
+
+    def on_activated(self):
+        """Handles creation of tool properties pane"""
+        self.subscribe("tool.selected", lambda x: self.set_panel(x.data))
 
     @Slot(BaseTool)
     def set_panel(self, tool: BaseTool):

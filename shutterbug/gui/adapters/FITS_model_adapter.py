@@ -68,7 +68,7 @@ class FITSModelAdapter(TabularDataInterface):
     def _load_all_stars(self):
         """Loads all stars from the Star Catalog into table"""
         rows = []
-        for star in self.controller.stars.get_all_stars():
+        for star in self.controller.stars.all:
             measurement = star.measurements.get(self.image.uid)
             if measurement is not None:
                 row = self._get_row_from_measurement(measurement)

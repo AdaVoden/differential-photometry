@@ -32,6 +32,7 @@ class PhotometryOperator(BaseOperator):
         self.params = params
         self.listening = True
         self.markers = {}  # (x, y) -> [markers]
+        self.view = viewer.view
 
         self.params.changed.connect(self._on_params_changed)
 
@@ -41,11 +42,11 @@ class PhotometryOperator(BaseOperator):
 
     def start(self, event: QMouseEvent):
         """Begins operator function"""
-        if self.viewer.current_image is None:
+        if self.view.current_image is None:
             return
-        i_id = self.viewer.current_image.uid
+        i_id = self.view.current_image.uid
         image_markers = self.controller.markers.markers_from_image(
-            self.viewer.current_image
+            self.view.current_image
         ).copy()
         inner_colour = self.controller.themes.colours["aperture_inner"]
         outer_colour = self.controller.themes.colours["aperture_outer"]
@@ -93,7 +94,7 @@ class PhotometryOperator(BaseOperator):
 
     def build_command(self) -> QUndoCommand | None:
         """Builds photometry measurement command"""
-        image = self.viewer.current_image
+        image = self.view.current_image
         if image is None:
             return None
         measurements = self.controller.stars.get_measurements_by_image(image)
@@ -106,7 +107,7 @@ class PhotometryOperator(BaseOperator):
 
     def cleanup_preview(self):
         """Returns view to normal"""
-        if self.viewer.current_image is None:
+        if self.view.current_image is None:
             return
 
         for pos in self.markers:
@@ -114,7 +115,7 @@ class PhotometryOperator(BaseOperator):
                 self.controller.markers.remove_marker(marker)
 
         image_markers = self.controller.markers.markers_from_image(
-            self.viewer.current_image
+            self.view.current_image
         ).copy()
         for marker in image_markers:
             marker.visible = True

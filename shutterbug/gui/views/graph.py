@@ -10,16 +10,21 @@ import logging
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 from PySide6.QtCore import Slot
-from PySide6.QtWidgets import QVBoxLayout, QWidget
+from PySide6.QtWidgets import QVBoxLayout
 
 from shutterbug.core.events.change_event import Event
+from .base_view import BaseView
+from .registry import register_view
 
 
-class GraphViewer(QWidget):
+@register_view()
+class GraphViewer(BaseView):
     """Viewer for star data in spreadsheet format"""
 
-    def __init__(self, controller: AppController):
-        super().__init__()
+    name = "Graph Viewer"
+
+    def __init__(self, controller: AppController, parent=None):
+        super().__init__(controller, parent)
         # Layout settings
         layout = QVBoxLayout()
         layout.setContentsMargins(0, 0, 0, 0)
@@ -33,7 +38,12 @@ class GraphViewer(QWidget):
         self.ax = None
         layout.addWidget(self.canvas)
 
-        controller.on("graph.selected", self._on_active_graph_change)
+    def on_activated(self):
+        """On the graph viewer's initial activation"""
+        self.subscribe("graph.selected", self._on_active_graph_change)
+        self.graph = self.controller.selections.graph
+        if self.graph:
+            self.display()
 
     def _clear(self):
         """Clears active graph and axes object"""

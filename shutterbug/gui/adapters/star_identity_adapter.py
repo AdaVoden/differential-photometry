@@ -7,8 +7,6 @@ from shutterbug.core.events.change_event import Event
 if TYPE_CHECKING:
     from shutterbug.core.app_controller import AppController
 
-import logging
-
 from typing import List
 
 from PySide6.QtCore import Slot

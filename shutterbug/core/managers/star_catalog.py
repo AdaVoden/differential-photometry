@@ -133,13 +133,14 @@ class StarCatalog(BaseManager):
         """Gets all measurements that belong to a specific image"""
         measurements = []
         image_id = image.uid
-        for star in self.get_all_stars():
+        for star in self.all:
             m = star.measurements.get(image_id)
             if m is not None:
                 measurements.append(m)
         return measurements
 
-    def get_all_stars(self) -> List[StarIdentity]:
+    @property
+    def all(self) -> List[StarIdentity]:
         """Gets all stars currently registered"""
         return list(self.stars.values())
 
