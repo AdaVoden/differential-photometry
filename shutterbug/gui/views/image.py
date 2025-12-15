@@ -18,6 +18,7 @@ from PySide6.QtCore import (
     QPointF,
     QPropertyAnimation,
     QRect,
+    QTimer,
     Qt,
     Signal,
     Slot,
@@ -29,6 +30,7 @@ from PySide6.QtGui import (
     QMouseEvent,
     QPen,
     QPixmap,
+    QShowEvent,
     QWheelEvent,
 )
 from PySide6.QtWidgets import QGraphicsScene, QGraphicsView, QMenu, QVBoxLayout, QWidget
@@ -94,6 +96,11 @@ class ImageViewer(BaseView):
         self.subscribe("marker.created", self.view._on_marker_created)
         self.subscribe("marker.removed", self.view._on_marker_removed)
         self.subscribe("marker.updated.*", self.view._on_marker_updated)
+
+    def on_deactivated(self):
+        super().on_deactivated()
+        self.view.scene().deleteLater()
+        self.view.deleteLater()
 
     @Slot(Event)
     def _on_operator_changed(self, event: Event):
@@ -192,7 +199,7 @@ class ImageGraphicsView(QGraphicsView):
     def __init__(self, controller: AppController, parent=None):
         super().__init__(parent)
         self.controller = controller
-        self.current_image = None
+        self.current_image = controller.selections.image
         self.first_image = True
 
         self.markers = {}  # (x, y) -> List[marker]
@@ -204,6 +211,7 @@ class ImageGraphicsView(QGraphicsView):
         # Scene setup
         scene = QGraphicsScene(self)
         self.setScene(scene)
+
         self.pixmap_item = scene.addPixmap(QPixmap())
 
         self.setAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -225,10 +233,14 @@ class ImageGraphicsView(QGraphicsView):
         self.scale(1.0, 1.0)  # Scale of 1
 
         # Zoom animation settings
+        self.resetTransform()
         self._zoom_level = 1.0  # base scale
         self._target_scene_pos = QPointF()
         self._target_viewport_pos = QPointF()
         self.anim = None
+
+        self._update_settings()
+        self.update_display()
 
     @Slot(Event)
     def _on_image_selected(self, event: Event):
@@ -238,12 +250,8 @@ class ImageGraphicsView(QGraphicsView):
 
             self.current_image = image
             if image is not None:
-                self.stretchs.brightness = image.brightness
-                self.stretchs.contrast = image.contrast
-                self.stretchs.set_mode(image.stretch_type)
-                self.stretchs.update_lut()
-
-            self.update_display()
+                self._update_settings()
+                self.update_display()
 
     @Slot(Event)
     def _on_image_update_event(self, event: Event):
@@ -252,10 +260,7 @@ class ImageGraphicsView(QGraphicsView):
         if image is None:
             return
         if image == self.current_image:
-            self.stretchs.brightness = image.brightness
-            self.stretchs.contrast = image.contrast
-            self.stretchs.set_mode(image.stretch_type)
-            self.stretchs.update_lut()
+            self._update_settings()
             self.update_display()
 
     @Slot(Event)
@@ -287,6 +292,16 @@ class ImageGraphicsView(QGraphicsView):
         # Lazy way, need to revise
         self.remove_star_marker(marker)
         self.add_star_marker(marker)
+
+    def _update_settings(self):
+        """Updates all image parameters from image"""
+        image = self.current_image
+        if image is None:
+            return
+        self.stretchs.brightness = image.brightness
+        self.stretchs.contrast = image.contrast
+        self.stretchs.set_mode(image.stretch_type)
+        self.stretchs.update_lut()
 
     # Zoom properties for animation
     def get_zoom(self):
@@ -373,10 +388,17 @@ class ImageGraphicsView(QGraphicsView):
             self.parent().mouseMoveEvent(event)  # type: ignore
         super().mouseMoveEvent(event)
 
+    @Slot(QShowEvent)
+    def showEvent(self, event: QShowEvent):
+        """Called when widget becomes visible and properly sized"""
+        super().showEvent(event)
+
+        if self.first_image and not self.pixmap_item.pixmap().isNull():
+            QTimer.singleShot(0, self._delayed_fit)
+
     def update_display(self):
         """Updates image display"""
         if self.current_image is None:
-            self.pixmap_item.setPixmap(QPixmap())
             return
 
         self._display_image(self.current_image)
@@ -394,11 +416,8 @@ class ImageGraphicsView(QGraphicsView):
         """Display given FITS data array"""
         logging.debug(f"Image display called on image: {image.filename}")
         self._clear_markers()
-
+        should_preserve_view = not self.first_image
         old_center = self.mapToScene(self.viewport().rect().center())
-
-        # Store new image
-        self.current_image = image
 
         # Get normalized information
         display_data = self.get_8bit_preview()
@@ -412,16 +431,23 @@ class ImageGraphicsView(QGraphicsView):
         # Display
         pixmap = QPixmap.fromImage(qimage)
         self.pixmap_item.setPixmap(pixmap)
+
+        if self.first_image and self.isVisible():
+            QTimer.singleShot(0, self._delayed_fit)
+
+        if should_preserve_view:
+            self.centerOn(old_center)
+            new_center = self.mapToScene(self.viewport().rect().center())
+            # Fixing upward drift
+            delta = old_center - new_center
+            self.centerOn(old_center + delta)
+        self._display_markers_for_image()
+
+    def _delayed_fit(self):
+        """Fit view after layout is complete"""
         if self.first_image:
             self.fitInView(self.pixmap_item, Qt.AspectRatioMode.KeepAspectRatio)
             self.first_image = False
-
-        self.centerOn(old_center)
-        new_center = self.mapToScene(self.viewport().rect().center())
-        # Fixing upward drift
-        delta = old_center - new_center
-        self.centerOn(old_center + delta)
-        self._display_markers_for_image()
 
     def _clear_image(self):
         """Clear current image from view"""

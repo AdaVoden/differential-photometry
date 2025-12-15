@@ -41,7 +41,6 @@ class MainWindow(QMainWindow):
 
         # Create sidebar and viewer
         self.sidebar = Sidebar(controller)
-        self.viewer = ImageViewer(controller)
 
         # Set up central widget with horizontal layout
         central = QWidget()
@@ -55,7 +54,7 @@ class MainWindow(QMainWindow):
 
         # Add in contents
         main_layout.addWidget(
-            Panel(self.viewer, self.controller, self), stretch=3
+            Panel("Image Viewer", self.controller, self), stretch=3
         )  # Viewer takes most space
         main_layout.addWidget(self.sidebar, stretch=1)  # Sidebar on the right
 
