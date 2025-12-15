@@ -22,6 +22,7 @@ class Panel(BaseUIWidget):
     def __init__(self, name: str, controller: AppController, parent=None):
         super().__init__(controller, parent)
         # Initial variables
+        self.name = name
         self.view = VIEW_REGISTRY[name](controller, self)
         self.view.on_activated()
         self.setObjectName("panel")
@@ -55,6 +56,7 @@ class Panel(BaseUIWidget):
     def set_view(self, name: str):
         """Sets view to specified"""
         # Set new view
+        self.name = name
         old_view = self.view
         self.view = VIEW_REGISTRY[name](self.controller, self)
         # Delete old view
