@@ -10,6 +10,7 @@ from uuid import uuid4
 class Region(QWidget):
 
     split_requested = Signal(Qt.Orientation)
+    collapse_requested = Signal(object)  # Emitting itself
 
     def __init__(self, panel: Panel, parent=None):
         super().__init__(parent)
@@ -29,6 +30,7 @@ class Region(QWidget):
 
         # Set up signals
         self.panel.split_requested.connect(self.split)
+        self.panel.collapse_requested.connect(self.collapse)
 
         logging.debug(f"Region {self.uid} initialized with panel {panel.name}")
 
@@ -56,9 +58,39 @@ class Region(QWidget):
 
             layout.addWidget(self.splitter)
 
-    def collapse(self, region):
+            self.child_a.collapse_requested.connect(self.collapse)
+            self.child_b.collapse_requested.connect(self.collapse)
+
+    @Slot(object)
+    def collapse(self, region: object):
         """Collapses regions together"""
-        pass
+        if self.is_leaf:
+            # Leafs cannot collapse
+            self.collapse_requested.emit(self)
+            return
+        # We're not a leaf, time to become one
+        self.child_a.collapse_requested.disconnect(self.collapse)
+        self.child_b.collapse_requested.disconnect(self.collapse)
+        # Which child is going to survive?
+        if self.child_a == region:
+            self.panel = self.child_a.panel
+            if self.child_b:
+                self.child_b._del_widget()
+                self.child_b.deleteLater()
+        if self.child_b == region:
+            self.panel = self.child_b.panel
+            if self.child_a:
+                self.child_a._del_widget()
+                self.child_a.deleteLater()
+        self._del_widget()
+        layout = self.layout()
+        if layout and self.panel:
+            layout.addWidget(self.panel)
+            self.panel.split_requested.connect(self.split)
+            self.panel.collapse_requested.connect(self.collapse)
+
+        self.is_leaf = True
+        self.splitter = None
 
     def set_panel(self, panel: Panel):
         """Sets the current panel"""

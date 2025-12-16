@@ -19,6 +19,7 @@ class Panel(BaseUIWidget):
     """Contains view"""
 
     split_requested = Signal(Qt.Orientation)
+    collapse_requested = Signal(object)
 
     def __init__(self, name: str, controller: AppController, parent=None):
         super().__init__(controller, parent)
@@ -69,8 +70,7 @@ class Panel(BaseUIWidget):
         split_V = split_menu.addAction("Split (Vertical)")
 
         split_menu.addSeparator()
-        collapse_H = split_menu.addAction("Collapse (Horizontal)")
-        colllapse_V = split_menu.addAction("Collapse (Vertical)")
+        collapse = split_menu.addAction("Collapse")
 
         # Set up signal events
         split_H.triggered.connect(
@@ -79,6 +79,7 @@ class Panel(BaseUIWidget):
         split_V.triggered.connect(
             lambda: self.split_requested.emit(Qt.Orientation.Vertical)
         )
+        collapse.triggered.connect(lambda: self.collapse_requested.emit(self.parent()))
 
         self.menu_bar.addMenu(split_menu)
 
