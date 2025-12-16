@@ -28,12 +28,12 @@ class Region(QWidget):
         old_panel = self.panel
         self.is_leaf = False
         self.panel = None
+
+        self._del_widget()
         # Remove old widget from layout
         layout = self.layout()
         if not layout:
             return
-
-        self._del_widget()
 
         self.splitter = QSplitter(orientation)
         if old_panel:
@@ -68,5 +68,7 @@ class Region(QWidget):
             item = layout.takeAt(0).widget()
 
             if item:
+                if isinstance(item, Panel):
+                    item.view.on_deactivated()
                 item.deleteLater()
                 del item

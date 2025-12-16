@@ -99,8 +99,8 @@ class ImageViewer(BaseView):
 
     def on_deactivated(self):
         super().on_deactivated()
-        self.view.scene().deleteLater()
-        self.view.deleteLater()
+        self.tools.tool_settings_changed.disconnect(self.tool_settings_changed)
+        self.popover.tool_selected.disconnect(self.tools.set_tool)
 
     @Slot(Event)
     def _on_operator_changed(self, event: Event):

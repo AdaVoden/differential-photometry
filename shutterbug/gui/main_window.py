@@ -11,7 +11,6 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 from shutterbug.core.app_controller import AppController
-from shutterbug.gui import region
 from shutterbug.gui.commands.graph_commands import AddGraphCommand
 from shutterbug.gui.commands.star_commands import DifferentialPhotometryAllCommand
 from shutterbug.gui.region import Region
