@@ -1,6 +1,7 @@
 import logging
 
 from PySide6.QtCore import QCoreApplication, Slot
+from PySide6.QtGui import Qt
 from PySide6.QtWidgets import (
     QFileDialog,
     QHBoxLayout,
@@ -12,6 +13,7 @@ from PySide6.QtWidgets import (
 from shutterbug.core.app_controller import AppController
 from shutterbug.gui.commands.graph_commands import AddGraphCommand
 from shutterbug.gui.commands.star_commands import DifferentialPhotometryAllCommand
+from shutterbug.gui.region import Region
 
 
 from .commands import LoadImagesCommand
@@ -51,11 +53,17 @@ class MainWindow(QMainWindow):
         main_layout.setContentsMargins(1, 1, 1, 1)
         main_layout.setSpacing(2)
 
-        # Add in contents
-        main_layout.addWidget(
-            Panel("Image Viewer", self.controller, self), stretch=3
-        )  # Viewer takes most space
-        main_layout.addWidget(self.sidebar, stretch=1)  # Sidebar on the right
+        image_viewer = Panel("Image Viewer", self.controller)
+        outliner = Panel("Outliner", self.controller)
+        properties = Panel("Properties", self.controller)
+
+        region_main = Region(image_viewer)
+        region_main.split(Qt.Orientation.Horizontal)
+        region_main.child_b.set_panel(outliner)
+        region_main.child_b.split(Qt.Orientation.Vertical)
+        region_main.child_b.child_b.set_panel(properties)
+
+        main_layout.addWidget(region_main)
 
         # Set up menu bar
         self.setup_menu_bar()
