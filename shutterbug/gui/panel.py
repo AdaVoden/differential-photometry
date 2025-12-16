@@ -1,23 +1,24 @@
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
-from PySide6.QtCore import Slot
+from PySide6.QtCore import Signal, Slot, Qt
 
 from shutterbug.gui.base_ui_widget import BaseUIWidget
-from shutterbug.gui.views.base_view import BaseView
 
 if TYPE_CHECKING:
     from shutterbug.core.app_controller import AppController
 
-from PySide6.QtWidgets import QComboBox, QHBoxLayout, QVBoxLayout
+from PySide6.QtWidgets import QComboBox, QHBoxLayout, QMenu, QMenuBar, QVBoxLayout
 
 from .views.registry import VIEW_REGISTRY
 
 
 class Panel(BaseUIWidget):
     """Contains view"""
+
+    split_requested = Signal(Qt.Orientation)
 
     def __init__(self, name: str, controller: AppController, parent=None):
         super().__init__(controller, parent)
@@ -37,6 +38,13 @@ class Panel(BaseUIWidget):
         self.bar.addWidget(self.selector)
         idx = self.selector.findText(name)
         self.selector.setCurrentIndex(idx)
+        # Menu
+        self.menu_bar = QMenuBar()
+        self.bar.addWidget(self.menu_bar)
+        for menu in self.view.create_header_actions():
+            self.menu_bar.addMenu(menu)
+
+        self._setup_region_menu()
 
         # Fill the rest of the width
         self.bar.addStretch()
@@ -52,6 +60,27 @@ class Panel(BaseUIWidget):
         layout.setSpacing(2)
 
         self.selector.currentIndexChanged.connect(self._change_view)
+
+    def _setup_region_menu(self):
+        """Sets up region-specific controls in the top bar"""
+        split_menu = QMenu("Region", self)
+
+        split_H = split_menu.addAction("Split (Horizontal)")
+        split_V = split_menu.addAction("Split (Vertical)")
+
+        split_menu.addSeparator()
+        collapse_H = split_menu.addAction("Collapse (Horizontal)")
+        colllapse_V = split_menu.addAction("Collapse (Vertical)")
+
+        # Set up signal events
+        split_H.triggered.connect(
+            lambda: self.split_requested.emit(Qt.Orientation.Horizontal)
+        )
+        split_V.triggered.connect(
+            lambda: self.split_requested.emit(Qt.Orientation.Vertical)
+        )
+
+        self.menu_bar.addMenu(split_menu)
 
     def set_view(self, name: str):
         """Sets view to specified"""
