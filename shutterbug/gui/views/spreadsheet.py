@@ -34,6 +34,8 @@ class SpreadsheetViewer(BaseView):
         super().__init__(controller, parent)
         # Default variables
         self.adapter: Optional[TabularDataInterface] = None
+        self.view_types = []
+        self.selected_type = None
         # Layout without styling
         layout = QVBoxLayout()
         layout.setContentsMargins(0, 0, 0, 0)
@@ -53,23 +55,46 @@ class SpreadsheetViewer(BaseView):
 
         layout.addWidget(self.table_view)
 
-        # Handle signals
-
         logging.debug("Spreadsheet viewer initialized")
 
     def on_activated(self):
         """Handles spreadsheet viewer's first time activation"""
-        self.subscribe("adapter.selected", self.set_adapter)
-        self.adapter = self.controller.selections.adapter
-        if self.adapter:
-            self.refresh()
+        self.subscribe("adapter.selected", self._on_adapter_selected)
+        adapter = self.controller.selections.adapter
+        self.set_adapter(adapter)
 
     def create_header_actions(self) -> List[QMenu | QWidget]:
-        views = QComboBox()
-        adapters = self.controller.adapters._registry.values()
-        views.addItems([a.name for a in adapters])
+        self.views = QComboBox()
+        for k, v in self.controller.adapters._registry.items():
+            self.views.addItem(v.name)
+            self.view_types.append(k)
 
-        return [views]
+        self.views.currentIndexChanged.connect(self._on_view_selected)
+
+        return [self.views]
+
+    @Slot(int)
+    def _on_view_selected(self, index: int):
+        """Handles Spreadsheet view being selected"""
+        self.selected_type = self.views.itemText(index)
+        selected_item = getattr(self.controller.selections, self.view_types[index].type)
+        if selected_item:
+            adapter = self.controller.adapters.get_adapter_for(selected_item)
+            self.set_adapter(adapter)
+        else:
+            self.set_adapter(None)
+
+    @Slot(Event)
+    def _on_adapter_selected(self, event: Event):
+        """Handles adapter of same type being selected"""
+        adapter = event.data
+        if not self.selected_type:
+            return
+        if adapter is not None and self.selected_type == adapter.name:
+            if self.adapter != adapter:
+                self.set_adapter(adapter)
+            else:
+                self.refresh()
 
     def _row_from_id(self, id: str) -> int | None:
         """Finds index associated with id"""
@@ -96,29 +121,24 @@ class SpreadsheetViewer(BaseView):
         for row in data_rows:
             self.model.appendRow(row)
 
-    @Slot(Event)
-    def set_adapter(self, event: Event):
+    def set_adapter(self, adapter: TabularDataInterface | None):
         """Sets the data adapter for the spreadsheet"""
-        adapter = event.data
-        if self.adapter != adapter:
-            if self.adapter is not None:
-                logging.debug(f"Removing adapter {type(adapter).__name__}")
-                signals = self.adapter.signals
-                signals.item_added.disconnect(self._add_row)
-                signals.item_removed.disconnect(self._remove_row)
-                signals.item_updated.disconnect(self._refresh_row)
+        if self.adapter is not None:
+            logging.debug(f"Removing adapter {type(adapter).__name__}")
+            signals = self.adapter.signals
+            signals.item_added.disconnect(self._add_row)
+            signals.item_removed.disconnect(self._remove_row)
+            signals.item_updated.disconnect(self._refresh_row)
 
-            logging.debug(f"Setting adapter to {type(adapter).__name__}")
-            self.adapter = adapter
-            if adapter:
-                signals = adapter.signals
-                signals.item_added.connect(self._add_row)
-                signals.item_removed.connect(self._remove_row)
-                signals.item_updated.connect(self._refresh_row)
+        logging.debug(f"Setting adapter to {type(adapter).__name__}")
+        self.adapter = adapter
+        if adapter:
+            signals = adapter.signals
+            signals.item_added.connect(self._add_row)
+            signals.item_removed.connect(self._remove_row)
+            signals.item_updated.connect(self._refresh_row)
 
-            self.refresh()
-        else:
-            logging.debug("Adapter failed to update in spreadsheet")
+        self.refresh()
 
     @Slot(str, int, object)
     def _refresh_row(self, id: str, column: int, value: Any):
