@@ -18,7 +18,6 @@ from shutterbug.gui.region import Region
 
 from .commands import LoadImagesCommand
 from .project import ShutterbugProject
-from .sidebar import Sidebar
 from .panel import Panel
 
 
@@ -40,9 +39,6 @@ class MainWindow(QMainWindow):
         # Set up save/load functionality
         self.project = ShutterbugProject()
 
-        # Create sidebar and viewer
-        self.sidebar = Sidebar(controller)
-
         # Set up central widget with horizontal layout
         central = QWidget()
         self.setCentralWidget(central)
@@ -53,6 +49,7 @@ class MainWindow(QMainWindow):
         main_layout.setContentsMargins(1, 1, 1, 1)
         main_layout.setSpacing(2)
 
+        # Set up default layout
         image_viewer = Panel("Image Viewer", self.controller)
         outliner = Panel("Outliner", self.controller)
         properties = Panel("Properties", self.controller)

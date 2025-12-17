@@ -61,6 +61,7 @@ class Region(QWidget):
 
             self.splitter.addWidget(self.child_a)
             self.splitter.addWidget(self.child_b)
+            # Set up initial sizing
             if left_stretch and right_stretch:
                 self.splitter.setStretchFactor(0, left_stretch)
                 self.splitter.setStretchFactor(1, right_stretch)
@@ -91,8 +92,10 @@ class Region(QWidget):
             if self.child_a:
                 self.child_a._del_widget()
                 self.child_a.deleteLater()
+        # Remove the loser
         self._del_widget()
         layout = self.layout()
+        # Finish making a leaf!
         if layout and self.panel:
             layout.addWidget(self.panel)
             self.panel.split_requested.connect(self.split)
