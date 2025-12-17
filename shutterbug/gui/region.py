@@ -1,4 +1,5 @@
 import logging
+from typing import Optional
 from PySide6.QtCore import Signal, Qt, Slot
 from PySide6.QtWidgets import QSplitter, QVBoxLayout, QWidget
 
@@ -35,7 +36,12 @@ class Region(QWidget):
         logging.debug(f"Region {self.uid} initialized with panel {panel.name}")
 
     @Slot(Qt.Orientation)
-    def split(self, orientation: Qt.Orientation):
+    def split(
+        self,
+        orientation: Qt.Orientation,
+        left_stretch: Optional[int] = None,
+        right_stretch: Optional[int] = None,
+    ):
         """Splits region into child regions"""
         old_panel = self.panel
         self.is_leaf = False
@@ -55,6 +61,9 @@ class Region(QWidget):
 
             self.splitter.addWidget(self.child_a)
             self.splitter.addWidget(self.child_b)
+            if left_stretch and right_stretch:
+                self.splitter.setStretchFactor(0, left_stretch)
+                self.splitter.setStretchFactor(1, right_stretch)
 
             layout.addWidget(self.splitter)
 

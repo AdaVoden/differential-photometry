@@ -58,9 +58,9 @@ class MainWindow(QMainWindow):
         properties = Panel("Properties", self.controller)
 
         region_main = Region(image_viewer)
-        region_main.split(Qt.Orientation.Horizontal)
+        region_main.split(Qt.Orientation.Horizontal, 3, 1)
         region_main.child_b.set_panel(outliner)
-        region_main.child_b.split(Qt.Orientation.Vertical)
+        region_main.child_b.split(Qt.Orientation.Vertical, 1, 3)
         region_main.child_b.child_b.set_panel(properties)
 
         main_layout.addWidget(region_main)
