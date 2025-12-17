@@ -8,7 +8,7 @@ if TYPE_CHECKING:
 
 from shutterbug.gui.tools.box_select_settings import BoxSelectOperatorSettingsWidget
 
-from PySide6.QtCore import QRect, QSize, QTimer, Slot
+from PySide6.QtCore import QRect, QSize, QTimer, Slot, Qt
 from PySide6.QtGui import QMouseEvent
 from PySide6.QtWidgets import QRubberBand
 from shutterbug.gui.commands.star_commands import AddMeasurementsCommand
@@ -35,6 +35,7 @@ class BoxSelectOperator(BaseOperator):
         self.rubber = None
         self.preview_items = []
         self.view = viewer.view  # type: ignore
+        self.scene_rect = None
 
         # Debounce timer
         self.debounce_timer = QTimer()
@@ -57,18 +58,27 @@ class BoxSelectOperator(BaseOperator):
 
     def update(self, event: QMouseEvent):
         """Updates selection box on mouse move"""
-        if not self.active or not self.listening:
+        if not self.active and not self.listening:
             return
-        self.end_pos = event.pos()
-        if self.start_pos and self.end_pos:
-            rect = QRect(self.start_pos, self.end_pos).normalized()
-            if self.rubber:
-                self.rubber.setGeometry(rect)
+        if self.active and not self.listening:
+            # Pan and drag just happened
+            if self.scene_rect:
+                new_rect = self.view.mapFromScene(self.scene_rect).boundingRect()
 
-            # Compute scene rect
-            self.scene_rect = self.view.viewport_rect_to_scene(rect)
-            self.debounce_timer.stop()
-            self.debounce_timer.start(42)  # ~24 fps
+                if self.rubber:
+                    self.rubber.setGeometry(new_rect)
+        else:
+            # Normal operation
+            self.end_pos = event.pos()
+            if self.start_pos and self.end_pos:
+                rect = QRect(self.start_pos, self.end_pos).normalized()
+                if self.rubber:
+                    self.rubber.setGeometry(rect)
+
+                # Compute scene rect
+                self.scene_rect = self.view.viewport_rect_to_scene(rect)
+                self.debounce_timer.stop()
+                self.debounce_timer.start(42)  # ~24 fps
 
     def build_command(self):
         """Builds command that adds star measurements to project"""

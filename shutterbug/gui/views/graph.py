@@ -4,7 +4,6 @@ from typing import TYPE_CHECKING
 
 from matplotlib.backends.backend_qt import NavigationToolbar2QT
 
-
 if TYPE_CHECKING:
     from shutterbug.core.app_controller import AppController
 

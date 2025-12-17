@@ -7,7 +7,8 @@
 - [ ] Toggle arrow for Popover panel
 - [ ] Hover tooltips
 - [ ] Better star propagation algorithm
-- [ ] Fix box select moving on image pan
+- [x] Fix box select moving on image pan
+- [ ] Handle box select at edge of image
 - [ ] Live editable graph title/labels
 - [ ] Progress bar
 - [ ] Hide not-in-use properties panels

@@ -157,18 +157,20 @@ class ImageViewer(BaseView):
             self.tools.begin_operation(event, self)
             event.accept()
         else:
+            self.tools.update_operation(event)
             super().mousePressEvent(event)
 
     @Slot(QMouseEvent)
     def mouseReleaseEvent(self, event: QMouseEvent):
         if event.button() == Qt.MouseButton.LeftButton:
             self.tools.end_operation_interaction()
-            event.accept()
+
+        super().mouseReleaseEvent(event)
 
     @Slot(QMouseEvent)
     def mouseMoveEvent(self, event: QMouseEvent) -> None:
         self.tools.update_operation(event)
-        event.accept()
+        super().mouseMoveEvent(event)
 
     @Slot(QKeyEvent)
     def keyPressEvent(self, event: QKeyEvent):
