@@ -52,11 +52,11 @@ class StarIdentityAdapter(TabularDataInterface):
             "X",
             "Y",
             "Flux",
-            "Flux Err",
-            "Mag",
-            "Mag Err",
-            "Diff Mag",
-            "Diff Mag Err",
+            "Flux Error",
+            "Magnitude",
+            "Magnitude Error",
+            "Differential Magnitude",
+            "Differential Magnitude Error",
         ]
 
     def get_row_data(self) -> List:

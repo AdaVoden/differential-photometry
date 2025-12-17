@@ -50,7 +50,7 @@ class SpreadsheetViewer(BaseView):
         self.table_view.setModel(self.model)
         self.table_view.setAlternatingRowColors(True)
         self.table_view.horizontalHeader().setSectionResizeMode(
-            QHeaderView.ResizeMode.Stretch
+            QHeaderView.ResizeMode.ResizeToContents
         )
 
         layout.addWidget(self.table_view)
@@ -64,12 +64,7 @@ class SpreadsheetViewer(BaseView):
         self.set_adapter(adapter)
 
     def create_header_actions(self) -> List[QMenu | QWidget]:
-        self.views = QComboBox()
-        for k, v in self.controller.adapters._registry.items():
-            self.views.addItem(v.name)
-            self.view_types.append(k)
-
-        self.views.currentIndexChanged.connect(self._on_view_selected)
+        self._set_up_type_selector()
 
         return [self.views]
 
@@ -95,6 +90,22 @@ class SpreadsheetViewer(BaseView):
                 self.set_adapter(adapter)
             else:
                 self.refresh()
+
+    def _set_up_type_selector(self):
+        """Sets up widget that selects spreadsheet view type"""
+        self.views = QComboBox()
+        view_types = []
+        for k, v in self.controller.adapters._registry.items():
+            self.views.addItem(v.name)
+            view_types.append(k)
+        if len(view_types) != len(self.view_types):
+            self.view_types.extend(view_types)
+        if not self.selected_type:
+            self.selected_type = self.view_types[0]
+        else:
+            self.views.setCurrentText(self.selected_type)
+
+        self.views.currentIndexChanged.connect(self._on_view_selected)
 
     def _row_from_id(self, id: str) -> int | None:
         """Finds index associated with id"""
