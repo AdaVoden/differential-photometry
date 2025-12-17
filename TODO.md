@@ -1,4 +1,4 @@
-- [ ] Add icons for tabs
+- [x] Add icons for tabs
 - [ ] Unbreak Save project/load project
 - [ ] Add About Shutterbug
 - [ ] Select star in spreadsheet view to select star in image
@@ -9,6 +9,6 @@
   - [ ] Hotkey management system
 - [ ] Control hints display in bottom toolbar (Like Blender)
 - [ ] Hover tooltips
-- [ ] Improve display of outliner
-  - [ ] Remove black part to left of entries
-  - [ ] Add expansion arrows to trees
+- [x] Improve display of outliner
+  - [x] Remove black part to left of entries
+  - [x] Add expansion arrows to trees

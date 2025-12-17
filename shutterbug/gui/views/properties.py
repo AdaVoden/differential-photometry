@@ -210,6 +210,10 @@ class GraphPropertiesPanel(BaseUIWidget):
             "graph.updated.y_label", lambda evt: self.title.set_text(evt.data.y_label)
         )
 
+        self.title.editing_finished.connect(self._on_title_changed)
+        self.x_label.editing_finished.connect(self._on_x_label_changed)
+        self.y_label.editing_finished.connect(self._on_y_label_changed)
+
     @Slot(Event)
     def _on_graph_selected(self, event: Event):
         """Handles new graph being selected"""

@@ -13,7 +13,7 @@ from typing import Dict, List
 import numpy as np
 from astropy import stats
 from photutils.detection import DAOStarFinder
-from PySide6.QtCore import QPoint
+from PySide6.QtCore import QPoint, Slot
 from shutterbug.core.models import FITSModel
 
 from .base_manager import BaseManager
@@ -39,13 +39,12 @@ class ImageManager(BaseManager):
         self.threshold: float = self.THRESHOLD_DEFAULT
         self.sigma: float = self.SIGMA_DEFAULT
 
+        self.controller.on("image.selected", self._on_image_selected)
         logging.debug("Initialized Image Manager")
 
     def add_image(self, image: FITSModel):
         """Add image to manager"""
         self.images[image.filename] = image
-        self.compute_stats(image)
-        self.build_base_preview(image)
         self.controller.dispatch(Event(EventDomain.IMAGE, "created", data=image))
         if self.first_image:
             self.controller.selections.select(image)
@@ -183,3 +182,17 @@ class ImageManager(BaseManager):
         scaled = (image.data - image.p_min) / (image.p_max - image.p_min)
         scaled = np.clip(scaled, 0, 1)
         image.display_data = (scaled * 255).astype(np.uint8)
+
+    @Slot(Event)
+    def _on_image_selected(self, event: Event):
+        """Handles image being selected"""
+        image = event.data
+        if not image:
+            return
+
+        if image.display_data is not None:
+            return  # No work to do
+
+        # set image up for display
+        self.compute_stats(image)
+        self.build_base_preview(image)

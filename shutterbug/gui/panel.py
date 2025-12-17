@@ -32,6 +32,7 @@ class Panel(BaseUIWidget):
         # Set up top bar
         self.bar = BaseUIWidget(controller, self)
         self.bar.setObjectName("topbar")
+        # Layout settings
         self.bar_layout = QHBoxLayout(self.bar)
         self.bar_layout.setContentsMargins(2, 2, 1, 1)
         self.bar_layout.setSpacing(2)
