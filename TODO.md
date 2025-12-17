@@ -8,7 +8,7 @@
 - [ ] Hover tooltips
 - [ ] Better star propagation algorithm
 - [x] Fix box select moving on image pan
-- [ ] Handle box select at edge of image
+- [x] Handle box select at edge of image
 - [ ] Live editable graph title/labels
 - [ ] Progress bar
 - [ ] Hide not-in-use properties panels
