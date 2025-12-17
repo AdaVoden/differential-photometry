@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Type
 
 from PySide6.QtGui import QIcon
 
@@ -39,7 +39,9 @@ class ToolPanel(BasePopOver):
             layout.addWidget(self.box_btn)
             layout.addWidget(self.phot_btn)
 
-    def _make_button(self, icon: QIcon, tool: BaseTool, checked=False) -> QToolButton:
+    def _make_button(
+        self, icon: QIcon, tool: Type[BaseTool], checked=False
+    ) -> QToolButton:
         """Makes a toggle-able button"""
         btn = QToolButton()
         btn.setIcon(icon)

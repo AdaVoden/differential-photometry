@@ -145,7 +145,7 @@ class PhotometryAllCommand(QUndoCommand):
         super().__init__("Photometry All Images")
         self.controller = controller
         self.params = params
-        self.images = controller.images.all()
+        self.images = controller.images.all
         self.cmds = []
         for i in self.images:
             measurements = controller.stars.get_measurements_by_image(i)
@@ -201,7 +201,7 @@ class DifferentialPhotometryAllCommand(QUndoCommand):
 
     def __init__(self, controller: AppController):
         super().__init__("Differential Photometry All Images")
-        self.images = controller.images.all()
+        self.images = controller.images.all
         self.cmds = []
         for i in self.images:
             self.cmds.append(DifferentialPhotometryCommand(i, controller))
@@ -223,7 +223,7 @@ class PropagateStarSelection(QUndoCommand):
         self.controller = controller
         self.image = image
         self.measurements = controller.stars.get_measurements_by_image(image)
-        images = controller.images.all()
+        images = controller.images.all
         # All images not ours
         self.others = [i for i in images if i != image]
         self.added = []

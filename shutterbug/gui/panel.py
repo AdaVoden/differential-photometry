@@ -48,8 +48,11 @@ class Panel(BaseUIWidget):
         self.menu_bar = QMenuBar(self)
         self.bar_layout.addWidget(self.menu_bar)
 
-        for menu in self.view.create_header_actions():
-            self.menu_bar.addMenu(menu)
+        for item in self.view.create_header_actions():
+            if isinstance(item, QMenu):
+                self.menu_bar.addMenu(item)
+            else:
+                self.bar_layout.addWidget(item)
 
         self._setup_region_menu()
 

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, List
 
 from shutterbug.core.models.marker_model import MarkerModel
 from shutterbug.gui.commands.star_commands import PropagateStarSelection
@@ -38,7 +38,10 @@ from PySide6.QtWidgets import QGraphicsScene, QGraphicsView, QMenu, QVBoxLayout,
 from shutterbug.core.models import FITSModel
 from shutterbug.core.events.change_event import Event
 from shutterbug.core.managers import StretchManager
-from shutterbug.gui.commands import DifferentialPhotometryCommand
+from shutterbug.gui.commands import (
+    DifferentialPhotometryCommand,
+    DifferentialPhotometryAllCommand,
+)
 from shutterbug.gui.panels import BasePopOver, OperatorPanel, ToolPanel
 from .base_view import BaseView
 from shutterbug.gui.views.registry import register_view
@@ -128,6 +131,16 @@ class ImageViewer(BaseView):
         )
 
     @Slot()
+    def _on_all_differential(self):
+        """Handles differential photometry on image being requested"""
+        if self.view.current_image is None:
+            return  # No work to do
+
+        self.controller._undo_stack.push(
+            DifferentialPhotometryAllCommand(self.controller)
+        )
+
+    @Slot()
     def _on_propagate(self):
         """Handles propagating measurements request"""
         if self.view.current_image is None:
@@ -171,11 +184,7 @@ class ImageViewer(BaseView):
     def contextMenuEvent(self, event: QContextMenuEvent) -> None:
         menu = QMenu()
 
-        differential_action = menu.addAction("Differential Photometry")
-        differential_action.triggered.connect(self._on_differential)
-
-        propagate_action = menu.addAction("Propagate Measurements")
-        propagate_action.triggered.connect(self._on_propagate)
+        self._create_image_actions(menu)
 
         menu.exec(event.globalPos())
 
@@ -187,6 +196,23 @@ class ImageViewer(BaseView):
             panel.hide()
         else:
             panel.show_at_corner()
+
+    def _create_image_actions(self, menu: QMenu):
+        diff_action = menu.addAction("Differential Photometry")
+        diff_action.triggered.connect(self._on_differential)
+
+        diff_all_action = menu.addAction("Differential Photometry (All images)")
+        diff_all_action.triggered.connect(self._on_all_differential)
+
+        propagate_action = menu.addAction("Propagate Measurements")
+        propagate_action.triggered.connect(self._on_propagate)
+
+    def create_header_actions(self) -> List[QMenu | QWidget]:
+        image_menu = QMenu("Image")
+
+        self._create_image_actions(image_menu)
+
+        return [image_menu]
 
 
 class ImageGraphicsView(QGraphicsView):
