@@ -30,30 +30,35 @@ class Panel(BaseUIWidget):
         self.setObjectName("panel")
 
         # Set up top bar
-        self.bar = QHBoxLayout()
+        self.bar = BaseUIWidget(controller, self)
         self.bar.setObjectName("topbar")
+        self.bar_layout = QHBoxLayout(self.bar)
+        self.bar_layout.setContentsMargins(2, 2, 1, 1)
+        self.bar_layout.setSpacing(2)
+        self.bar_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
         # Selector
         self.selector = QComboBox(self)
         self.selector.addItems(list(VIEW_REGISTRY.keys()))
-        self.bar.addWidget(self.selector)
+        self.bar_layout.addWidget(self.selector)
         idx = self.selector.findText(name)
         self.selector.setCurrentIndex(idx)
         # Menu
-        self.menu_bar = QMenuBar()
-        self.bar.addWidget(self.menu_bar)
+        self.menu_bar = QMenuBar(self)
+        self.bar_layout.addWidget(self.menu_bar)
+
         for menu in self.view.create_header_actions():
             self.menu_bar.addMenu(menu)
 
         self._setup_region_menu()
 
         # Fill the rest of the width
-        self.bar.addStretch()
+        self.bar_layout.addStretch()
 
         # Layout with styling
         layout = QVBoxLayout(self)
-        layout.addLayout(self.bar)
         self.setLayout(layout)
+        layout.addWidget(self.bar)
         layout.addWidget(self.view)
 
         # Styling

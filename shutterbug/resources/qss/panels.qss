@@ -60,3 +60,21 @@
 #popover > QToolButton:checked {
     background: rgba(80, 80, 80, 220);
 }
+
+#panel {
+    background: {{ bg_4 }};
+    border: 1px solid {{ bg_3 }};
+    border-radius: 6px;
+}
+
+#panel > #topbar {
+    background: {{ bg_4 }};
+}
+
+#panel > #topbar > QMenuBar {
+    background: {{ bg_4 }};
+}
+
+#panel > #topbar > QMenuBar::item:selected {
+    background: {{ bg_3 }};
+}

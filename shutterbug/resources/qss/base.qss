@@ -27,16 +27,6 @@ QMainWindow {
     background: {{ bg_4 }};
 }
 
-#panel {
-    background: {{ bg_4 }};
-    border: 1px solid {{ bg_3 }};
-    border-radius: 6px;
-}
-
-#panel > #topbar {
-    background: {{ bg_4 }};
-}
-
 #sidebar {
     background: {{ bg_0 }};
     margin: 0px;
