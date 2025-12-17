@@ -33,6 +33,7 @@ class StarIdentityAdapter(TabularDataInterface):
         "diff_mag": 7,
         "diff_err": 8,
     }
+    name = "Star"
 
     def __init__(self, star: StarIdentity, controller: AppController):
         self.star = star

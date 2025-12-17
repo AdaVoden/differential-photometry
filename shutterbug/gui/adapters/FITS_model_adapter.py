@@ -31,6 +31,7 @@ class FITSModelAdapter(TabularDataInterface):
         "diff_mag": 7,
         "diff_err": 8,
     }
+    name = "Image"
 
     def __init__(self, image: FITSModel, controller: AppController):
         self.image = image

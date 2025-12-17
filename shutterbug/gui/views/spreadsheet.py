@@ -8,7 +8,14 @@ if TYPE_CHECKING:
 
 import logging
 from shutterbug.core.events import Event
-from PySide6.QtWidgets import QVBoxLayout, QTableView, QHeaderView
+from PySide6.QtWidgets import (
+    QComboBox,
+    QMenu,
+    QVBoxLayout,
+    QTableView,
+    QHeaderView,
+    QWidget,
+)
 from PySide6.QtGui import QStandardItem, QStandardItemModel
 from PySide6.QtCore import Slot
 
@@ -57,6 +64,13 @@ class SpreadsheetViewer(BaseView):
         if self.adapter:
             self.refresh()
 
+    def create_header_actions(self) -> List[QMenu | QWidget]:
+        views = QComboBox()
+        adapters = self.controller.adapters._registry.values()
+        views.addItems([a.name for a in adapters])
+
+        return [views]
+
     def _row_from_id(self, id: str) -> int | None:
         """Finds index associated with id"""
         row = self.model.findItems(id, column=0)
@@ -96,10 +110,11 @@ class SpreadsheetViewer(BaseView):
 
             logging.debug(f"Setting adapter to {type(adapter).__name__}")
             self.adapter = adapter
-            signals = self.adapter.signals
-            signals.item_added.connect(self._add_row)
-            signals.item_removed.connect(self._remove_row)
-            signals.item_updated.connect(self._refresh_row)
+            if adapter:
+                signals = adapter.signals
+                signals.item_added.connect(self._add_row)
+                signals.item_removed.connect(self._remove_row)
+                signals.item_updated.connect(self._refresh_row)
 
             self.refresh()
         else:

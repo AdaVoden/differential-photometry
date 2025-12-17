@@ -13,6 +13,9 @@ class AdapterSignals(QObject):
 
 
 class TabularDataInterface(ABC):
+
+    name = "BaseTable"
+
     @abstractmethod
     def get_column_headers(self) -> List[str]:
         raise NotImplementedError
