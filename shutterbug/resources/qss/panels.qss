@@ -69,6 +69,7 @@
 
 #panel > #topbar {
     background: {{ bg_4 }};
+    max-height: 30px;
 }
 
 #panel > #topbar > QMenuBar {

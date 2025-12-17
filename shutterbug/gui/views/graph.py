@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from matplotlib.backends.backend_qt import NavigationToolbar2QT
+
 
 if TYPE_CHECKING:
     from shutterbug.core.app_controller import AppController
@@ -35,7 +37,9 @@ class GraphViewer(BaseView):
         # Graph settings
         self.figure = Figure(figsize=(5, 4))
         self.canvas = FigureCanvas(self.figure)
+        self.toolbar = NavigationToolbar2QT(self.canvas, self)
         self.ax = None
+        layout.addWidget(self.toolbar)
         layout.addWidget(self.canvas)
 
     def on_activated(self):

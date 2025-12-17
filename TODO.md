@@ -1,14 +1,13 @@
-- [x] Add icons for tabs
-- [ ] Unbreak Save project/load project
-- [ ] Add About Shutterbug
-- [ ] Select star in spreadsheet view to select star in image
-- [ ] Hover-highlight for stars
-- [ ] Toggle arrow for N panel
-- [ ] Split-view editor system
+- [ ] Save/Load system
+- [ ] Program preferences
 - [ ] Hotkeys
   - [ ] Hotkey management system
-- [ ] Control hints display in bottom toolbar (Like Blender)
+  - [ ] Control hints display in bottom toolbar (Like Blender)
+- [ ] About Shutterbug
+- [ ] Toggle arrow for Popover panel
 - [ ] Hover tooltips
-- [x] Improve display of outliner
-  - [x] Remove black part to left of entries
-  - [x] Add expansion arrows to trees
+- [ ] Better star propagation algorithm
+- [ ] Fix box select moving on image pan
+- [ ] Live editable graph title/labels
+- [ ] Progress bar
+- [ ] Hide not-in-use properties panels
