@@ -4,17 +4,18 @@ from typing import TYPE_CHECKING, Type
 
 from PySide6.QtGui import QIcon
 
+
 if TYPE_CHECKING:
     from shutterbug.core.app_controller import AppController
 
-from PySide6.QtCore import QSize, Qt, Signal
+from PySide6.QtCore import QSize, Qt, Signal, Slot
 from PySide6.QtWidgets import QButtonGroup, QToolButton, QWidget
+from shutterbug.core.events import Event
 from shutterbug.gui.panels.base_popover import BasePopOver
 from shutterbug.gui.tools import BaseTool, BoxSelectTool, SelectTool, PhotometryTool
 
 
 class ToolPanel(BasePopOver):
-    tool_selected = Signal(BaseTool)
 
     def __init__(self, controller: AppController, parent: QWidget | None = None):
         super().__init__(controller, parent)
@@ -39,6 +40,19 @@ class ToolPanel(BasePopOver):
             layout.addWidget(self.box_btn)
             layout.addWidget(self.phot_btn)
 
+        self.subscribe("tool.selected", self._on_tool_selected)
+
+    @Slot(Event)
+    def _on_tool_selected(self, event: Event):
+        tool = event.data
+        if tool:
+            if tool.name == "Select":
+                self.select_btn.setChecked(True)
+            if tool.name == "Box Select":
+                self.box_btn.setChecked(True)
+            if tool.name == "Photometry":
+                self.phot_btn.setChecked(True)
+
     def _make_button(
         self, icon: QIcon, tool: Type[BaseTool], checked=False
     ) -> QToolButton:
@@ -48,7 +62,7 @@ class ToolPanel(BasePopOver):
         btn.setIconSize(QSize(32, 32))
         btn.setCheckable(True)
         btn.setChecked(checked)
-        btn.clicked.connect(lambda: self.tool_selected.emit(tool))
+        btn.clicked.connect(lambda: self.controller.tools.set_tool(tool))
         btn.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonIconOnly)
 
         # register in exclusive group

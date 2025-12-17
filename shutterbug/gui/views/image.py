@@ -20,7 +20,6 @@ from PySide6.QtCore import (
     QRect,
     QTimer,
     Qt,
-    Signal,
     Slot,
 )
 from PySide6.QtGui import (
@@ -51,8 +50,6 @@ from shutterbug.gui.views.registry import register_view
 class ImageViewer(BaseView):
 
     name = "Image Viewer"
-    # Tool signals
-    tool_settings_changed = Signal(QWidget)
 
     def __init__(self, controller: AppController, parent=None):
         super().__init__(controller, parent)
@@ -81,10 +78,6 @@ class ImageViewer(BaseView):
 
         # General signals
 
-        self.tools.tool_settings_changed.connect(self.tool_settings_changed)
-
-        self.popover.tool_selected.connect(self.tools.set_tool)
-
         logging.debug("Image Viewer initialized")
 
     def on_activated(self):
@@ -102,8 +95,7 @@ class ImageViewer(BaseView):
 
     def on_deactivated(self):
         super().on_deactivated()
-        self.tools.tool_settings_changed.disconnect(self.tool_settings_changed)
-        self.popover.tool_selected.disconnect(self.tools.set_tool)
+        self.popover.on_deactivated()
 
     @Slot(Event)
     def _on_operator_changed(self, event: Event):
