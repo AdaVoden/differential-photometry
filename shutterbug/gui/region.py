@@ -44,11 +44,10 @@ class Region(QWidget):
     ):
         """Splits region into child regions"""
         old_panel = self.panel
+        # Remove old widget
         self.is_leaf = False
         self.panel = None
-
-        # Remove old widget from layout
-        self._del_widget()
+        self._clear_self()
 
         layout = self.layout()
         if not layout:
@@ -72,28 +71,33 @@ class Region(QWidget):
             self.child_b.collapse_requested.connect(self.collapse)
 
     @Slot(object)
-    def collapse(self, region: object):
+    def collapse(self, region: object = None):
         """Collapses regions together"""
         if self.is_leaf:
             # Leafs cannot collapse
             self.collapse_requested.emit(self)
-            return
+            return self.panel
         # We're not a leaf, time to become one
+        # Prevent loops
         self.child_a.collapse_requested.disconnect(self.collapse)
         self.child_b.collapse_requested.disconnect(self.collapse)
         # Which child is going to survive?
-        if self.child_a == region:
-            self.panel = self.child_a.panel
-            if self.child_b:
-                self.child_b._del_widget()
-                self.child_b.deleteLater()
-        if self.child_b == region:
-            self.panel = self.child_b.panel
-            if self.child_a:
-                self.child_a._del_widget()
-                self.child_a.deleteLater()
-        # Remove the loser
-        self._del_widget()
+
+        panel_a = self.child_a.collapse()
+        panel_b = self.child_b.collapse()
+
+        if region is None:
+            self.panel = panel_a
+            self.child_b._del_widget()
+            self.child_b.deleteLater()
+        elif self.child_a == region:
+            self.panel = panel_a
+            self.child_b._del_widget()
+            self.child_b.deleteLater()
+        elif self.child_b == region:
+            self.panel = panel_b
+            self.child_a._del_widget()
+            self.child_a.deleteLater()
         layout = self.layout()
         # Finish making a leaf!
         if layout and self.panel:
@@ -102,6 +106,8 @@ class Region(QWidget):
             self.panel.collapse_requested.connect(self.collapse)
 
         self.is_leaf = True
+        if self.splitter:
+            self.splitter.deleteLater()
         self.splitter = None
 
     def set_panel(self, panel: Panel):
@@ -124,14 +130,16 @@ class Region(QWidget):
             )
             return False
 
-    def _del_widget(self):
-        """Removes current set splitter or panel"""
+    def _clear_self(self):
+        """Removes main widget from layout"""
         layout = self.layout()
         if layout:
             item = layout.takeAt(0).widget()
-
             if item:
                 if isinstance(item, Panel):
                     item.view.on_deactivated()
                 item.deleteLater()
-                del item
+
+    def _del_widget(self):
+        """Removes current set splitter or panel"""
+        self._clear_self()

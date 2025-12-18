@@ -72,7 +72,6 @@ class ImagePropertiesPanel(BaseUIWidget):
     def __init__(self, controller: AppController, parent=None):
         super().__init__(controller, parent)
 
-        self.controller = controller
         self._undo_stack = controller._undo_stack
 
         self.current_image = controller.selections.image
@@ -94,14 +93,14 @@ class ImagePropertiesPanel(BaseUIWidget):
         self.contrast_slider = LabeledSlider("Contrast", 0.5, 1.5, 1, "float", 3)
 
         # Panel
-        self.settings_panel = CollapsibleSection(
+        self.settings_section = CollapsibleSection(
             "Image Settings",
             [self.stretches, self.brightness_slider, self.contrast_slider],
             self.controller,
             self,
         )
 
-        layout.addWidget(self.settings_panel)
+        layout.addWidget(self.settings_section)
 
         # Set up sliders
         if self.current_image:
@@ -131,6 +130,13 @@ class ImagePropertiesPanel(BaseUIWidget):
             "image.updated.stretch_type",
             lambda evt: self.stretches.set_text(evt.data.stretch_type),
         )
+
+    def on_deactivated(self):
+        """Handles destruction of image properties panel"""
+        super().on_deactivated()
+        self.brightness_slider.valueChanged.disconnect(self._on_brightness_changed)
+        self.contrast_slider.valueChanged.disconnect(self._on_contrast_changed)
+        self.stretches.activated.disconnect(self._on_stretch_changed)
 
     @Slot(Event)
     def _on_image_selected(self, event: Event):
@@ -214,6 +220,12 @@ class GraphPropertiesPanel(BaseUIWidget):
         self.x_label.editing_finished.connect(self._on_x_label_changed)
         self.y_label.editing_finished.connect(self._on_y_label_changed)
 
+    def on_deactivated(self):
+        super().on_deactivated()
+        self.title.editing_finished.disconnect(self._on_title_changed)
+        self.x_label.editing_finished.disconnect(self._on_x_label_changed)
+        self.y_label.editing_finished.disconnect(self._on_y_label_changed)
+
     @Slot(Event)
     def _on_graph_selected(self, event: Event):
         """Handles new graph being selected"""
@@ -256,7 +268,6 @@ class ToolPropertiesPanel(BaseUIWidget):
         layout = QVBoxLayout()
         self.setLayout(layout)
         self.setObjectName("toolProperties")
-        self.controller = controller
 
         layout.setContentsMargins(16, 8, 8, 8)
         layout.setSpacing(5)
@@ -270,7 +281,7 @@ class ToolPropertiesPanel(BaseUIWidget):
 
     def on_activated(self):
         """Handles creation of tool properties pane"""
-        self.subscribe("tool.selected", lambda x: self.set_panel(x.data))
+        self.subscribe("tool.selected", lambda evt: self.set_panel(evt.data))
 
     @Slot(BaseTool)
     def set_panel(self, tool: BaseTool):

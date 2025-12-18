@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -28,7 +29,8 @@ class BaseUIWidget(QWidget):
     def _cleanup(self):
         """Unsubscribe from everything"""
         for sub_id in self._subscription_ids:
-            self.controller.off(sub_id)
+            result = self.controller.off(sub_id)
+            logging.debug(f"Attempted to unsubscribe id {sub_id} with result {result}")
         self._subscription_ids.clear()
 
     def on_activated(self):

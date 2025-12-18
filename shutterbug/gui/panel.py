@@ -67,6 +67,12 @@ class Panel(BaseUIWidget):
 
         self.selector.currentIndexChanged.connect(self._change_view)
 
+    def on_deactivated(self):
+        """Handles panel being destroyed"""
+        super().on_deactivated()
+        if self.view:
+            self.view.on_deactivated()
+
     def _setup_region_menu(self):
         """Sets up region-specific controls in the top bar"""
         split_menu = QMenu("Region", self)
