@@ -6,7 +6,7 @@
 - [ ] About Shutterbug
 - [ ] Toggle arrow for Popover panel
 - [ ] Hover tooltips
-- [ ] Better star propagation algorithm
+- [x] Better star propagation algorithm
 - [x] Fix box select moving on image pan
 - [x] Handle box select at edge of image
 - [ ] Live editable graph title/labels

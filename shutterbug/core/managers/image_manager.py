@@ -76,10 +76,12 @@ class ImageManager(BaseManager):
         x: float,
         y: float,
         max_distance: int = MAX_DISTANCE_DEFAULT,
+        threshold: float = THRESHOLD_DEFAULT,
+        sigma: float = SIGMA_DEFAULT,
     ):
         """Given a coordinate, finds the nearest centroid within a tolerance to that coordinate"""
         stamp = image.get_stamp(x, y, max_distance)
-        centroids = self.find_centroids(stamp)
+        centroids = self.find_centroids(stamp, threshold, sigma)
 
         if centroids is None:
             return
@@ -139,7 +141,7 @@ class ImageManager(BaseManager):
         h = data.shape[0]
         w = data.shape[1]
         if (h * w) <= self.MINIMUM_AREA_DEFAULT:
-            return  # Not enough area
+            return []  # Not enough area
 
         centroids = self.find_centroids(data, threshold, sigma)
         if centroids is None:
@@ -152,7 +154,11 @@ class ImageManager(BaseManager):
         return centroids
 
     def find_centroids(
-        self, data, threshold: float = THRESHOLD_DEFAULT, sigma: float = SIGMA_DEFAULT
+        self,
+        data,
+        threshold: float = THRESHOLD_DEFAULT,
+        sigma: float = SIGMA_DEFAULT,
+        fwhm: float = FWHM_DEFAULT,
     ):
         """Detect centroids using DAOStarFinder"""
         bg_subtracted = self.get_background_subtracted(data, sigma)
@@ -162,7 +168,7 @@ class ImageManager(BaseManager):
         # Estimate FWHM and threshold
         _, _, std = stats.sigma_clipped_stats(bg_subtracted, sigma=sigma)
 
-        daofind = DAOStarFinder(fwhm=self.fwhm, threshold=threshold * std)
+        daofind = DAOStarFinder(fwhm=fwhm, threshold=threshold * std)
         centroids = daofind(bg_subtracted)
 
         return centroids

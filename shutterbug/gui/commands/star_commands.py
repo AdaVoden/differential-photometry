@@ -42,8 +42,10 @@ class AddMeasurementsCommand(QUndoCommand):
             self.star_select = self.controller.stars.get_by_measurement(
                 self.measurements[0]
             )
-            self.old_select = self.controller.selections.star
-            self.controller.selections.select(self.star_select)
+
+            if self.star_select:
+                self.old_select = self.controller.selections.star
+                self.controller.selections.select(self.star_select)
 
     def undo(self):
         logging.debug(f"COMMAND: undoing addition of {len(self.stars)} measurements")
@@ -230,10 +232,18 @@ class PropagateStarSelection(QUndoCommand):
 
     def redo(self):
         logging.debug(f"COMMAND: Propagating stars from image {self.image.uid}")
-        for i in self.others:
-            for m in self.measurements:
-                star = self.controller.stars.get_by_measurement(m)
-                centroid = self.controller.images.find_nearest_centroid(i, m.x, m.y)
+        for m in self.measurements:
+            # Account for drift
+            last_m = None
+            star = self.controller.stars.get_by_measurement(m)
+            for i in self.others:
+                if last_m:
+                    # If images aren't aligned properly
+                    centroid = self.controller.images.find_nearest_centroid(
+                        i, last_m.x, last_m.y
+                    )
+                else:
+                    centroid = self.controller.images.find_nearest_centroid(i, m.x, m.y)
                 if not centroid:
                     logging.error(
                         f"Unable to find matching centroid at position ({m.x, m.y}) for image {i.uid}"
@@ -249,6 +259,7 @@ class PropagateStarSelection(QUndoCommand):
                     star=star,
                 )
                 self.added.append(new_m)
+                last_m = new_m
 
     def undo(self):
         for m in self.added:
