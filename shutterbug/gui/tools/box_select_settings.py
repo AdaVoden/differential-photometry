@@ -14,11 +14,21 @@ class BoxSelectOperatorSettingsWidget(BaseSettings):
         self.setLayout(layout)
         layout.setSpacing(6)
         layout.setContentsMargins(0, 0, 0, 0)
+
+        # controls and tooltips
         self.threshold = LabeledSlider(
-            "Threshold", 0, 5, self.params.threshold, "float", 3
+            "Threshold", 1, 10, self.params.threshold, "float", 3
         )
+        self.threshold.setToolTip("Minimum absolute value above background")
+
+        self.sigma = LabeledSlider("Sigma", 1, 10, self.params.sigma, "float", 3)
+        self.sigma.setToolTip("Background standard deviation")
+
+        # Add to layout
+        layout.addWidget(self.sigma)
         layout.addWidget(self.threshold)
 
+        self.sigma.valueChanged.connect(self._update_threshold)
         self.threshold.valueChanged.connect(self._update_threshold)
 
     @Slot(float)

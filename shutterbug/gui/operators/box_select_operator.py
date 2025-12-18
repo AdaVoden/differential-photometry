@@ -8,7 +8,7 @@ if TYPE_CHECKING:
 
 from shutterbug.gui.tools.box_select_settings import BoxSelectOperatorSettingsWidget
 
-from PySide6.QtCore import QRect, QSize, QTimer, Slot, Qt
+from PySide6.QtCore import QRect, QSize, QTimer, Slot
 from PySide6.QtGui import QMouseEvent
 from PySide6.QtWidgets import QRubberBand
 from shutterbug.gui.commands.star_commands import AddMeasurementsCommand
@@ -115,7 +115,9 @@ class BoxSelectOperator(BaseOperator):
         # Query stars using threshold
         if not self.rubber:
             return  # Something broke
-        stars = self._find_stars_in(self.scene_rect)
+        stars = None
+        if self.scene_rect:
+            stars = self._find_stars_in(self.scene_rect)
 
         if not stars or self.view.current_image is None:
             return None

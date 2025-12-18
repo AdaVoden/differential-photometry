@@ -6,15 +6,16 @@ class OperatorParameters(QObject):
 
 
 class BoxSelectParameters(OperatorParameters):
-    threshold = 3.0
+    threshold = 5.0
+    sigma = 3.0
 
 
 class PhotometryParameters(OperatorParameters):
     mode = "all"
     images = "single"
-    aperture_radius = 10
-    annulus_inner_radius = 15
-    annulus_outer_radius = 20
+    aperture_radius = 5
+    annulus_inner_radius = 10
+    annulus_outer_radius = 15
     number_type = "float"
     decimal_places = 1
     buffer = 0.1  # Pixel

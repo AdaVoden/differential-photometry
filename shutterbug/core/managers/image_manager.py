@@ -27,6 +27,7 @@ class ImageManager(BaseManager):
     SIGMA_DEFAULT = 3.0
     FWHM_DEFAULT = 3.0
     THRESHOLD_DEFAULT = 5.0
+    MINIMUM_AREA_DEFAULT = 50  # pixel
 
     def __init__(self, controller: AppController, parent=None):
 
@@ -102,21 +103,26 @@ class ImageManager(BaseManager):
 
         return None
 
-    def _compute_background(self, data):
+    def _compute_background(self, data, sigma: float = SIGMA_DEFAULT):
         """Calculate background of image using sigma-clipped statistics"""
 
-        _, median, _ = stats.sigma_clipped_stats(data, sigma=self.sigma)
+        _, median, _ = stats.sigma_clipped_stats(data, sigma=sigma)
 
         return median
 
-    def get_background_subtracted(self, data):
+    def get_background_subtracted(self, data, sigma: float = SIGMA_DEFAULT):
         """Get background-subtracted data, creates if unavailable"""
-        background = self._compute_background(data)
+        background = self._compute_background(data, sigma)
         background_subtracted = data - background
         return background_subtracted
 
     def find_centroids_from_points(
-        self, image: FITSModel, start: QPoint, end: QPoint, threshold: float
+        self,
+        image: FITSModel,
+        start: QPoint,
+        end: QPoint,
+        threshold: float = THRESHOLD_DEFAULT,
+        sigma: float = SIGMA_DEFAULT,
     ):
 
         x0, x1 = start.x(), end.x()
@@ -132,10 +138,10 @@ class ImageManager(BaseManager):
         # Prevent error from having no area to search
         h = data.shape[0]
         w = data.shape[1]
-        if (h * w) <= 50:
+        if (h * w) <= self.MINIMUM_AREA_DEFAULT:
             return  # Not enough area
 
-        centroids = self.find_centroids(data, threshold)
+        centroids = self.find_centroids(data, threshold, sigma)
         if centroids is None:
             return []
 
@@ -145,14 +151,16 @@ class ImageManager(BaseManager):
 
         return centroids
 
-    def find_centroids(self, data, threshold: float = THRESHOLD_DEFAULT):
+    def find_centroids(
+        self, data, threshold: float = THRESHOLD_DEFAULT, sigma: float = SIGMA_DEFAULT
+    ):
         """Detect centroids using DAOStarFinder"""
-        bg_subtracted = self.get_background_subtracted(data)
+        bg_subtracted = self.get_background_subtracted(data, sigma)
         if bg_subtracted is None:
             return
 
         # Estimate FWHM and threshold
-        _, _, std = stats.sigma_clipped_stats(bg_subtracted, sigma=self.sigma)
+        _, _, std = stats.sigma_clipped_stats(bg_subtracted, sigma=sigma)
 
         daofind = DAOStarFinder(fwhm=self.fwhm, threshold=threshold * std)
         centroids = daofind(bg_subtracted)
