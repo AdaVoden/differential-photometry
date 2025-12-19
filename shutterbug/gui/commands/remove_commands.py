@@ -65,44 +65,32 @@ class RemoveStarCommand(QUndoCommand):
 class RemoveGraphCommand(QUndoCommand):
     """Command to deselect a star"""
 
-    def __init__(self, measurement: StarMeasurement, controller: AppController):
+    def __init__(self, graph: GraphDataModel, controller: AppController):
         super().__init__("Remove Measurements")
-        self.measurement = measurement
-        self.stars = controller.stars
+        self.graph = graph
+        self.graphs = controller.graphs
 
     def redo(self):
-        m = self.measurement
-        logging.debug(
-            f"COMMAND: Removing measurement at {m.x:.0f}/{m.y:.0f} for image {m.image_id}"
-        )
-        self.stars.unregister_measurement(m)
+        logging.debug(f"COMMAND: Removing graph {self.graph.label}")
+        self.graphs.remove_graph(self.graph)
 
     def undo(self):
-        m = self.measurement
-        logging.debug(
-            f"COMMAND: Undoing measurement removal at {m.x:.0f}/{m.y:.0f} for image {m.image_id}"
-        )
-        self.stars.register_measurement(m)
+        logging.debug(f"COMMAND: Undoing graph {self.graph.label} removal")
+        self.graphs.add_graph(self.graph)
 
 
 class RemoveImageCommand(QUndoCommand):
     """Command to deselect a star"""
 
-    def __init__(self, measurement: StarMeasurement, controller: AppController):
+    def __init__(self, image: FITSModel, controller: AppController):
         super().__init__("Remove Measurements")
-        self.measurement = measurement
-        self.stars = controller.stars
+        self.image = image
+        self.images = controller.images
 
     def redo(self):
-        m = self.measurement
-        logging.debug(
-            f"COMMAND: Removing measurement at {m.x:.0f}/{m.y:.0f} for image {m.image_id}"
-        )
-        self.stars.unregister_measurement(m)
+        logging.debug(f"COMMAND: Removing image {self.image.filepath}")
+        self.images.remove_image(self.image)
 
     def undo(self):
-        m = self.measurement
-        logging.debug(
-            f"COMMAND: Undoing measurement removal at {m.x:.0f}/{m.y:.0f} for image {m.image_id}"
-        )
-        self.stars.register_measurement(m)
+        logging.debug(f"COMMAND: Undoing image {self.image.filepath} removal")
+        self.images.add_image(self.image)

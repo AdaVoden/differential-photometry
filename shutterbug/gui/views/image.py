@@ -88,7 +88,8 @@ class ImageViewer(BaseView):
         self.subscribe("operator.cancelled", self._on_operator_finished)
         # View subscriptions
         self.subscribe("image.selected", self.view._on_image_selected)
-        self.subscribe("image.updated.*", self.view._on_image_update_event)
+        self.subscribe("image.updated.*", self.view._on_image_update)
+        self.subscribe("image.removed", self.view._on_image_removed)
         self.subscribe("marker.created", self.view._on_marker_created)
         self.subscribe("marker.removed", self.view._on_marker_removed)
         self.subscribe("marker.updated.*", self.view._on_marker_updated)
@@ -279,7 +280,15 @@ class ImageGraphicsView(QGraphicsView):
                 self.update_display()
 
     @Slot(Event)
-    def _on_image_update_event(self, event: Event):
+    def _on_image_removed(self, event: Event):
+        """Handles image being removed from system"""
+        image = event.data
+        if image == self.current_image:
+            self.current_image = None
+            self.update_display()
+
+    @Slot(Event)
+    def _on_image_update(self, event: Event):
         """Handles current image changing values"""
         image = event.data
         if image is None:
@@ -427,6 +436,7 @@ class ImageGraphicsView(QGraphicsView):
     def update_display(self):
         """Updates image display"""
         if self.current_image is None:
+            self.pixmap_item.setPixmap(QPixmap())
             return
 
         self._display_image(self.current_image)
