@@ -1,11 +1,22 @@
 import logging
+from typing import Any
 
 from PySide6.QtCore import QItemSelection, QPoint, Qt, Signal, Slot
 from PySide6.QtWidgets import QMenu, QTreeView, QVBoxLayout
 from shutterbug.core.app_controller import AppController
-from shutterbug.core.models import OutlinerModel
+from shutterbug.core.models import (
+    OutlinerModel,
+    FITSModel,
+    StarIdentity,
+    GraphDataModel,
+)
 from shutterbug.gui.views.registry import register_view
 from .base_view import BaseView
+from shutterbug.gui.commands import (
+    RemoveStarCommand,
+    RemoveImageCommand,
+    RemoveGraphCommand,
+)
 
 
 @register_view()
@@ -13,6 +24,12 @@ class Outliner(BaseView):
 
     name = "Outliner"
     object_selected = Signal(object)
+
+    mapping = {
+        FITSModel: RemoveImageCommand,
+        StarIdentity: RemoveStarCommand,
+        GraphDataModel: RemoveGraphCommand,
+    }
 
     def __init__(self, controller: AppController, parent=None):
         super().__init__(controller, parent)
@@ -86,9 +103,17 @@ class Outliner(BaseView):
     @Slot(QPoint)
     def show_context_menu(self, pos: QPoint):
         """Displays context menu for right-clicked item in file list"""
-        selection = self.item_view.selectionModel().selection()
+        selection = self.item_view.selectionModel()
+        data = selection.currentIndex().data(Qt.ItemDataRole.UserRole)
         menu = QMenu()
 
         delete_action = menu.addAction("Delete")
+        delete_action.triggered.connect(lambda: self._remove_item(data))
 
         menu.exec(self.item_view.mapToGlobal(pos))
+
+    def _remove_item(self, item: Any):
+        """Removes item from system"""
+        cmd = self.mapping.get(type(item))
+        if cmd:
+            self.controller._undo_stack.push(cmd(item, self.controller))

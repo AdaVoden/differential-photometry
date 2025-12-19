@@ -97,6 +97,10 @@ class StarCatalog(BaseManager):
         self, measurement: StarMeasurement, star: Optional[StarIdentity] = None
     ) -> StarIdentity:
         """Registers measurement to star with catalog"""
+        # is the star in our database already?
+        if star and not self.stars.get(star.id):
+            self._add_star(star, measurement.x, measurement.y)
+
         # If no star, try to find one
         if star is None:
             star = self.find_nearest(measurement.x, measurement.y)

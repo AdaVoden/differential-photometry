@@ -19,7 +19,7 @@ class SelectCommand(QUndoCommand):
         self.old_identity = self.controller.selections.get(object)
 
     def redo(self):
-        logging.debug(f"COMMAND: Setting active object to {type(self.object).__name__}")
+        logging.debug(f"COMMAND: Selecting object {type(self.object).__name__}")
         self.controller.selections.select(self.object)
 
     def undo(self):

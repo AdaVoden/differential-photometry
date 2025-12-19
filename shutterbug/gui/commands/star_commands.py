@@ -59,29 +59,6 @@ class AddMeasurementsCommand(QUndoCommand):
                 self.controller.selections.select(self.old_select)
 
 
-class RemoveMeasurementCommand(QUndoCommand):
-    """Command to deselect a star"""
-
-    def __init__(self, measurement: StarMeasurement, controller: AppController):
-        super().__init__("Remove Measurements")
-        self.measurement = measurement
-        self.stars = controller.stars
-
-    def redo(self):
-        m = self.measurement
-        logging.debug(
-            f"COMMAND: Removing measurement at {m.x:.0f}/{m.y:.0f} for image {m.image_id}"
-        )
-        self.stars.unregister_measurement(m)
-
-    def undo(self):
-        m = self.measurement
-        logging.debug(
-            f"COMMAND: Undoing measurement removal at {m.x:.0f}/{m.y:.0f} for image {m.image_id}"
-        )
-        self.stars.register_measurement(m)
-
-
 class PhotometryMeasurementCommand(QUndoCommand):
     """Command to perform photometry on a star"""
 
