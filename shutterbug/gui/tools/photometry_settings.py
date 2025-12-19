@@ -14,8 +14,8 @@ class PhotometryOperatorSettingsWidget(BaseSettings):
         self.setLayout(layout)
         layout.setSpacing(6)
         layout.setContentsMargins(0, 0, 0, 0)
-        self.mode = LabeledComboBox("Mode", ["all", "active"])
-        self.images = LabeledComboBox("Images", ["single", "all"])
+        # self.mode = LabeledComboBox("Mode", ["all", "active"])
+        self.images = LabeledComboBox("Images", ["all", "single"])
         self.aperture = LabeledSlider(
             "Aperture",
             1,
@@ -41,13 +41,13 @@ class PhotometryOperatorSettingsWidget(BaseSettings):
             self.params.decimal_places,
         )
 
-        self.mode.activated.connect(self._update_mode)
+        # self.mode.activated.connect(self._update_mode)
         self.images.activated.connect(self._update_images)
         self.aperture.valueChanged.connect(self._update_aperture)
         self.annulus_inner.valueChanged.connect(self._update_annulus_inner)
         self.annulus_outer.valueChanged.connect(self._update_annulus_outer)
 
-        layout.addWidget(self.mode)
+        # layout.addWidget(self.mode)
         layout.addWidget(self.images)
         layout.addWidget(self.aperture)
         layout.addWidget(self.annulus_inner)

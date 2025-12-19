@@ -8,7 +8,7 @@ from PySide6.QtGui import QIcon
 if TYPE_CHECKING:
     from shutterbug.core.app_controller import AppController
 
-from PySide6.QtCore import QSize, Qt, Signal, Slot
+from PySide6.QtCore import QSize, Qt, Slot
 from PySide6.QtWidgets import QButtonGroup, QToolButton, QWidget
 from shutterbug.core.events import Event
 from shutterbug.gui.panels.base_popover import BasePopOver
@@ -40,18 +40,31 @@ class ToolPanel(BasePopOver):
             layout.addWidget(self.box_btn)
             layout.addWidget(self.phot_btn)
 
+        tool = self.controller.selections.tool
+        if tool:
+            self._select_button(tool.name)
+
         self.subscribe("tool.selected", self._on_tool_selected)
+
+    def _select_button(self, name: str):
+        """Selects appropriate button from selected tool"""
+        if name == "Select":
+            self.select_btn.setChecked(True)
+        elif name == "Box Select":
+            self.box_btn.setChecked(True)
+        elif name == "Photometry":
+            self.phot_btn.setChecked(True)
+        else:
+            self.select_btn.setChecked(False)
+            self.box_btn.setChecked(False)
+            self.phot_btn.setChecked(False)
 
     @Slot(Event)
     def _on_tool_selected(self, event: Event):
+        """Handles tool being selected"""
         tool = event.data
         if tool:
-            if tool.name == "Select":
-                self.select_btn.setChecked(True)
-            if tool.name == "Box Select":
-                self.box_btn.setChecked(True)
-            if tool.name == "Photometry":
-                self.phot_btn.setChecked(True)
+            self._select_button(tool.name)
 
     def _make_button(
         self, icon: QIcon, tool: Type[BaseTool], checked=False

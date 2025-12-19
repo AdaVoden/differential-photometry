@@ -41,8 +41,8 @@ class GraphDataModel(ObservableQObject):
         self.xlim = self._define_field("xlim", xlim)
         self.ylim = self._define_field("ylim", ylim)
         ys = self.get_ys()
-        min_y = np.min(ys)
-        max_y = np.max(ys)
+        min_y = np.nanmin(ys)
+        max_y = np.nanmax(ys)
         # 10 percent buffer
         self._ylim = (0.9 * min_y, 1.10 * max_y)
 

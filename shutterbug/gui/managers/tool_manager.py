@@ -36,7 +36,7 @@ class ToolManager(BaseManager):
         logging.debug(f"Setting current tool to: {tool_cls.__name__}")
         tool = tool_cls()
         self._current_tool = tool
-        self.controller.dispatch(Event(EventDomain.TOOL, "selected", data=tool))
+        self.controller.selections.select(tool)
 
     def begin_operation(
         self,

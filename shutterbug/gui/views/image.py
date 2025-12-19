@@ -14,7 +14,6 @@ from typing import Tuple
 
 from PySide6.QtCore import (
     Property,
-    QEvent,
     QPoint,
     QPointF,
     QPropertyAnimation,

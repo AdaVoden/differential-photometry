@@ -9,6 +9,7 @@ if TYPE_CHECKING:
 
 import logging
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas
+import matplotlib.dates as mdates
 from matplotlib.figure import Figure
 from PySide6.QtCore import Slot
 from PySide6.QtWidgets import QVBoxLayout
@@ -37,6 +38,7 @@ class GraphViewer(BaseView):
         self.graph = controller.selections.graph
         # Graph settings
         self.figure = Figure(figsize=(5, 4))
+        self.figure.tight_layout()
         self.canvas = FigureCanvas(self.figure)
         self.toolbar = NavigationToolbar2QT(self.canvas, self)
         self.ax = None
@@ -97,7 +99,7 @@ class GraphViewer(BaseView):
 
         xs = graph_data.get_xs()
         ys = graph_data.get_ys()
-        xs = Time(xs, format="jd", scale="utc").to_datetime()
+        xs = Time(xs, format="jd").to_datetime()
         err = graph_data.get_error()
 
         self.ax = self.figure.add_subplot(111)
@@ -108,5 +110,9 @@ class GraphViewer(BaseView):
         self.ax.set_xlim(graph_data.xlim)
         self.ax.set_ylim(graph_data.ylim)
         self.ax.set_title(graph_data.title or "")
+        # prettification of x-axis
+        self.ax.xaxis.set_major_formatter(mdates.DateFormatter("%H:%M"))
+        self.ax.tick_params(axis="x", labelrotation=45)
         self.ax.grid(True)
+        self.ax.yaxis.set_inverted(True)
         self.canvas.draw_idle()
