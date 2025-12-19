@@ -35,7 +35,7 @@ class BaseOperator(QObject):
         pass
 
     # Called on mouse move
-    def update(self, event: QMouseEvent):
+    def update(self, event: QMouseEvent | None = None):
         pass
 
     def stop_interaction(self):

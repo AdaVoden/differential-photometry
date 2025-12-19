@@ -59,7 +59,7 @@ class ToolManager(BaseManager):
         self.controller.dispatch(Event(EventDomain.OPERATOR, "selected", data=op))
         op.start(event)
 
-    def update_operation(self, event: QMouseEvent):
+    def update_operation(self, event: QMouseEvent | None = None):
         """Updates current operation, if any"""
         if self.active_operator:
             self.active_operator.update(event)

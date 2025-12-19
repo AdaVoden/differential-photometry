@@ -83,10 +83,6 @@ class PhotometryOperator(BaseOperator):
             )
             self.markers[(x, y)] = [aperture, annulus_inner, annulus_outer]
 
-    def update(self, event: QMouseEvent):
-        """Updates operator on mouse movement"""
-        pass
-
     def stop_interaction(self):
         """Prevents interaction with operator"""
         self._update_preview()

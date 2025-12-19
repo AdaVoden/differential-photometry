@@ -14,6 +14,7 @@ from typing import Tuple
 
 from PySide6.QtCore import (
     Property,
+    QEvent,
     QPoint,
     QPointF,
     QPropertyAnimation,
@@ -163,6 +164,11 @@ class ImageViewer(BaseView):
     def mouseMoveEvent(self, event: QMouseEvent) -> None:
         self.tools.update_operation(event)
         super().mouseMoveEvent(event)
+
+    @Slot(QWheelEvent)
+    def wheelEvent(self, event: QWheelEvent):
+        self.tools.update_operation()
+        super().wheelEvent(event)
 
     @Slot(QKeyEvent)
     def keyPressEvent(self, event: QKeyEvent):
@@ -343,6 +349,9 @@ class ImageGraphicsView(QGraphicsView):
             - self._target_scene_pos
         )
         self.translate(delta.x(), delta.y())
+
+        # Fix box select region changing on zoom
+        self.controller.tools.update_operation()
 
     zoom = Property(float, get_zoom, set_zoom)
 

@@ -47,7 +47,7 @@ class BoxSelectOperator(BaseOperator):
 
     def start(self, event: QMouseEvent):
         """Begins selection box at point of click"""
-        self.start_pos = event.pos()
+        self.start_pos = self.view.mapToScene(event.pos()).toPoint()
         self.rubber = QRubberBand(QRubberBand.Shape.Rectangle, self.view)
         self.rubber.setGeometry(QRect(event.pos(), QSize()))
         self.rubber.show()
@@ -56,22 +56,24 @@ class BoxSelectOperator(BaseOperator):
         self._update_preview()
         self.listening = False
 
-    def update(self, event: QMouseEvent):
+    def update(self, event: QMouseEvent | None = None):
         """Updates selection box on mouse move"""
         if not self.active and not self.listening:
             return
         if self.active and not self.listening:
             # Pan and drag just happened
-            if self.scene_rect:
-                new_rect = self.view.mapFromScene(self.scene_rect).boundingRect()
-
-                if self.rubber:
-                    self.rubber.setGeometry(new_rect)
-        else:
-            # Normal operation
-            self.end_pos = event.pos()
             if self.start_pos and self.end_pos:
                 rect = QRect(self.start_pos, self.end_pos).normalized()
+                rect = self.view.mapFromScene(rect).boundingRect().normalized()
+
+                if self.rubber:
+                    self.rubber.setGeometry(rect)
+        elif event:
+            # Normal operation
+            self.end_pos = self.view.mapToScene(event.pos()).toPoint()
+            if self.start_pos and self.end_pos:
+                rect = QRect(self.start_pos, self.end_pos).normalized()
+                rect = self.view.mapFromScene(rect).boundingRect().normalized()
                 if self.rubber:
                     self.rubber.setGeometry(rect)
 
