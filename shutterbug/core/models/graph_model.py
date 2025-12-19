@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Tuple
 
 if TYPE_CHECKING:
     from shutterbug.core.app_controller import AppController
@@ -13,6 +13,8 @@ from .base_observable import ObservableQObject
 from .star_measurement import StarMeasurement
 from uuid import uuid4
 
+import numpy as np
+
 
 class GraphDataModel(ObservableQObject):
 
@@ -24,10 +26,10 @@ class GraphDataModel(ObservableQObject):
         label: str,
         measurements: List[StarMeasurement],
         title: Optional[str] = None,
-        x_label: Optional[str] = None,
-        y_label: Optional[str] = None,
-        xlim: Optional[float] = None,
-        ylim: Optional[float] = None,
+        x_label: Optional[str] = "Time (UTC)",
+        y_label: Optional[str] = "Differential Magnitude (Unitless)",
+        xlim: Optional[Tuple[float, float]] = None,
+        ylim: Optional[Tuple[float, float]] = None,
     ):
         super().__init__(controller)
         self.uid = uuid4().hex
@@ -38,6 +40,11 @@ class GraphDataModel(ObservableQObject):
         self.y_label = self._define_field("y_label", y_label)
         self.xlim = self._define_field("xlim", xlim)
         self.ylim = self._define_field("ylim", ylim)
+        ys = self.get_ys()
+        min_y = np.min(ys)
+        max_y = np.max(ys)
+        # 10 percent buffer
+        self._ylim = (0.9 * min_y, 1.10 * max_y)
 
     def set_limits(self, xlim: Optional[float] = None, ylim: Optional[float] = None):
         """Sets limit of the graph"""

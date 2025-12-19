@@ -210,10 +210,10 @@ class GraphPropertiesPanel(BaseUIWidget):
             "graph.updated.title", lambda evt: self.title.set_text(evt.data.title)
         )
         self.subscribe(
-            "graph.updated.x_label", lambda evt: self.title.set_text(evt.data.x_label)
+            "graph.updated.x_label", lambda evt: self.x_label.set_text(evt.data.x_label)
         )
         self.subscribe(
-            "graph.updated.y_label", lambda evt: self.title.set_text(evt.data.y_label)
+            "graph.updated.y_label", lambda evt: self.y_label.set_text(evt.data.y_label)
         )
 
         self.title.editing_finished.connect(self._on_title_changed)

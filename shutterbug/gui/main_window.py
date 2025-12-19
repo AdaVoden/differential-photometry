@@ -108,17 +108,12 @@ class MainWindow(QMainWindow):
         redo_action = edit_menu.addAction("Redo")
         redo_action.triggered.connect(self.controller.on_redo)
 
-        diff_menu = edit_menu.addMenu("Differential")
-
-        diff_all_action = diff_menu.addAction("Differential (All Images)")
-        diff_all_action.triggered.connect(self._on_differential_all)
-
-        graph_action = diff_menu.addAction("Graph selected star")
+        graph_action = edit_menu.addAction("Graph selected star")
         graph_action.triggered.connect(self._on_graph_selection)
 
         # Help menu
-        # help_menu = menu_bar.addMenu("Help")
-        # about_action = help_menu.addAction("About Shutterbug")
+        help_menu = menu_bar.addMenu("Help")
+        about_action = help_menu.addAction("About Shutterbug")
 
         logging.debug("Menu bar set up")
 

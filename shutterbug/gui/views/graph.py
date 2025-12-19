@@ -17,6 +17,8 @@ from shutterbug.core.events.change_event import Event
 from .base_view import BaseView
 from .registry import register_view
 
+from astropy.time import Time
+
 
 @register_view()
 class GraphViewer(BaseView):
@@ -32,7 +34,7 @@ class GraphViewer(BaseView):
         layout.setSpacing(0)
         self.setLayout(layout)
 
-        self.graph = None
+        self.graph = controller.selections.graph
         # Graph settings
         self.figure = Figure(figsize=(5, 4))
         self.canvas = FigureCanvas(self.figure)
@@ -41,9 +43,13 @@ class GraphViewer(BaseView):
         layout.addWidget(self.toolbar)
         layout.addWidget(self.canvas)
 
+        if self.graph:
+            self.display()
+
     def on_activated(self):
         """On the graph viewer's initial activation"""
-        self.subscribe("graph.selected", self._on_active_graph_change)
+        self.subscribe("graph.selected", self._on_graph_selected)
+        self.subscribe("graph.updated.*", self._on_active_graph_change)
         self.graph = self.controller.selections.graph
         if self.graph:
             self.display()
@@ -58,6 +64,18 @@ class GraphViewer(BaseView):
         self.ax = None
 
     @Slot(Event)
+    def _on_graph_selected(self, event: Event):
+        graph = event.data
+        if graph is None:
+            logging.debug(f"Graph viewer clearing graph, no graph selected")
+            self._clear()
+            self.graph = None
+            return
+        self.graph = graph
+        self._clear()
+        self.display()
+
+    @Slot(Event)
     def _on_active_graph_change(self, event: Event):
         graph_data = event.data
         if graph_data is None:
@@ -65,10 +83,11 @@ class GraphViewer(BaseView):
             self._clear()
             self.graph = None
             return
-        logging.debug(f"Graph updated in graphing viewer")
-        self.graph = graph_data
-        self._clear()
-        self.display()
+        if self.graph == graph_data:
+            logging.debug(f"Graph updated in graphing viewer")
+            self.graph = graph_data
+            self._clear()
+            self.display()
 
     def display(self):
         """Displays input graph"""
@@ -78,6 +97,7 @@ class GraphViewer(BaseView):
 
         xs = graph_data.get_xs()
         ys = graph_data.get_ys()
+        xs = Time(xs, format="jd", scale="utc").to_datetime()
         err = graph_data.get_error()
 
         self.ax = self.figure.add_subplot(111)
