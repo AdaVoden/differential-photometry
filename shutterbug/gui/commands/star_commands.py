@@ -217,13 +217,15 @@ class PropagateStarSelection(QUndoCommand):
                 if last_m:
                     # If images aren't aligned properly
                     centroid = self.controller.images.find_nearest_centroid(
-                        i, last_m.x, last_m.y
+                        i, last_m.x, last_m.y, reference=last_m
                     )
                 else:
-                    centroid = self.controller.images.find_nearest_centroid(i, m.x, m.y)
+                    centroid = self.controller.images.find_nearest_centroid(
+                        i, m.x, m.y, reference=m
+                    )
                 if not centroid:
                     logging.error(
-                        f"Unable to find matching centroid at position ({m.x, m.y}) for image {i.uid}"
+                        f"Unable to find matching centroid at position ({m.x, m.y}) for image {i.filename}"
                     )
                     continue
                 new_m = self.controller.stars.create_measurement(

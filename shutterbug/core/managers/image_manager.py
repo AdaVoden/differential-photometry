@@ -1,8 +1,9 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 from shutterbug.core.events.change_event import Event, EventDomain
+from shutterbug.core.models.star_measurement import StarMeasurement
 
 if TYPE_CHECKING:
     from shutterbug.core.app_controller import AppController
@@ -23,11 +24,12 @@ class ImageManager(BaseManager):
     """Manages multiple images and tracks which is active"""
 
     # Star Finding defaults
-    MAX_DISTANCE_DEFAULT = 20  # pixels
-    SIGMA_DEFAULT = 3.0
+    MAX_DISTANCE_DEFAULT = 10  # pixels
+    SIGMA_DEFAULT = 2.0
     FWHM_DEFAULT = 3.0
-    THRESHOLD_DEFAULT = 5.0
+    THRESHOLD_DEFAULT = 3.0
     MINIMUM_AREA_DEFAULT = 50  # pixel
+    FLUX_TOLERANCE_DEFAULT = 10  # percent
 
     def __init__(self, controller: AppController, parent=None):
 
@@ -78,6 +80,8 @@ class ImageManager(BaseManager):
         max_distance: int = MAX_DISTANCE_DEFAULT,
         threshold: float = THRESHOLD_DEFAULT,
         sigma: float = SIGMA_DEFAULT,
+        reference: Optional[StarMeasurement] = None,
+        flux_tolerance: float = FLUX_TOLERANCE_DEFAULT,
     ):
         """Given a coordinate, finds the nearest centroid within a tolerance to that coordinate"""
         stamp = image.get_stamp(x, y, max_distance)
@@ -86,6 +90,13 @@ class ImageManager(BaseManager):
         if centroids is None:
             return
 
+        if reference:
+            percent = flux_tolerance
+            flux = reference.flux
+            if flux:
+                close = centroids["flux"] <= flux + (percent * flux)
+                if not (~close).all():
+                    centroids = centroids[close]
         # Get stamp center
         stamp_size = stamp.shape[0]
         s_x, s_y = stamp_size / 2, stamp_size / 2
@@ -168,7 +179,9 @@ class ImageManager(BaseManager):
         # Estimate FWHM and threshold
         _, _, std = stats.sigma_clipped_stats(bg_subtracted, sigma=sigma)
 
-        daofind = DAOStarFinder(fwhm=fwhm, threshold=threshold * std)
+        daofind = DAOStarFinder(
+            fwhm=fwhm, threshold=threshold * std, roundlo=-0.75, roundhi=0.75
+        )
         centroids = daofind(bg_subtracted)
 
         return centroids

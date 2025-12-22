@@ -11,8 +11,6 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 from shutterbug.core.app_controller import AppController
-from shutterbug.gui.commands.graph_commands import AddGraphCommand
-from shutterbug.gui.commands.star_commands import DifferentialPhotometryAllCommand
 from shutterbug.gui.region import Region
 
 
@@ -108,9 +106,6 @@ class MainWindow(QMainWindow):
         redo_action = edit_menu.addAction("Redo")
         redo_action.triggered.connect(self.controller.on_redo)
 
-        graph_action = edit_menu.addAction("Graph selected star")
-        graph_action.triggered.connect(self._on_graph_selection)
-
         # Help menu
         help_menu = menu_bar.addMenu("Help")
         about_action = help_menu.addAction("About Shutterbug")
@@ -151,17 +146,3 @@ class MainWindow(QMainWindow):
     @Slot()
     def exit(self):
         QCoreApplication.quit()
-
-    @Slot()
-    def _on_differential_all(self):
-        """Handles differential all being triggered"""
-        self.controller._undo_stack.push(
-            DifferentialPhotometryAllCommand(self.controller)
-        )
-
-    @Slot()
-    def _on_graph_selection(self):
-        """Handles graph creation being triggered"""
-        star = self.controller.selections.star
-        if star:
-            self.controller._undo_stack.push(AddGraphCommand(star, self.controller))

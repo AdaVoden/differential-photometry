@@ -10,6 +10,7 @@ from shutterbug.core.models import (
     StarIdentity,
     GraphDataModel,
 )
+from shutterbug.gui.commands.graph_commands import AddGraphCommand
 from shutterbug.gui.views.registry import register_view
 from .base_view import BaseView
 from shutterbug.gui.commands import (
@@ -109,6 +110,8 @@ class Outliner(BaseView):
 
         delete_action = menu.addAction("Delete")
         delete_action.triggered.connect(lambda: self._remove_item(data))
+        if isinstance(data, StarIdentity):
+            self._star_menu(menu, data)
 
         menu.exec(self.item_view.mapToGlobal(pos))
 
@@ -117,3 +120,13 @@ class Outliner(BaseView):
         cmd = self.mapping.get(type(item))
         if cmd:
             self.controller._undo_stack.push(cmd(item, self.controller))
+
+    def _star_menu(self, menu: QMenu, star: StarIdentity):
+        """Creates menu for stars"""
+
+        graph_action = menu.addAction("Graph star")
+        graph_action.triggered.connect(
+            lambda: self.controller._undo_stack.push(
+                AddGraphCommand(star, self.controller)
+            )
+        )
