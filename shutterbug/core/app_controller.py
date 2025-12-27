@@ -11,6 +11,7 @@ from shutterbug.gui.adapters import (
 from shutterbug.gui.adapters.adapter_registry import AdapterRegistry
 from shutterbug.gui.managers.icon_manager import IconManager
 from shutterbug.gui.managers.theme_manager import ThemeManager
+from shutterbug.gui.managers.progress_manager import ProgressManager
 from shutterbug.gui.tools.select import SelectTool
 
 from .managers import (
@@ -49,6 +50,7 @@ class AppController(QObject):
         self.icons = IconManager(self)
         self.themes = ThemeManager(self)
         self.tools = ToolManager(self)
+        self.progress = ProgressManager(self)
 
         # Default tool
         self.tools.set_tool(SelectTool)

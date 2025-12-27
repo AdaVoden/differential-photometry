@@ -87,25 +87,29 @@ class PhotometryMeasurementCommand(QUndoCommand):
         logging.debug(
             f"COMMAND: Performing aperture photometry on {len(self.measurements)} stars"
         )
-        for m in self.measurements:
-            data = self.image.get_stamp(
-                m.x, m.y, r=self.parameters.annulus_outer_radius
-            )
-            # star is in middle of data
-            x = data.shape[0] / 2
-            y = x
-            mag, mag_err, flux, flux_err = phot.measure_star_magnitude(
-                x=x,
-                y=y,
-                data=data,
-                aperture_radius=self.parameters.aperture_radius,
-                annulus_inner=self.parameters.annulus_inner_radius,
-                annulus_outer=self.parameters.annulus_outer_radius,
-            )
-            m.mag = mag
-            m.mag_error = mag_err
-            m.flux = flux
-            m.flux_error = flux_err
+        with self.controller.progress(
+            "Conducting photometry...", len(self.measurements)
+        ) as prog:
+            for m in self.measurements:
+                data = self.image.get_stamp(
+                    m.x, m.y, r=self.parameters.annulus_outer_radius
+                )
+                # star is in middle of data
+                x = data.shape[0] / 2
+                y = x
+                mag, mag_err, flux, flux_err = phot.measure_star_magnitude(
+                    x=x,
+                    y=y,
+                    data=data,
+                    aperture_radius=self.parameters.aperture_radius,
+                    annulus_inner=self.parameters.annulus_inner_radius,
+                    annulus_outer=self.parameters.annulus_outer_radius,
+                )
+                m.mag = mag
+                m.mag_error = mag_err
+                m.flux = flux
+                m.flux_error = flux_err
+                prog.advance()
 
     def undo(self):
         logging.debug(f"COMMAND: Undoing photometry on {len(self.measurements)} stars")
@@ -209,36 +213,40 @@ class PropagateStarSelection(QUndoCommand):
 
     def redo(self):
         logging.debug(f"COMMAND: Propagating stars from image {self.image.uid}")
-        for m in self.measurements:
-            # Account for drift
-            last_m = None
-            star = self.controller.stars.get_by_measurement(m)
-            for i in self.others:
-                if last_m:
-                    # If images aren't aligned properly
-                    centroid = self.controller.images.find_nearest_centroid(
-                        i, last_m.x, last_m.y, reference=last_m
+        with self.controller.progress(
+            "Propagating star selection...", len(self.measurements)
+        ) as prog:
+            for m in self.measurements:
+                # Account for drift
+                last_m = None
+                star = self.controller.stars.get_by_measurement(m)
+                for i in self.others:
+                    if last_m:
+                        # If images aren't aligned properly
+                        centroid = self.controller.images.find_nearest_centroid(
+                            i, last_m.x, last_m.y, reference=last_m
+                        )
+                    else:
+                        centroid = self.controller.images.find_nearest_centroid(
+                            i, m.x, m.y, reference=m
+                        )
+                    if not centroid:
+                        logging.error(
+                            f"Unable to find matching centroid at position ({m.x, m.y}) for image {i.filename}"
+                        )
+                        continue
+                    new_m = self.controller.stars.create_measurement(
+                        centroid["xcentroid"],
+                        centroid["ycentroid"],
+                        i.observation_time,
+                        i.uid,
+                        flux=centroid["flux"],
+                        mag=centroid["mag"],
+                        star=star,
                     )
-                else:
-                    centroid = self.controller.images.find_nearest_centroid(
-                        i, m.x, m.y, reference=m
-                    )
-                if not centroid:
-                    logging.error(
-                        f"Unable to find matching centroid at position ({m.x, m.y}) for image {i.filename}"
-                    )
-                    continue
-                new_m = self.controller.stars.create_measurement(
-                    centroid["xcentroid"],
-                    centroid["ycentroid"],
-                    i.observation_time,
-                    i.uid,
-                    flux=centroid["flux"],
-                    mag=centroid["mag"],
-                    star=star,
-                )
-                self.added.append(new_m)
-                last_m = new_m
+                    self.added.append(new_m)
+                    last_m = new_m
+                prog.advance()
 
     def undo(self):
         for m in self.added:

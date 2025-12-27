@@ -28,11 +28,6 @@ class MainWindow(QMainWindow):
         self.setWindowTitle("Shutterbug")
         self.setGeometry(100, 100, 1200, 800)
 
-        # Managers
-        self.image_manager = controller.images
-        self.star_catalog = controller.stars
-        self.graph_manager = controller.graphs
-
         self.controller = controller
         # Set up save/load functionality
         self.project = ShutterbugProject()
@@ -73,11 +68,46 @@ class MainWindow(QMainWindow):
         self.progress_bar.setMaximumWidth(100)  # Pixels
         self.progress_bar.setVisible(False)
         # Handler for context handling
+        self.progress = controller.progress
 
         # Add to status bar
         self.status_bar.addPermanentWidget(self.progress_bar)
 
+        self.progress.started.connect(self._on_progress_started)
+        self.progress.finished.connect(self._on_progress_finished)
+        self.progress.changed.connect(self._on_progress_changed)
+
         logging.debug("Main window initialized")
+
+    @Slot()
+    def _on_progress_started(self):
+        """Handles progress task starting"""
+        self.progress_bar.setVisible(True)
+        self._update_progress_bar()
+        self.status_label.setText(self.progress.text)
+        self.status_label.repaint()
+
+    @Slot()
+    def _on_progress_finished(self):
+        """Handles progress task finishing"""
+        self.status_label.setText("Ready")
+        self.progress_bar.setVisible(False)
+
+    @Slot()
+    def _on_progress_changed(self):
+        """Handles text changing in progress handler"""
+        self._update_progress_bar()
+        self.status_label.setText(self.progress.text)
+        self.status_label.repaint()
+
+    def _update_progress_bar(self):
+        """Updates the progress bar"""
+        if self.progress.current > 0 and self.progress.max > 0:
+            percent = round(self.progress.max / self.progress.current) * 100
+        else:
+            percent = 0
+        self.progress_bar.setValue(percent)
+        self.progress_bar.repaint()
 
     def setup_menu_bar(self):
         """Set up the menu bar with File, Edit, View, and Help menus"""
