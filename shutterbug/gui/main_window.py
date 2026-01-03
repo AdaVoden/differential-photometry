@@ -3,6 +3,7 @@ import logging
 from PySide6.QtCore import QCoreApplication, Slot
 from PySide6.QtGui import Qt
 from PySide6.QtWidgets import (
+    QApplication,
     QFileDialog,
     QHBoxLayout,
     QLabel,
@@ -11,6 +12,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 from shutterbug.core.app_controller import AppController
+from shutterbug.gui.managers.progress_manager import ProgressTask
 from shutterbug.gui.region import Region
 
 
@@ -64,9 +66,11 @@ class MainWindow(QMainWindow):
         self.status_bar.addWidget(self.status_label)
 
         # Set up progress bar (Hidden by default)
-        self.progress_bar = QProgressBar()
+        self.progress_bar = QProgressBar(self)
         self.progress_bar.setMaximumWidth(100)  # Pixels
         self.progress_bar.setVisible(False)
+        self.progress_bar.setMaximum(100)
+        self.progress_bar.setMinimum(0)
         # Handler for context handling
         self.progress = controller.progress
 
@@ -79,12 +83,12 @@ class MainWindow(QMainWindow):
 
         logging.debug("Main window initialized")
 
-    @Slot()
-    def _on_progress_started(self):
+    @Slot(ProgressTask)
+    def _on_progress_started(self, progress: ProgressTask):
         """Handles progress task starting"""
         self.progress_bar.setVisible(True)
-        self._update_progress_bar()
-        self.status_label.setText(self.progress.text)
+        self._update_progress_bar(progress)
+        self.status_label.setText(progress.text)
         self.status_label.repaint()
 
     @Slot()
@@ -92,22 +96,20 @@ class MainWindow(QMainWindow):
         """Handles progress task finishing"""
         self.status_label.setText("Ready")
         self.progress_bar.setVisible(False)
+        self.progress_bar.setValue(0)
 
-    @Slot()
-    def _on_progress_changed(self):
+    @Slot(ProgressTask)
+    def _on_progress_changed(self, progress: ProgressTask):
         """Handles text changing in progress handler"""
-        self._update_progress_bar()
-        self.status_label.setText(self.progress.text)
+        self._update_progress_bar(progress)
+        self.status_label.setText(progress.text)
         self.status_label.repaint()
 
-    def _update_progress_bar(self):
+    def _update_progress_bar(self, progress: ProgressTask):
         """Updates the progress bar"""
-        if self.progress.current > 0 and self.progress.max > 0:
-            percent = round(self.progress.max / self.progress.current) * 100
-        else:
-            percent = 0
-        self.progress_bar.setValue(percent)
+        self.progress_bar.setValue(progress.percent)
         self.progress_bar.repaint()
+        self.status_bar.repaint()
 
     def setup_menu_bar(self):
         """Set up the menu bar with File, Edit, View, and Help menus"""

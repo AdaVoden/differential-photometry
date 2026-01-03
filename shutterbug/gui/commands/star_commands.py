@@ -87,9 +87,10 @@ class PhotometryMeasurementCommand(QUndoCommand):
         logging.debug(
             f"COMMAND: Performing aperture photometry on {len(self.measurements)} stars"
         )
-        with self.controller.progress(
+        prog = self.controller.progress(
             "Conducting photometry...", len(self.measurements)
-        ) as prog:
+        )
+        with prog:
             for m in self.measurements:
                 data = self.image.get_stamp(
                     m.x, m.y, r=self.parameters.annulus_outer_radius
@@ -213,9 +214,10 @@ class PropagateStarSelection(QUndoCommand):
 
     def redo(self):
         logging.debug(f"COMMAND: Propagating stars from image {self.image.uid}")
-        with self.controller.progress(
-            "Propagating star selection...", len(self.measurements)
-        ) as prog:
+        prog = self.controller.progress(
+            "Propagating star selection", len(self.measurements)
+        )
+        with prog:
             for m in self.measurements:
                 # Account for drift
                 last_m = None
@@ -232,7 +234,7 @@ class PropagateStarSelection(QUndoCommand):
                         )
                     if not centroid:
                         logging.error(
-                            f"Unable to find matching centroid at position ({m.x, m.y}) for image {i.filename}"
+                            f"Unable to find matching centroid at position ({m.x:.0f}, {m.y:.0f}) for image {i.filename}"
                         )
                         continue
                     new_m = self.controller.stars.create_measurement(
