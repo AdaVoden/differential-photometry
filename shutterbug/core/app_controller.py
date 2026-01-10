@@ -20,6 +20,7 @@ from .managers import (
     ImageManager,
     SelectionManager,
     StarCatalog,
+    ErrorManager,
 )
 from .models import FITSModel, StarIdentity
 from shutterbug.gui.managers import MarkerManager, ToolManager
@@ -45,6 +46,7 @@ class AppController(QObject):
         self.graphs = GraphManager(self)
         self.adapters = AdapterRegistry(self)
         self.selections = SelectionManager(self)
+        self.error = ErrorManager(self)
         # GUI managers
         self.markers = MarkerManager(self)
         self.icons = IconManager(self)

@@ -3,15 +3,16 @@ import logging
 from PySide6.QtCore import QCoreApplication, Slot
 from PySide6.QtGui import Qt
 from PySide6.QtWidgets import (
-    QApplication,
     QFileDialog,
     QHBoxLayout,
     QLabel,
     QMainWindow,
+    QMessageBox,
     QProgressBar,
     QWidget,
 )
 from shutterbug.core.app_controller import AppController
+from shutterbug.core.models.error_model import ErrorModel
 from shutterbug.gui.managers.progress_manager import ProgressTask
 from shutterbug.gui.region import Region
 
@@ -81,6 +82,9 @@ class MainWindow(QMainWindow):
         self.progress.finished.connect(self._on_progress_finished)
         self.progress.changed.connect(self._on_progress_changed)
 
+        self.error = controller.error
+        self.error.error_raised.connect(self.show_error)
+
         logging.debug("Main window initialized")
 
     @Slot(ProgressTask)
@@ -110,6 +114,11 @@ class MainWindow(QMainWindow):
         self.progress_bar.setValue(progress.percent)
         self.progress_bar.repaint()
         self.status_bar.repaint()
+
+    @Slot(ErrorModel)
+    def show_error(self, error: ErrorModel):
+        """Shows error from system"""
+        QMessageBox.critical(self, "Shutterbug Error", error.message)
 
     def setup_menu_bar(self):
         """Set up the menu bar with File, Edit, View, and Help menus"""

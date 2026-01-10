@@ -6,6 +6,7 @@ from .star_catalog import StarCatalog
 from .graph_manager import GraphManager
 from .selection_manager import SelectionManager
 from .stretch_manager import StretchManager
+from .error_manager import ErrorManager
 
 __all__ = [
     "FileManager",
@@ -14,4 +15,5 @@ __all__ = [
     "GraphManager",
     "SelectionManager",
     "StretchManager",
+    "ErrorManager",
 ]

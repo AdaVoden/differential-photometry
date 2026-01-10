@@ -5,6 +5,7 @@ from .fits_model import FITSModel
 from .graph_model import GraphDataModel
 from .outliner_model import OutlinerModel
 from .marker_model import MarkerModel, MarkerType
+from .error_model import ErrorModel
 
 __all__ = [
     "MarkerType",
@@ -15,4 +16,5 @@ __all__ = [
     "FITSModel",
     "GraphDataModel",
     "OutlinerModel",
+    "ErrorModel",
 ]
