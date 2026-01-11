@@ -164,7 +164,7 @@ class MainWindow(QMainWindow):
             "FITS Files (*.fits *.fit *.fts);;All Files (*)",
         )
 
-        self.controller._undo_stack.push(LoadImagesCommand(filenames, self.controller))
+        self.controller.push_command(LoadImagesCommand(filenames, self.controller))
 
     @Slot()
     def save_project(self):

@@ -72,8 +72,6 @@ class ImagePropertiesPanel(BaseUIWidget):
     def __init__(self, controller: AppController, parent=None):
         super().__init__(controller, parent)
 
-        self._undo_stack = controller._undo_stack
-
         self.current_image = controller.selections.image
 
         self.setObjectName("imageProperties")
@@ -153,21 +151,21 @@ class ImagePropertiesPanel(BaseUIWidget):
     @Slot(int)
     def _on_brightness_changed(self, value: int):
         if self.current_image:
-            self._undo_stack.push(
+            self.controller.push_command(
                 SetImageValueCommand("brightness", value, self.current_image)
             )
 
     @Slot(int)
     def _on_contrast_changed(self, value: int):
         if self.current_image:
-            self._undo_stack.push(
+            self.controller.push_command(
                 SetImageValueCommand("contrast", value, self.current_image)
             )
 
     @Slot(str)
     def _on_stretch_changed(self, value: str):
         if self.current_image:
-            self._undo_stack.push(
+            self.controller.push_command(
                 SetImageValueCommand("stretch_type", value, self.current_image)
             )
 
@@ -240,7 +238,7 @@ class GraphPropertiesPanel(BaseUIWidget):
     def _on_title_changed(self, title: str):
         """Handles title changing in graph"""
         if self.current_graph:
-            self.controller._undo_stack.push(
+            self.controller.push_command(
                 SetGraphValueCommand("title", title, self.current_graph)
             )
 
@@ -248,7 +246,7 @@ class GraphPropertiesPanel(BaseUIWidget):
     def _on_x_label_changed(self, label: str):
         """Handles X label changing in graph"""
         if self.current_graph:
-            self.controller._undo_stack.push(
+            self.controller.push_command(
                 SetGraphValueCommand("x_label", label, self.current_graph)
             )
 
@@ -256,7 +254,7 @@ class GraphPropertiesPanel(BaseUIWidget):
     def _on_y_label_changed(self, label: str):
         """Handles Y label changing in graph"""
         if self.current_graph:
-            self.controller._undo_stack.push(
+            self.controller.push_command(
                 SetGraphValueCommand("y_label", label, self.current_graph)
             )
 
