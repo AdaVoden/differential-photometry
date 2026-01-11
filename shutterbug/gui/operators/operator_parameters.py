@@ -12,7 +12,7 @@ class BoxSelectParameters(OperatorParameters):
 
 class PhotometryParameters(OperatorParameters):
     mode = "all"
-    images = "single"
+    images = "all"
     aperture_radius = 5
     annulus_inner_radius = 10
     annulus_outer_radius = 15
