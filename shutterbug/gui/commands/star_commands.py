@@ -27,7 +27,10 @@ class AddMeasurementsCommand(BaseCommand):
         self.measurements = []
 
     def validate(self):
-        pass
+        if not self.stars:
+            raise ValueError("attempted to add measurement to non-existent stars")
+        if not self.image:
+            raise ValueError("attempted to add measurements to non-existent image")
 
     def redo(self):
         logging.debug(f"COMMAND: Adding {len(self.stars)} measurements")
@@ -87,7 +90,8 @@ class PhotometryMeasurementCommand(BaseCommand):
             }
 
     def validate(self):
-        pass
+        if not self.measurements:
+            raise ValueError("Unable to run photometry, no stars detected")
 
     def redo(self):
         logging.debug(
@@ -146,7 +150,8 @@ class PhotometryAllCommand(BaseCommand):
             )
 
     def validate(self):
-        pass
+        for cmd in self.cmds:
+            cmd.validate()
 
     def redo(self):
         logging.debug(
@@ -178,7 +183,11 @@ class DifferentialPhotometryCommand(BaseCommand):
             }
 
     def validate(self):
-        pass
+        for m in self.measurements:
+            if not m.mag or not m.mag_error:
+                raise ValueError(
+                    f"Star at ({m.x:.0f}, {m.y:.0f}) missing magnitude data"
+                )
 
     def redo(self):
         for m in self.measurements:
@@ -203,7 +212,8 @@ class DifferentialPhotometryAllCommand(BaseCommand):
             self.cmds.append(DifferentialPhotometryCommand(i, controller))
 
     def validate(self):
-        pass
+        for cmd in self.cmds:
+            cmd.validate()
 
     def redo(self):
         for cmd in self.cmds:
@@ -228,7 +238,8 @@ class PropagateStarSelection(BaseCommand):
         self.added = []
 
     def validate(self):
-        pass
+        if not self.measurements:
+            raise ValueError("Stars required to propagate")
 
     def redo(self):
         logging.debug(f"COMMAND: Propagating stars from image {self.image.uid}")
