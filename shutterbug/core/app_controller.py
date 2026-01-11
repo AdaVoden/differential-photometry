@@ -9,6 +9,7 @@ from shutterbug.gui.adapters import (
     StarIdentityAdapter,
 )
 from shutterbug.gui.adapters.adapter_registry import AdapterRegistry
+from shutterbug.gui.commands.base_command import BaseCommand
 from shutterbug.gui.managers.icon_manager import IconManager
 from shutterbug.gui.managers.theme_manager import ThemeManager
 from shutterbug.gui.managers.progress_manager import ProgressManager
@@ -119,3 +120,13 @@ class AppController(QObject):
     def resources(self):
         """Returns resources folder"""
         return Path(__file__).resolve().parent.parent / "resources"
+
+    def push_command(self, command: BaseCommand):
+        """Validates command and pushes to the stack"""
+        try:
+            command.validate()
+        except ValueError as e:
+            self.error.raise_error(str(e), "critical")
+            return
+
+        self._undo_stack.push(command)

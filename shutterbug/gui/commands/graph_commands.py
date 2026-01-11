@@ -5,14 +5,14 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from shutterbug.core.app_controller import AppController
 
-from PySide6.QtGui import QUndoCommand
+from .base_command import BaseCommand
 
 from shutterbug.core.models.star_identity import StarIdentity
 
 import logging
 
 
-class AddGraphCommand(QUndoCommand):
+class AddGraphCommand(BaseCommand):
     """Command to add a graph to the system"""
 
     def __init__(self, star: StarIdentity, controller: AppController):
@@ -20,6 +20,9 @@ class AddGraphCommand(QUndoCommand):
         self.star = star
         self.controller = controller
         self.graph = None
+
+    def validate(self):
+        pass
 
     def redo(self):
         logging.debug(f"COMMAND: Adding graph to system")

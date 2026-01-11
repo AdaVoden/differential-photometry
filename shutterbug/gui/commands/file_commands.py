@@ -5,8 +5,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from shutterbug.core.app_controller import AppController
 
-from PySide6.QtGui import QUndoCommand
-
+from .base_command import BaseCommand
 from shutterbug.core.models import FITSModel
 
 from pathlib import Path
@@ -16,7 +15,7 @@ from typing import List
 import logging
 
 
-class LoadImagesCommand(QUndoCommand):
+class LoadImagesCommand(BaseCommand):
     """Loads images into application"""
 
     def __init__(self, image_paths: List[str], controller: AppController):
@@ -24,6 +23,9 @@ class LoadImagesCommand(QUndoCommand):
         self.image_paths = [Path(f) for f in image_paths]
         self.controller = controller
         self.images = []
+
+    def validate(self):
+        pass
 
     def redo(self) -> None:
         logging.debug(
@@ -43,7 +45,7 @@ class LoadImagesCommand(QUndoCommand):
         self.images.clear()
 
 
-class SelectFileCommand(QUndoCommand):
+class SelectFileCommand(BaseCommand):
     """Selects file in outliner and viewer"""
 
     def __init__(self, selected_image: FITSModel, controller: AppController):
@@ -51,6 +53,9 @@ class SelectFileCommand(QUndoCommand):
         self.selected_image = selected_image
         self.controller = controller
         self.last_selection = None
+
+    def validate(self):
+        pass
 
     def redo(self) -> None:
         logging.debug(
