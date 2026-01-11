@@ -22,7 +22,12 @@ class AddGraphCommand(BaseCommand):
         self.graph = None
 
     def validate(self):
-        pass
+        """Validates graph creation"""
+        for m in self.star.measurements.values():
+            if not m.diff_mag or not m.diff_err:
+                raise ValueError(
+                    "Cannot create graph, star missing differential photometry data"
+                )
 
     def redo(self):
         logging.debug(f"COMMAND: Adding graph to system")

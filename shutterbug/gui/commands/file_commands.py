@@ -6,7 +6,6 @@ if TYPE_CHECKING:
     from shutterbug.core.app_controller import AppController
 
 from .base_command import BaseCommand
-from shutterbug.core.models import FITSModel
 
 from pathlib import Path
 
@@ -25,7 +24,9 @@ class LoadImagesCommand(BaseCommand):
         self.images = []
 
     def validate(self):
-        pass
+        for p in self.image_paths:
+            if not p.is_file():
+                raise ValueError(f"File {p.name} not found or is a directory")
 
     def redo(self) -> None:
         logging.debug(
@@ -43,30 +44,3 @@ class LoadImagesCommand(BaseCommand):
             self.controller.images.remove_image(image)
 
         self.images.clear()
-
-
-class SelectFileCommand(BaseCommand):
-    """Selects file in outliner and viewer"""
-
-    def __init__(self, selected_image: FITSModel, controller: AppController):
-        super().__init__("Select File")
-        self.selected_image = selected_image
-        self.controller = controller
-        self.last_selection = None
-
-    def validate(self):
-        pass
-
-    def redo(self) -> None:
-        logging.debug(
-            f"COMMAND: Setting active image to: {self.selected_image.filename}"
-        )
-        self.last_selection = self.controller.selections._current
-        self.controller.selections.select(self.selected_image)
-
-    def undo(self) -> None:
-        logging.debug(
-            f"COMMAND: undoing setting active image to: {self.selected_image.filename}"
-        )
-
-        self.controller.selections.select(self.last_selection)

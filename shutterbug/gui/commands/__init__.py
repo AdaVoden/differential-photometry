@@ -1,4 +1,4 @@
-from .file_commands import LoadImagesCommand, SelectFileCommand
+from .file_commands import LoadImagesCommand
 from .star_commands import (
     AddMeasurementsCommand,
     PhotometryMeasurementCommand,
@@ -16,7 +16,6 @@ from .remove_commands import (
 
 __all__ = [
     "LoadImagesCommand",
-    "SelectFileCommand",
     "AddMeasurementsCommand",
     "RemoveMeasurementCommand",
     "RemoveGraphCommand",
