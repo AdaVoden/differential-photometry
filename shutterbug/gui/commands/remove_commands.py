@@ -12,18 +12,21 @@ from shutterbug.core.models import (
     StarIdentity,
 )
 
-from PySide6.QtGui import QUndoCommand
+from .base_command import BaseCommand
 
 import logging
 
 
-class RemoveMeasurementCommand(QUndoCommand):
+class RemoveMeasurementCommand(BaseCommand):
     """Command to deselect a star"""
 
     def __init__(self, measurement: StarMeasurement, controller: AppController):
         super().__init__("Remove Measurements")
         self.measurement = measurement
         self.stars = controller.stars
+
+    def validate(self):
+        pass
 
     def redo(self):
         m = self.measurement
@@ -40,7 +43,7 @@ class RemoveMeasurementCommand(QUndoCommand):
         self.stars.register_measurement(m)
 
 
-class RemoveStarCommand(QUndoCommand):
+class RemoveStarCommand(BaseCommand):
     """Command to deselect a star"""
 
     def __init__(self, star: StarIdentity, controller: AppController):
@@ -48,6 +51,9 @@ class RemoveStarCommand(QUndoCommand):
         self.star = star
         self.stars = controller.stars
         self.measurements = []
+
+    def validate(self):
+        pass
 
     def redo(self):
         s = self.star
@@ -62,13 +68,16 @@ class RemoveStarCommand(QUndoCommand):
             self.stars.register_measurement(m, self.star)
 
 
-class RemoveGraphCommand(QUndoCommand):
+class RemoveGraphCommand(BaseCommand):
     """Command to deselect a star"""
 
     def __init__(self, graph: GraphDataModel, controller: AppController):
         super().__init__("Remove Measurements")
         self.graph = graph
         self.graphs = controller.graphs
+
+    def validate(self):
+        pass
 
     def redo(self):
         logging.debug(f"COMMAND: Removing graph {self.graph.label}")
@@ -79,13 +88,16 @@ class RemoveGraphCommand(QUndoCommand):
         self.graphs.add_graph(self.graph)
 
 
-class RemoveImageCommand(QUndoCommand):
+class RemoveImageCommand(BaseCommand):
     """Command to deselect a star"""
 
     def __init__(self, image: FITSModel, controller: AppController):
         super().__init__("Remove Measurements")
         self.image = image
         self.images = controller.images
+
+    def validate(self):
+        pass
 
     def redo(self):
         logging.debug(f"COMMAND: Removing image {self.image.filepath}")

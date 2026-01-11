@@ -9,12 +9,12 @@ if TYPE_CHECKING:
 
 import logging
 from typing import List
-from PySide6.QtGui import QUndoCommand
 from shutterbug.core.models import FITSModel, StarMeasurement
+from .base_command import BaseCommand
 import shutterbug.core.utility.photometry as phot
 
 
-class AddMeasurementsCommand(QUndoCommand):
+class AddMeasurementsCommand(BaseCommand):
     """Command to select a star"""
 
     def __init__(self, stars: List, image: FITSModel, controller: AppController):
@@ -25,6 +25,12 @@ class AddMeasurementsCommand(QUndoCommand):
         self.controller = controller
         self.old_select = None
         self.measurements = []
+
+    def validate(self):
+        if not self.stars:
+            raise ValueError("attempted to add measurement to non-existent stars")
+        if not self.image:
+            raise ValueError("attempted to add measurements to non-existent image")
 
     def redo(self):
         logging.debug(f"COMMAND: Adding {len(self.stars)} measurements")
@@ -59,7 +65,7 @@ class AddMeasurementsCommand(QUndoCommand):
                 self.controller.selections.select(self.old_select)
 
 
-class PhotometryMeasurementCommand(QUndoCommand):
+class PhotometryMeasurementCommand(BaseCommand):
     """Command to perform photometry on a star"""
 
     def __init__(
@@ -82,6 +88,10 @@ class PhotometryMeasurementCommand(QUndoCommand):
                 "mag": m.mag,
                 "mag_error": m.mag_error,
             }
+
+    def validate(self):
+        if not self.measurements:
+            raise ValueError("Unable to run photometry, no stars detected")
 
     def redo(self):
         logging.debug(
@@ -122,7 +132,7 @@ class PhotometryMeasurementCommand(QUndoCommand):
             m.mag_error = o["mag_error"]
 
 
-class PhotometryAllCommand(QUndoCommand):
+class PhotometryAllCommand(BaseCommand):
     """Runs photometry with parameters across all images"""
 
     def __init__(self, params: PhotometryParameters, controller: AppController):
@@ -139,6 +149,10 @@ class PhotometryAllCommand(QUndoCommand):
                 )
             )
 
+    def validate(self):
+        for cmd in self.cmds:
+            cmd.validate()
+
     def redo(self):
         logging.debug(
             f"COMMAND: Performing photometry on all measurements in all images"
@@ -152,7 +166,7 @@ class PhotometryAllCommand(QUndoCommand):
             cmd.undo()
 
 
-class DifferentialPhotometryCommand(QUndoCommand):
+class DifferentialPhotometryCommand(BaseCommand):
     """Command to perform differential photometry on measurements"""
 
     def __init__(self, image: FITSModel, controller: AppController):
@@ -168,6 +182,13 @@ class DifferentialPhotometryCommand(QUndoCommand):
                 "diff_err": m.diff_err,
             }
 
+    def validate(self):
+        for m in self.measurements:
+            if not m.mag or not m.mag_error:
+                raise ValueError(
+                    f"Star at ({m.x:.0f}, {m.y:.0f}) missing magnitude data"
+                )
+
     def redo(self):
         for m in self.measurements:
             other_ms = [n for n in self.measurements if n != m]
@@ -180,7 +201,7 @@ class DifferentialPhotometryCommand(QUndoCommand):
             m.diff_err = self.old_measurements[m.uid]["diff_err"]
 
 
-class DifferentialPhotometryAllCommand(QUndoCommand):
+class DifferentialPhotometryAllCommand(BaseCommand):
     """Command to perform differential photometry on all images' measurements"""
 
     def __init__(self, controller: AppController):
@@ -189,6 +210,10 @@ class DifferentialPhotometryAllCommand(QUndoCommand):
         self.cmds = []
         for i in self.images:
             self.cmds.append(DifferentialPhotometryCommand(i, controller))
+
+    def validate(self):
+        for cmd in self.cmds:
+            cmd.validate()
 
     def redo(self):
         for cmd in self.cmds:
@@ -199,7 +224,7 @@ class DifferentialPhotometryAllCommand(QUndoCommand):
             cmd.undo()
 
 
-class PropagateStarSelection(QUndoCommand):
+class PropagateStarSelection(BaseCommand):
     """Command to propagate measurements from one image to the next"""
 
     def __init__(self, image: FITSModel, controller: AppController):
@@ -211,6 +236,10 @@ class PropagateStarSelection(QUndoCommand):
         # All images not ours
         self.others = [i for i in images if i != image]
         self.added = []
+
+    def validate(self):
+        if not self.measurements:
+            raise ValueError("Stars required to propagate")
 
     def redo(self):
         logging.debug(f"COMMAND: Propagating stars from image {self.image.uid}")

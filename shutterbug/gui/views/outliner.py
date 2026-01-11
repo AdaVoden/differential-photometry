@@ -119,14 +119,12 @@ class Outliner(BaseView):
         """Removes item from system"""
         cmd = self.mapping.get(type(item))
         if cmd:
-            self.controller._undo_stack.push(cmd(item, self.controller))
+            self.controller.push_command(cmd(item, self.controller))
 
     def _star_menu(self, menu: QMenu, star: StarIdentity):
         """Creates menu for stars"""
 
         graph_action = menu.addAction("Graph star")
         graph_action.triggered.connect(
-            lambda: self.controller._undo_stack.push(
-                AddGraphCommand(star, self.controller)
-            )
+            lambda: self.controller.push_command(AddGraphCommand(star, self.controller))
         )

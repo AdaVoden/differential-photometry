@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
-from PySide6.QtGui import QUndoCommand
+from .base_command import BaseCommand
 
 if TYPE_CHECKING:
     from shutterbug.core.app_controller import AppController
@@ -10,13 +10,18 @@ if TYPE_CHECKING:
 import logging
 
 
-class SelectCommand(QUndoCommand):
+class SelectCommand(BaseCommand):
 
     def __init__(self, object: Any, controller: AppController):
         super().__init__()
         self.object = object
         self.controller = controller
         self.old_identity = self.controller.selections.get(object)
+
+    def validate(self):
+        """Validates selection"""
+        # Nothing to validate yet
+        pass
 
     def redo(self):
         logging.debug(f"COMMAND: Selecting object {type(self.object).__name__}")

@@ -1,11 +1,10 @@
-from PySide6.QtGui import QUndoCommand
-
+from .base_command import BaseCommand
 from shutterbug.core.models import GraphDataModel, FITSModel
 
 import logging
 
 
-class SetGraphValueCommand(QUndoCommand):
+class SetGraphValueCommand(BaseCommand):
     """Sets value in image"""
 
     def __init__(self, value_name: str, new_value, graph: GraphDataModel):
@@ -14,6 +13,9 @@ class SetGraphValueCommand(QUndoCommand):
         self.graph = graph
         self.value_name = value_name
         self.old_value = graph.__getattribute__(value_name)
+
+    def validate(self):
+        pass
 
     def redo(self) -> None:
         logging.debug(f"COMMAND: Setting {self.value_name} to: {self.new_value}")
@@ -26,7 +28,7 @@ class SetGraphValueCommand(QUndoCommand):
         self.graph.__setattr__(self.value_name, self.new_value)
 
 
-class SetImageValueCommand(QUndoCommand):
+class SetImageValueCommand(BaseCommand):
     """Sets value in image"""
 
     def __init__(self, value_name: str, new_value, image: FITSModel):
@@ -35,6 +37,9 @@ class SetImageValueCommand(QUndoCommand):
         self.image = image
         self.value_name = value_name
         self.old_value = image.__getattribute__(value_name)
+
+    def validate(self):
+        pass
 
     def redo(self) -> None:
         logging.debug(f"COMMAND: Setting {self.value_name} to: {self.new_value}")

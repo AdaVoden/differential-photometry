@@ -5,9 +5,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from shutterbug.core.app_controller import AppController
 
-from PySide6.QtGui import QUndoCommand
-
-from shutterbug.core.models import FITSModel
+from .base_command import BaseCommand
 
 from pathlib import Path
 
@@ -16,7 +14,7 @@ from typing import List
 import logging
 
 
-class LoadImagesCommand(QUndoCommand):
+class LoadImagesCommand(BaseCommand):
     """Loads images into application"""
 
     def __init__(self, image_paths: List[str], controller: AppController):
@@ -24,6 +22,11 @@ class LoadImagesCommand(QUndoCommand):
         self.image_paths = [Path(f) for f in image_paths]
         self.controller = controller
         self.images = []
+
+    def validate(self):
+        for p in self.image_paths:
+            if not p.is_file():
+                raise ValueError(f"File {p.name} not found or is a directory")
 
     def redo(self) -> None:
         logging.debug(
@@ -41,27 +44,3 @@ class LoadImagesCommand(QUndoCommand):
             self.controller.images.remove_image(image)
 
         self.images.clear()
-
-
-class SelectFileCommand(QUndoCommand):
-    """Selects file in outliner and viewer"""
-
-    def __init__(self, selected_image: FITSModel, controller: AppController):
-        super().__init__("Select File")
-        self.selected_image = selected_image
-        self.controller = controller
-        self.last_selection = None
-
-    def redo(self) -> None:
-        logging.debug(
-            f"COMMAND: Setting active image to: {self.selected_image.filename}"
-        )
-        self.last_selection = self.controller.selections._current
-        self.controller.selections.select(self.selected_image)
-
-    def undo(self) -> None:
-        logging.debug(
-            f"COMMAND: undoing setting active image to: {self.selected_image.filename}"
-        )
-
-        self.controller.selections.select(self.last_selection)

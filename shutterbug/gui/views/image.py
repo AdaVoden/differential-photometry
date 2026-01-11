@@ -66,7 +66,6 @@ class ImageViewer(BaseView):
         layout.addWidget(self.view)
 
         # Manager setup
-        self._undo_stack = controller._undo_stack
         self.catalog = controller.stars
         self.image_manager = controller.images
         self.tools = controller.tools
@@ -119,7 +118,7 @@ class ImageViewer(BaseView):
         if self.view.current_image is None:
             return  # No work to do
 
-        self.controller._undo_stack.push(
+        self.controller.push_command(
             DifferentialPhotometryCommand(self.view.current_image, self.controller)
         )
 
@@ -129,9 +128,7 @@ class ImageViewer(BaseView):
         if self.view.current_image is None:
             return  # No work to do
 
-        self.controller._undo_stack.push(
-            DifferentialPhotometryAllCommand(self.controller)
-        )
+        self.controller.push_command(DifferentialPhotometryAllCommand(self.controller))
 
     @Slot()
     def _on_propagate(self):
@@ -139,7 +136,7 @@ class ImageViewer(BaseView):
         if self.view.current_image is None:
             return  # No work to do
 
-        self.controller._undo_stack.push(
+        self.controller.push_command(
             PropagateStarSelection(self.view.current_image, self.controller)
         )
 
